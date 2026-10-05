@@ -1,0 +1,628 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* NEXO Dark Blue (Overriding Indigo) */
+    --color-indigo-50: #f2f6fa;
+    --color-indigo-100: #e1ebf4;
+    --color-indigo-200: #c9dcea;
+    --color-indigo-300: #a2c6dd;
+    --color-indigo-400: #74a8cc;
+    --color-indigo-500: #518ab5;
+    --color-indigo-600: #082F4E;
+    --color-indigo-700: #072640;
+    --color-indigo-800: #061e33;
+    --color-indigo-900: #051829;
+    --color-indigo-950: #030f1a;
+
+    /* NEXO Cyan (Overriding Violet) */
+    --color-violet-50: #f0fcfb;
+    --color-violet-100: #cbf7f5;
+    --color-violet-200: #98efed;
+    --color-violet-300: #5de2df;
+    --color-violet-400: #2bccc8;
+    --color-violet-500: #14b8b4;
+    --color-violet-600: #07B0B0;
+    --color-violet-700: #068f8f;
+    --color-violet-800: #056e6e;
+    --color-violet-900: #044d4d;
+    --color-violet-950: #022e2e;
+
+    /* NEXO Red (Overriding Rose) */
+    --color-rose-50: #fff1f2;
+    --color-rose-100: #ffe4e6;
+    --color-rose-200: #fecdd3;
+    --color-rose-300: #fda4af;
+    --color-rose-400: #fb7185;
+    --color-rose-500: #f43f5e;
+    --color-rose-600: #E01E26;
+    --color-rose-700: #be123c;
+    --color-rose-800: #9f1239;
+    --color-rose-900: #881337;
+    --color-rose-950: #4c0519;
+}
+
+/* ===== Menú lateral =====
+   Móvil: cajón que se desliza con fondo. Escritorio: colapsado (6rem) o fijado (18rem).
+   Los iconos y el logo viven en una celda fija de 3.5rem a 1.25rem del borde: no se mueven al expandir. */
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-group(root) {
+    animation-duration: 0.15s;
+}
+
+@layer components {
+    .sidebar {
+        position: fixed;
+        inset-block: 0;
+        left: 0;
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        overflow: hidden;
+        width: min(20rem, 85vw);
+        background: #fff;
+        border-radius: 0 2rem 2rem 0;
+        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform 0.3s ease, visibility 0s linear 0.3s;
+        view-transition-name: sidebar;
+    }
+
+    .sidebar.abierto {
+        transform: none;
+        visibility: visible;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar-fondo {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        background: rgb(15 23 42 / 0.45);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .sidebar-fondo.abierto {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .sb-fila {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 3rem;
+        overflow: hidden;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .sb-icono {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 3.5rem;
+        height: 3rem;
+    }
+
+    .sb-etiqueta {
+        white-space: nowrap;
+        padding: 0 1rem 0 0.5rem;
+        transition: opacity 0.2s ease;
+    }
+
+    @media (min-width: 48rem) {
+        .sidebar {
+            position: relative;
+            margin: 1rem;
+            width: 6rem;
+            border: 1px solid var(--color-slate-100);
+            border-radius: 2rem;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            transform: none;
+            visibility: visible;
+            transition: width 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .sidebar:hover {
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        }
+
+        .sidebar.is-pinned {
+            width: 18rem;
+        }
+
+        .sidebar-fondo {
+            display: none;
+        }
+
+        /* Colapsado: textos y botón de fijar ocultos (los iconos no cambian de sitio). */
+        .sidebar:not(.is-pinned) .sb-etiqueta,
+        .sidebar:not(.is-pinned) .sb-extra {
+            opacity: 0;
+            pointer-events: none;
+        }
+    }
+
+    /* Sin animaciones hasta el primer pintado (evita que parezca que "carga" en cada página). */
+    .sin-animacion,
+    .sin-animacion * {
+        transition: none !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .sidebar *,
+    .sidebar-fondo {
+        transition: none !important;
+    }
+}
+
+/* ===== Pantalla de carga entre páginas =====
+   Barra de progreso superior (cian a azul NEXO) + velo translúcido con el logo dentro de un anillo que gira.
+   Queda por debajo del menú lateral (z-40 frente a z-50): el menú nunca se tapa ni parpadea. */
+@layer components {
+    .cargando {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at 50% 45%, rgb(255 255 255 / 0.88), rgb(240 242 245 / 0.7));
+        backdrop-filter: blur(6px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+    }
+
+    .cargando.activo {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.18s ease;
+    }
+
+    .cargando-marca {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 5.5rem;
+        height: 5.5rem;
+    }
+
+    .cargando-anillo {
+        position: absolute;
+        inset: 0;
+        border-radius: 9999px;
+        background: conic-gradient(from 0deg, transparent 0 25%, #07b0b0 75%, #082f4e);
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+        animation: cargando-girar 1s linear infinite;
+    }
+
+    .cargando-logo {
+        width: 2.75rem;
+        height: 2.75rem;
+        object-fit: contain;
+        animation: cargando-latido 1.6s ease-in-out infinite;
+    }
+
+    .cargando-texto {
+        margin-top: 1.1rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #082f4e;
+        opacity: 0.7;
+    }
+
+    .cargando-barra {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 21;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #07b0b0, #082f4e);
+        transform-origin: left;
+        transform: scaleX(0);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .cargando-barra.activa {
+        opacity: 1;
+        animation: cargando-progreso 8s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
+    }
+}
+
+/* Entrada suave del contenido al llegar a una página. */
+.animate-fade-in {
+    animation: cargando-entrada 0.28s ease-out both;
+}
+
+@keyframes cargando-girar {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes cargando-latido {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes cargando-progreso {
+    0% { transform: scaleX(0); }
+    25% { transform: scaleX(0.55); }
+    100% { transform: scaleX(0.93); }
+}
+
+@keyframes cargando-entrada {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cargando-anillo,
+    .cargando-logo,
+    .cargando-barra.activa,
+    .animate-fade-in {
+        animation-duration: 0.01ms;
+        animation-iteration-count: 1;
+    }
+}
+
+/* ===== Campos de formulario =====
+   Un solo lenguaje para input, select, textarea y casilla: caja de 2.75rem con borde suave,
+   foco con borde azul NEXO y halo cian, error en rojo NEXO, íconos a la izquierda que se
+   tiñen al enfocar. Los componentes <x-campo*> solo ponen estas clases. */
+@layer components {
+    .campo {
+        margin-bottom: 1.15rem;
+    }
+
+    .campo-etiqueta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.15rem 0.45rem;
+        margin-bottom: 0.4rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--color-slate-700);
+    }
+
+    .campo-requerido {
+        display: inline-block;
+        width: 0.4rem;
+        height: 0.4rem;
+        border-radius: 9999px;
+        background: #e01e26;
+        transform: translateY(-0.12rem);
+    }
+
+    .campo-ayuda {
+        font-size: 0.75rem;
+        font-weight: 400;
+        color: var(--color-slate-500);
+    }
+
+    .campo-caja {
+        position: relative;
+    }
+
+    .campo-control {
+        display: block;
+        width: 100%;
+        min-height: 2.75rem;
+        padding: 0.6rem 0.9rem;
+        font-size: 0.9375rem;
+        line-height: 1.4;
+        color: var(--color-slate-900);
+        background-color: #fff;
+        border: 1px solid var(--color-slate-300);
+        border-radius: 0.75rem;
+        box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.05);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+
+    .campo-control::placeholder {
+        color: var(--color-slate-400);
+    }
+
+    .campo-control:hover:not(:disabled):not(:focus) {
+        border-color: var(--color-slate-400);
+    }
+
+    .campo-control:focus {
+        outline: none;
+        border-color: #082f4e;
+        box-shadow: 0 0 0 4px rgb(7 176 176 / 0.22);
+    }
+
+    .campo-control[aria-invalid='true'] {
+        border-color: #e01e26;
+        background-color: #fffafa;
+    }
+
+    .campo-control[aria-invalid='true']:focus {
+        box-shadow: 0 0 0 4px rgb(224 30 38 / 0.16);
+    }
+
+    .campo-control:disabled,
+    .campo-control[readonly] {
+        color: var(--color-slate-500);
+        background-color: var(--color-slate-50);
+        cursor: not-allowed;
+    }
+
+    .campo-caja.con-icono .campo-control {
+        padding-left: 2.65rem;
+    }
+
+    .campo-icono {
+        position: absolute;
+        top: 50%;
+        left: 0.9rem;
+        width: 1.1rem;
+        height: 1.1rem;
+        color: var(--color-slate-400);
+        transform: translateY(-50%);
+        pointer-events: none;
+        transition: color 0.15s ease;
+    }
+
+    .campo-caja:focus-within .campo-icono {
+        color: #082f4e;
+    }
+
+    .campo-caja:has([aria-invalid='true']) .campo-icono {
+        color: #e01e26;
+    }
+
+    /* select: flecha propia en lugar de la del navegador */
+    select.campo-control {
+        padding-right: 2.7rem;
+        cursor: pointer;
+        appearance: none;
+    }
+
+    .campo-flecha {
+        position: absolute;
+        top: 50%;
+        right: 0.9rem;
+        width: 1rem;
+        height: 1rem;
+        color: var(--color-slate-400);
+        transform: translateY(-50%);
+        pointer-events: none;
+        transition: transform 0.15s ease, color 0.15s ease;
+    }
+
+    .campo-caja:focus-within .campo-flecha {
+        color: #082f4e;
+    }
+
+    textarea.campo-control {
+        min-height: 6.5rem;
+        resize: vertical;
+    }
+
+    /* número: sin las flechitas del navegador */
+    input[type='number'].campo-control {
+        appearance: textfield;
+    }
+
+    input[type='number'].campo-control::-webkit-inner-spin-button,
+    input[type='number'].campo-control::-webkit-outer-spin-button {
+        appearance: none;
+        margin: 0;
+    }
+
+    .campo-ojo {
+        position: absolute;
+        top: 50%;
+        right: 0.4rem;
+        display: grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        color: var(--color-slate-400);
+        border-radius: 0.5rem;
+        transform: translateY(-50%);
+        transition: color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .campo-ojo:hover {
+        color: #082f4e;
+        background-color: var(--color-slate-100);
+    }
+
+    .campo-ojo:focus-visible {
+        outline: 2px solid #07b0b0;
+        outline-offset: 1px;
+    }
+
+    .campo-caja:has(.campo-ojo) .campo-control {
+        padding-right: 2.9rem;
+    }
+
+    .campo-error {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.35rem;
+        margin-top: 0.4rem;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: #b4161d;
+    }
+
+    .campo-error svg {
+        flex-shrink: 0;
+        width: 1rem;
+        height: 1rem;
+        margin-top: 0.1rem;
+    }
+
+    .campo-nota {
+        margin-top: 0.4rem;
+        font-size: 0.75rem;
+        color: #b45309;
+    }
+
+    .campo-conteo {
+        margin-top: 0.3rem;
+        font-size: 0.75rem;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--color-slate-400);
+    }
+
+    /* casilla en una fila que se puede tocar entera */
+    .campo-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.8rem 0.95rem;
+        cursor: pointer;
+        background: #fff;
+        border: 1px solid var(--color-slate-300);
+        border-radius: 0.75rem;
+        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .campo-check:hover {
+        border-color: var(--color-slate-400);
+    }
+
+    .campo-check:has(input:checked) {
+        background: rgb(7 176 176 / 0.07);
+        border-color: #07b0b0;
+    }
+
+    .campo-check:has(input:focus-visible) {
+        box-shadow: 0 0 0 4px rgb(7 176 176 / 0.22);
+    }
+
+    .campo-check input {
+        flex-shrink: 0;
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.1rem;
+        cursor: pointer;
+        appearance: none;
+        background: #fff center / 0.8rem no-repeat;
+        border: 1.5px solid var(--color-slate-400);
+        border-radius: 0.4rem;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .campo-check input:checked {
+        background-color: #082f4e;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+        border-color: #082f4e;
+    }
+
+    .campo-check input:focus {
+        outline: none;
+    }
+
+    .campo-check-texto {
+        font-size: 0.9rem;
+        font-weight: 500;
+        line-height: 1.35rem;
+        color: var(--color-slate-700);
+    }
+}
+
+/* ===== Botones =====
+   Misma altura que los campos (2.75rem). Primario = azul NEXO; secundario = blanco con borde.
+   Foco con el mismo halo cian de los campos. */
+@layer components {
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 2.75rem;
+        padding: 0.55rem 1.15rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-radius: 0.75rem;
+        transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+    }
+
+    .btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px rgb(7 176 176 / 0.28);
+    }
+
+    .btn:active {
+        transform: translateY(1px);
+    }
+
+    .btn:disabled,
+    .btn[aria-disabled='true'] {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-primario {
+        color: #fff;
+        background-color: #082f4e;
+        box-shadow: 0 1px 2px rgb(8 47 78 / 0.25);
+    }
+
+    .btn-primario:hover:not(:disabled) {
+        background-color: #072640;
+    }
+
+    .btn-secundario {
+        color: var(--color-slate-700);
+        background-color: #fff;
+        border-color: var(--color-slate-300);
+    }
+
+    .btn-secundario:hover:not(:disabled) {
+        background-color: var(--color-slate-50);
+        border-color: var(--color-slate-400);
+    }
+
+    /* Pie de formulario: Cancelar a la izquierda del acción principal; apilados en móvil. */
+    .form-acciones {
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 0.75rem;
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--color-slate-200);
+    }
+
+    @media (min-width: 40rem) {
+        .form-acciones {
+            flex-direction: row;
+            justify-content: flex-end;
+        }
+    }
+}

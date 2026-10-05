@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: nexo_sis_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nexo_sis
+      POSTGRES_USER: nexo
+      POSTGRES_PASSWORD: nexo_dev   # solo desarrollo
+    ports:
+      - "5433:5432"
+    volumes:
+      - nexo_pgdata:/var/lib/postgresql/data
+
+volumes:
+  nexo_pgdata:
