@@ -14,7 +14,19 @@ class Programa extends Model
 
     protected $table = 'programas';
 
-    protected $fillable = ['codigo', 'nombre', 'version', 'descripcion', 'estado_comercial'];
+    protected $fillable = [
+        'codigo',
+        'nombre',
+        'version',
+        'descripcion',
+        'estado_comercial',
+        'precio',
+        'nivel_academico',
+        'imagen_portada_url',
+        'requisitos_ingreso',
+        'perfil_egreso',
+        'certificado_otorga',
+    ];
 
     protected function casts(): array
     {
@@ -30,7 +42,7 @@ class Programa extends Model
     {
         return $consulta->abierto()->whereDoesntHave(
             'modulos',
-            fn (Builder $modulos) => $modulos->reorder()->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
+            fn(Builder $modulos) => $modulos->reorder()->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
         );
     }
 

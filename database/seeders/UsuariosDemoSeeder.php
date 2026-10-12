@@ -34,6 +34,7 @@ class UsuariosDemoSeeder extends Seeder
                     'telefono' => '70000'.substr($ci, -3),
                     'password' => 'Demo12345',
                     'estado' => 'activo',
+                    'foto_perfil_url' => 'https://api.dicebear.com/7.x/avataaars/svg?seed='.urlencode($nombres),
                 ]
             );
         }

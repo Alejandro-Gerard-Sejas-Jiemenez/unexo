@@ -44,7 +44,14 @@ class ProgramaController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $programa = Programa::create($request->validate($this->reglas(null)));
+        $data = $request->validate($this->reglas(null));
+
+        if ($request->hasFile('imagen_portada_url')) {
+            $path = $request->file('imagen_portada_url')->store('programas', 'public');
+            $data['imagen_portada_url'] = '/storage/' . $path;
+        }
+
+        $programa = Programa::create($data);
 
         return redirect()->route('programas.show', $programa)->with('ok', 'Programa creado. Ahora agrega sus módulos.');
     }
@@ -67,7 +74,16 @@ class ProgramaController extends Controller
 
     public function update(Request $request, Programa $programa): RedirectResponse
     {
-        $programa->update($request->validate($this->reglas($programa)));
+        $data = $request->validate($this->reglas($programa));
+
+        if ($request->hasFile('imagen_portada_url')) {
+            $path = $request->file('imagen_portada_url')->store('programas', 'public');
+            $data['imagen_portada_url'] = '/storage/' . $path;
+        } else {
+            unset($data['imagen_portada_url']);
+        }
+
+        $programa->update($data);
 
         return redirect()->route('programas.show', $programa)->with('ok', 'Programa actualizado.');
     }
@@ -112,6 +128,12 @@ class ProgramaController extends Controller
             'version' => ['required', 'string', 'max:'.config('limites.programas.version')],
             'descripcion' => ['nullable', 'string', 'max:'.config('limites.programas.descripcion')],
             'estado_comercial' => ['required', Rule::enum(EstadoComercial::class)],
+            'precio' => ['nullable', 'numeric', 'min:0'],
+            'nivel_academico' => ['nullable', 'string', 'max:100'],
+            'imagen_portada_url' => ['nullable', 'image', 'max:2048'],
+            'requisitos_ingreso' => ['nullable', 'string'],
+            'perfil_egreso' => ['nullable', 'string'],
+            'certificado_otorga' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

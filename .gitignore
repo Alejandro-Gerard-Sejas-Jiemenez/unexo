@@ -1,25 +1,44 @@
 *.log
 .DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment
 .env
 .env.backup
+.env.*.local
 .env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
+
+# Dependencies
 /node_modules
+/vendor
+
+# Laravel Storage & Cache
 /public/build
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+
+# Testing & Tools
+.phpunit.result.cache
+/.phpunit.cache
+.phpactor.json
+/auth.json
 Homestead.json
 Homestead.yaml
-Thumbs.db
+
+# IDEs & Editors
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+
+# AI & Assistant configs locales
 /.claude/settings.local.json
+.impeccable/
+
+/output

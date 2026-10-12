@@ -58,6 +58,10 @@ class ModuloController extends Controller
             'nombre' => ['required', 'string', 'max:'.config('limites.modulos.nombre')],
             'duracion_horas' => ['nullable', 'integer', 'min:1', 'max:'.config('limites.modulos.duracion_horas')],
             'estado_comercial' => ['required', Rule::enum(EstadoComercial::class)],
+            'descripcion' => ['nullable', 'string'],
+            'creditos' => ['nullable', 'integer', 'min:1'],
+            'tipo_evaluacion' => ['nullable', 'string', 'max:50'],
+            'pdf_temario_url' => ['nullable', 'url', 'max:255'],
         ]);
     }
 }

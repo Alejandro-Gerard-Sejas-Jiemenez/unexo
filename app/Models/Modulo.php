@@ -19,6 +19,10 @@ class Modulo extends Model
         'nombre',
         'duracion_horas',
         'estado_comercial',
+        'descripcion',
+        'creditos',
+        'tipo_evaluacion',
+        'pdf_temario_url',
     ];
 
     protected function casts(): array

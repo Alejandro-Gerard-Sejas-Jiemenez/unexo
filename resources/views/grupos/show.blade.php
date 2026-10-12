@@ -1,53 +1,96 @@
 @extends('layouts.app')
 @section('titulo', 'Grupo: '.$grupo->modulo->nombre)
 @section('contenido')
-<p style="margin:0 0 .75rem"><a class="enlace-icono" href="{{ route('grupos.index') }}"><x-icono nombre="volver" /> Volver a grupos</a></p>
-<div class="encabezado">
+<div class="mb-4">
+    <a href="{{ route('grupos.index') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
+        <x-icono nombre="volver" class="w-4 h-4" /> Volver a grupos
+    </a>
+</div>
+
+<div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-        <h1>{{ $grupo->modulo->nombre }}</h1>
-        <p class="suave" style="margin:0">{{ $grupo->cohorte ? $grupo->cohorte->programa->nombre.' · '.$grupo->cohorte->nombre : 'Módulo suelto' }} · {{ $grupo->nombre }}</p>
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">{{ $grupo->modulo->nombre }}</h1>
+        <p class="text-sm text-slate-500 mt-1">{{ $grupo->cohorte ? $grupo->cohorte->programa->nombre.' · '.$grupo->cohorte->nombre : 'Módulo suelto' }} · {{ $grupo->nombre }}</p>
     </div>
-    <div class="acciones">
-        <span class="etiqueta {{ $grupo->estado->value }}">{{ $grupo->estado->label() }}</span>
-        <a class="btn sec" href="{{ route('grupos.edit', $grupo) }}"><x-icono nombre="editar" /> Editar</a>
+    <div class="flex items-center gap-3">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $grupo->estado->value === 'programado' ? 'bg-blue-100 text-blue-800' : ($grupo->estado->value === 'en_curso' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800') }}">
+            {{ $grupo->estado->label() }}
+        </span>
+        <a class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-700 font-medium rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition-all focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm" href="{{ route('grupos.edit', $grupo) }}">
+            <x-icono nombre="editar" class="w-4 h-4" /> Editar
+        </a>
     </div>
 </div>
 
-<div class="tarjeta">
-    <dl class="datos">
-        <dt>Docente</dt><dd>{{ $grupo->docente->nombre_completo }}</dd>
-        <dt>Fechas</dt><dd>{{ $grupo->fecha_inicio->format('d/m/Y') }} al {{ $grupo->fecha_fin->format('d/m/Y') }}</dd>
-        <dt>Modalidad</dt><dd>{{ $grupo->modalidad->label() }}@if ($grupo->aula) · {{ $grupo->aula->nombre }}@endif</dd>
+<div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden mb-8 p-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div>
+            <h3 class="text-sm font-medium text-slate-500 mb-1">Docente</h3>
+            <p class="text-base text-slate-800 font-medium">{{ $grupo->docente->nombre_completo }}</p>
+        </div>
+        <div>
+            <h3 class="text-sm font-medium text-slate-500 mb-1">Fechas</h3>
+            <p class="text-base text-slate-800 font-medium">{{ $grupo->fecha_inicio->format('d/m/Y') }} al {{ $grupo->fecha_fin->format('d/m/Y') }}</p>
+        </div>
+        <div>
+            <h3 class="text-sm font-medium text-slate-500 mb-1">Modalidad</h3>
+            <p class="text-base text-slate-800 font-medium">{{ $grupo->modalidad->label() }}@if ($grupo->aula) <span class="text-slate-400 font-normal">·</span> {{ $grupo->aula->nombre }}@endif</p>
+        </div>
         @if ($grupo->enlace_videoconferencia)
-            <dt>Enlace</dt><dd><a href="{{ $grupo->enlace_videoconferencia }}" target="_blank" rel="noopener">{{ $grupo->enlace_videoconferencia }}</a></dd>
+        <div class="sm:col-span-2 md:col-span-3">
+            <h3 class="text-sm font-medium text-slate-500 mb-1">Enlace</h3>
+            <p class="text-base font-medium">
+                <a href="{{ $grupo->enlace_videoconferencia }}" target="_blank" rel="noopener" class="text-indigo-600 hover:underline break-all">{{ $grupo->enlace_videoconferencia }}</a>
+            </p>
+        </div>
         @endif
         @if ($grupo->cupo_minimo)
-            <dt>Cupo mínimo</dt><dd class="cifra-tabular">{{ $grupo->cupo_minimo }}</dd>
+        <div>
+            <h3 class="text-sm font-medium text-slate-500 mb-1">Cupo mínimo</h3>
+            <p class="text-base text-slate-800 font-medium">{{ $grupo->cupo_minimo }}</p>
+        </div>
         @endif
-    </dl>
+    </div>
 </div>
 
-<h2>Estudiantes inscritos <span class="suave">({{ $grupo->inscripciones->count() }})</span></h2>
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+        <h2 class="text-xl font-bold text-slate-800">Estudiantes inscritos <span class="text-slate-500 text-base font-normal">({{ $grupo->inscripciones->count() }})</span></h2>
+    </div>
+</div>
+
 @if ($grupo->inscripciones->isEmpty())
-    <div class="tarjeta">
-        <p style="margin:0 0 .25rem"><strong>Todavía no hay estudiantes inscritos.</strong></p>
-        <p class="suave" style="margin:0">Inscribe estudiantes desde <a href="{{ route('matriculas.create') }}">Matrículas</a>.</p>
+    <div class="bg-slate-50 border border-slate-200 shadow-sm rounded-xl p-8 text-center">
+        <h3 class="text-lg font-medium text-slate-800 mb-2">Todavía no hay estudiantes inscritos.</h3>
+        <p class="text-slate-500">Inscribe estudiantes desde <a href="{{ route('matriculas.create') }}" class="text-indigo-600 hover:underline">Matrículas</a>.</p>
     </div>
 @else
-    <div class="tabla-scroll">
-        <table class="tabla-adaptable">
-            <thead><tr><th>Estudiante</th><th>Correo institucional</th><th>Matrícula</th></tr></thead>
-            <tbody>
-            @foreach ($grupo->inscripciones as $inscripcion)
-                @php $estudiante = $inscripcion->matricula->estudiante; @endphp
-                <tr>
-                    <td data-label="Estudiante">{{ $estudiante->apellidos }}, {{ $estudiante->nombres }}</td>
-                    <td data-label="Correo institucional">{{ $estudiante->correo_institucional ?? '—' }}</td>
-                    <td data-label="Matrícula"><span class="etiqueta {{ $inscripcion->matricula->estado->value }}">{{ $inscripcion->matricula->estado->label() }}</span></td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
+    <div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                        <th class="px-6 py-4">Estudiante</th>
+                        <th class="px-6 py-4">Correo institucional</th>
+                        <th class="px-6 py-4">Matrícula</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                @foreach ($grupo->inscripciones as $inscripcion)
+                    @php $estudiante = $inscripcion->matricula->estudiante; @endphp
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{{ $estudiante->apellidos }}, {{ $estudiante->nombres }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ $estudiante->correo_institucional ?? '—' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $inscripcion->matricula->estado->value === 'activa' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800' }}">
+                                {{ $inscripcion->matricula->estado->label() }}
+                            </span>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
     </div>
 @endif
 @endsection

@@ -85,6 +85,7 @@ class UsuarioController extends Controller
             'correo_institucional' => ['nullable', 'email', 'max:'.config('limites.usuarios.correo_institucional'), Rule::unique('users', 'correo_institucional')->ignore($usuario)],
             'telefono' => ['nullable', 'string', 'max:'.config('limites.usuarios.telefono')],
             'password' => [$usuario ? 'nullable' : 'required', 'string', 'min:8', 'max:'.config('limites.usuarios.password')],
+            'foto_perfil_url' => ['nullable', 'url', 'max:255'],
         ];
     }
 }

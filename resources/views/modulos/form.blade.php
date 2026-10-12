@@ -22,7 +22,13 @@
         
         <x-campo nombre="nombre" limite="modulos.nombre" etiqueta="Nombre" requerido :valor="$modulo->nombre" />
         
+        <x-campo-area nombre="descripcion" etiqueta="Descripción" :valor="$modulo->descripcion" />
+        
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100">
+            <x-campo nombre="creditos" etiqueta="Créditos Académicos" tipo="number" min="1" :valor="$modulo->creditos" />
+            <x-campo nombre="tipo_evaluacion" etiqueta="Tipo de Evaluación" :valor="$modulo->tipo_evaluacion" />
+            <x-campo nombre="pdf_temario_url" etiqueta="URL del PDF del Temario" tipo="url" :valor="$modulo->pdf_temario_url" />
+            
             <x-campo-select nombre="estado_comercial" etiqueta="Estado comercial" requerido
                 :opciones="collect(\App\Enums\EstadoComercial::cases())->mapWithKeys(fn ($e) => [$e->value => $e->label()])"
                 :valor="$modulo->estado_comercial?->value" />

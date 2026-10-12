@@ -29,6 +29,7 @@ class User extends Authenticatable
         'password',
         'id_externo_crm',
         'estado',
+        'foto_perfil_url',
     ];
 
     protected $hidden = [
@@ -46,7 +47,7 @@ class User extends Authenticatable
 
     protected function nombreCompleto(): Attribute
     {
-        return Attribute::get(fn () => trim($this->nombres.' '.$this->apellidos));
+        return Attribute::get(fn() => trim($this->nombres . ' ' . $this->apellidos));
     }
 
     public function matriculas(): HasMany
