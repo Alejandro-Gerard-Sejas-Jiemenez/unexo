@@ -42,3 +42,4 @@ Homestead.yaml
 .impeccable/
 
 /output
+/generate_ea.php
