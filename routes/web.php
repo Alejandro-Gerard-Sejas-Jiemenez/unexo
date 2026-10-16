@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AulaController;
 use App\Http\Controllers\CalendarioController;
+use App\Http\Controllers\ClienteApiController;
 use App\Http\Controllers\CohorteController;
+use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MatriculaController;
@@ -29,6 +31,8 @@ Route::middleware('auth')->group(function () {
     Route::get('calendario', [CalendarioController::class, 'index'])->middleware('rol:docente,estudiante')->name('calendario');
 
     Route::get('mis-cursos', [MisCursosController::class, 'index'])->middleware('rol:estudiante')->name('mis-cursos');
+    Route::post('matriculas/{matricula}/comprobantes', [ComprobanteController::class, 'store'])->middleware('rol:estudiante')->name('comprobantes.store');
+    Route::get('comprobantes/{comprobante}', [ComprobanteController::class, 'ver'])->middleware('rol:administrador,estudiante')->name('comprobantes.ver');
 
     Route::middleware('rol:docente')->group(function () {
         Route::get('mis-grupos', [MisGruposController::class, 'index'])->name('mis-grupos.index');
@@ -68,5 +72,11 @@ Route::middleware('auth')->group(function () {
             ->parameters(['matriculas' => 'matricula'])
             ->only(['index', 'create', 'store', 'show']);
         Route::patch('matriculas/{matricula}/estado', [MatriculaController::class, 'cambiarEstado'])->name('matriculas.estado');
+        Route::patch('comprobantes/{comprobante}/aprobar', [ComprobanteController::class, 'aprobar'])->name('comprobantes.aprobar');
+        Route::patch('comprobantes/{comprobante}/rechazar', [ComprobanteController::class, 'rechazar'])->name('comprobantes.rechazar');
+
+        Route::resource('clientes-api', ClienteApiController::class)
+            ->parameters(['clientes-api' => 'cliente'])
+            ->only(['index', 'store', 'destroy']);
     });
 });

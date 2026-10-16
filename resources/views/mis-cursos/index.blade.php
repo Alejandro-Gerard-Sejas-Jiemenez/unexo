@@ -13,6 +13,23 @@
     </div>
 </div>
 
+@foreach ($pendientes as $pendiente)
+    @php $ultimo = $pendiente->comprobantes->first(); @endphp
+    <section class="mb-6 p-5 bg-amber-50 border border-amber-200 rounded-xl">
+        <h2 class="font-semibold text-amber-900">Pago pendiente: {{ $pendiente->cohorte ? $pendiente->cohorte->programa->nombre : $pendiente->inscripciones->first()?->grupo->modulo->nombre }}</h2>
+        @if ($ultimo)
+            <p class="mt-1 text-sm text-amber-800">Último comprobante: {{ $ultimo->estado->label() }} ({{ $ultimo->created_at->format('d/m/Y') }}).</p>
+        @endif
+        @if (! $ultimo || $ultimo->estado !== \App\Enums\EstadoComprobante::Pendiente)
+            <form method="POST" action="{{ route('comprobantes.store', $pendiente) }}" enctype="multipart/form-data" class="mt-3 flex flex-col sm:flex-row gap-3 sm:items-center">
+                @csrf
+                <input type="file" name="archivo" accept=".jpg,.jpeg,.png,.pdf" required class="text-sm">
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Subir comprobante</button>
+            </form>
+        @endif
+    </section>
+@endforeach
+
 @if ($hayInscripciones)
     <div class="mb-8">
         @include('partials.filtro-clases', ['ruta' => route('mis-cursos'), 'fase' => $fase, 'busqueda' => $busqueda, 'conteo' => $conteo, 'total' => $total])

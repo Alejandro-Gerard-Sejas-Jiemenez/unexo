@@ -13,7 +13,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('modulos', function (Blueprint $table) {
-            $table->dropColumn(['requisitos_recomendados', 'es_independiente']);
+            // Solo las que existan: la base compartida puede tener ya alguna eliminada.
+            $table->dropColumn(array_values(array_filter(
+                ['requisitos_recomendados', 'es_independiente'],
+                fn ($c) => Schema::hasColumn('modulos', $c),
+            )));
         });
     }
 

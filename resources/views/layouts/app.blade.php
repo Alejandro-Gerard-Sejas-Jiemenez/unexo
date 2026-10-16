@@ -36,6 +36,7 @@
                 $menu[] = ['Grupos', route('grupos.index'), 'grupos.*', 'usuarios'];
                 $menu[] = ['Matrículas', route('matriculas.index'), 'matriculas.*', 'mas'];
                 $menu[] = ['Usuarios', route('usuarios.index'), 'usuarios.*', 'usuarios'];
+                $menu[] = ['Acceso API', route('clientes-api.index'), 'clientes-api.*', 'candado'];
             }
             $iniciales = mb_strtoupper(mb_substr($usuario->nombres, 0, 1) . mb_substr($usuario->apellidos, 0, 1));
         @endphp

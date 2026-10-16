@@ -82,12 +82,12 @@ class MatriculaController extends Controller
 
     public function show(Matricula $matricula): View
     {
-        $matricula->load(['estudiante', 'cohorte.programa', 'inscripciones.grupo.modulo', 'inscripciones.grupo.docente']);
+        $matricula->load(['estudiante', 'cohorte.programa', 'inscripciones.grupo.modulo', 'inscripciones.grupo.docente', 'comprobantes.subidoPor']);
 
         return view('matriculas.show', compact('matricula'));
     }
 
-    public function cambiarEstado(Request $request, Matricula $matricula): RedirectResponse
+    public function cambiarEstado(Request $request, Matricula $matricula, MatriculaService $servicio): RedirectResponse
     {
         $datos = $request->validate([
             'estado' => ['required', Rule::enum(EstadoMatricula::class)],
@@ -95,10 +95,7 @@ class MatriculaController extends Controller
 
         $nuevo = EstadoMatricula::from($datos['estado']);
 
-        $matricula->update([
-            'estado' => $nuevo,
-            'fecha_retiro' => $nuevo === EstadoMatricula::Retirado ? today() : null,
-        ]);
+        $servicio->cambiarEstado($matricula, $nuevo);
 
         return redirect()->route('matriculas.show', $matricula)->with('ok', 'Estado de la matrícula actualizado a '.$nuevo->label().'.');
     }

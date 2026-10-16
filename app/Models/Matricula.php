@@ -49,4 +49,9 @@ class Matricula extends Model
     {
         return $this->hasMany(InscripcionGrupo::class);
     }
+
+    public function comprobantes(): HasMany
+    {
+        return $this->hasMany(Comprobante::class)->latest();
+    }
 }

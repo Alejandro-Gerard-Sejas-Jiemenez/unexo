@@ -62,7 +62,10 @@
                 <h2 class="text-lg font-semibold text-slate-800">Acciones</h2>
             </div>
             <div class="p-6 space-y-3">
-                @if ($matricula->estado->value !== 'activo')
+                @if ($matricula->estado->value === 'retirado')
+                    <p class="text-sm text-slate-500">Matrícula retirada: se conserva como historial y no admite cambios.</p>
+                @endif
+                @if ($matricula->estado->value === 'pendiente')
                     <form method="POST" action="{{ route('matriculas.estado', $matricula) }}">
                         @csrf @method('PATCH')
                         <input type="hidden" name="estado" value="activo">
@@ -72,7 +75,7 @@
                     </form>
                 @endif
                 
-                @if ($matricula->estado->value !== 'pendiente')
+                @if ($matricula->estado->value === 'activo')
                     <form method="POST" action="{{ route('matriculas.estado', $matricula) }}">
                         @csrf @method('PATCH')
                         <input type="hidden" name="estado" value="pendiente">
@@ -94,6 +97,29 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="mb-6"><h2 class="text-2xl font-bold text-slate-800">Comprobantes de pago</h2></div>
+<div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden mb-10">
+    @forelse ($matricula->comprobantes as $comprobante)
+        <div class="flex flex-wrap items-center gap-3 px-6 py-4 {{ ! $loop->last ? 'border-b border-slate-200' : '' }} text-sm">
+            <a href="{{ route('comprobantes.ver', $comprobante) }}" target="_blank" rel="noopener" class="font-medium text-indigo-600 hover:underline">Ver comprobante</a>
+            <span class="text-slate-500">{{ $comprobante->created_at->format('d/m/Y H:i') }} · {{ $comprobante->subidoPor->nombre_completo }}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{{ $comprobante->estado->label() }}</span>
+            @if ($comprobante->estado === \App\Enums\EstadoComprobante::Pendiente)
+                <form method="POST" action="{{ route('comprobantes.aprobar', $comprobante) }}" class="ml-auto">
+                    @csrf @method('PATCH')
+                    <button class="px-3 py-1.5 text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Aprobar pago</button>
+                </form>
+                <form method="POST" action="{{ route('comprobantes.rechazar', $comprobante) }}">
+                    @csrf @method('PATCH')
+                    <button class="px-3 py-1.5 text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-50">Rechazar</button>
+                </form>
+            @endif
+        </div>
+    @empty
+        <p class="px-6 py-8 text-center text-slate-500">El estudiante todavía no subió ningún comprobante.</p>
+    @endforelse
 </div>
 
 <div class="mb-6 flex items-center gap-3">
