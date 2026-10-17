@@ -89,8 +89,7 @@
                                 class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                 Docente</th>
                             <th scope="col"
-                                class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Quórum
-                                (Mín. 20)</th>
+                                class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Inscritos</th>
                             <th scope="col"
                                 class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado
                             </th>
@@ -131,16 +130,14 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-2">
                                         <span
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {{ $quorum['alcanzado'] ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                                            {{ $quorum['inscritos'] }} / {{ $quorum['minimo'] }}
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                                            {{ $quorum['inscritos'] }} {{ $quorum['inscritos'] === 1 ? 'estudiante' : 'estudiantes' }}
                                         </span>
-                                        <span class="text-xs">
-                                            @if ($quorum['alcanzado'])
-                                                <span class="text-emerald-600 font-semibold">Quórum OK</span>
-                                            @else
-                                                <span class="text-amber-600 font-medium">Faltan {{ $quorum['restante'] }}</span>
-                                            @endif
-                                        </span>
+                                        @if ($quorum['tiene_limite'])
+                                            <span class="text-xs {{ $quorum['alcanzado'] ? 'text-emerald-600 font-medium' : 'text-slate-500' }}">
+                                                (mín. {{ $quorum['minimo'] }})
+                                            </span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">

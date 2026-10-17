@@ -110,17 +110,18 @@ class Grupo extends Model
         return $this->hasMany(InscripcionGrupo::class);
     }
 
-    /** Estado del quórum operativo respecto al cupo mínimo (NEXO). */
+    /** Estado de ocupación o quórum opcional respecto al cupo mínimo. */
     protected function quorum(): Attribute
     {
         return Attribute::get(function (): array {
             $inscritos = $this->inscripciones_count ?? $this->inscripciones()->count();
-            $minimo = $this->cupo_minimo ?? 20;
-            $alcanzado = $inscritos >= $minimo;
-            $porcentaje = $minimo > 0 ? min(100.0, round(($inscritos / $minimo) * 100, 1)) : 100.0;
-            $restante = max(0, $minimo - $inscritos);
+            $minimo = (int) ($this->cupo_minimo ?? 0);
+            $tieneLimite = $minimo > 0;
+            $alcanzado = $tieneLimite ? ($inscritos >= $minimo) : true;
+            $porcentaje = $tieneLimite ? min(100.0, round(($inscritos / $minimo) * 100, 1)) : 100.0;
+            $restante = $tieneLimite ? max(0, $minimo - $inscritos) : 0;
 
-            return compact('inscritos', 'minimo', 'alcanzado', 'porcentaje', 'restante');
+            return compact('inscritos', 'minimo', 'alcanzado', 'porcentaje', 'restante') + ['tiene_limite' => $tieneLimite];
         });
     }
 

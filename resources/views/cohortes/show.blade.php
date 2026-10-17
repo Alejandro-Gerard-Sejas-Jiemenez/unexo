@@ -131,8 +131,7 @@
                     <p class="text-xs sm:text-sm text-slate-600">
                         Esta cohorte tiene <span class="font-bold text-indigo-700">{{ $modulosPendientes->count() }} módulo(s)
                             pendiente(s)</span> de apertura. El generador creará automáticamente los grupos en secuencia
-                        cronológica, distribuyendo los tramos de fechas equitativamente con un cupo mínimo base de 20
-                        estudiantes.
+                        cronológica, distribuyendo los tramos de fechas sugeridos para cada módulo.
                     </p>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         @foreach ($modulosPendientes as $pend)
@@ -169,7 +168,6 @@
                             @endforeach
                         </select>
                     </div>
-                    <input type="hidden" name="cupo_minimo" value="20">
                     <button type="submit"
                         class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 shadow-sm transition-all focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-xs">
                         <x-icono nombre="mas" class="w-4 h-4" /> Aperturar {{ $modulosPendientes->count() }} Grupos
@@ -179,12 +177,11 @@
         </div>
     @endif
 
-    {{-- Sección de Grupos Aperturados y Control de Quórum --}}
+    {{-- Sección de Grupos Aperturados --}}
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h2 class="text-xl font-bold text-slate-800">Grupos Operativos y Quórum</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Control de fechas secuenciales, quórum mínimo (regla de 20 inscritos) y
-                ciclo de vida de cada grupo.</p>
+            <h2 class="text-xl font-bold text-slate-800">Grupos Operativos</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Control de fechas secuenciales, estudiantes inscritos y estado de cada grupo.</p>
         </div>
         <a class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-700 font-medium rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition-all focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-xs"
             href="{{ route('grupos.create', ['cohorte_id' => $cohorte->id]) }}">
@@ -213,7 +210,7 @@
                             <th class="px-6 py-4">Grupo</th>
                             <th class="px-6 py-4">Tramo de Fechas</th>
                             <th class="px-6 py-4">Fase / Estado</th>
-                            <th class="px-6 py-4">Quórum Operativo (Mín. 20)</th>
+                            <th class="px-6 py-4">Inscritos</th>
                             <th class="px-6 py-4 text-right">Acciones</th>
                         </tr>
                     </thead>
@@ -254,10 +251,10 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @php
                                         $badgeFase = match ($grupo->fase) {
-                                            'en-curso' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
-                                            'finalizado' => 'bg-slate-100 text-slate-600 border-slate-200',
-                                            default => 'bg-amber-50 text-amber-700 border-amber-200'
-                                        };
+                                             'en-curso' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                                             'finalizado' => 'bg-slate-100 text-slate-600 border-slate-200',
+                                             default => 'bg-amber-50 text-amber-700 border-amber-200'
+                                         };
                                     @endphp
                                     <span
                                         class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border {{ $badgeFase }}">
@@ -265,28 +262,22 @@
                                     </span>
                                 </td>
 
-                                {{-- Quórum Operativo --}}
+                                {{-- Inscritos --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span
-                                            class="text-xs font-bold {{ $quorum['alcanzado'] ? 'text-emerald-700' : 'text-amber-700' }}">
-                                            {{ $quorum['inscritos'] }} / {{ $quorum['minimo'] }}
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-bold text-slate-800">
+                                            {{ $quorum['inscritos'] }} {{ $quorum['inscritos'] === 1 ? 'inscrito' : 'inscritos' }}
                                         </span>
-                                        @if ($quorum['alcanzado'])
-                                            <span
-                                                class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                                                ✓ Quórum OK
+                                        @if ($quorum['tiene_limite'])
+                                            <span class="text-[11px] font-medium text-slate-500">
+                                                (mín. {{ $quorum['minimo'] }})
                                             </span>
-                                        @else
-                                            <span
-                                                class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">
-                                                Faltan {{ $quorum['restante'] }}
-                                            </span>
+                                            @if ($quorum['alcanzado'])
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                                    ✓ Cubierto
+                                                </span>
+                                            @endif
                                         @endif
-                                    </div>
-                                    <div class="w-32 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                        <div class="h-1.5 rounded-full {{ $quorum['alcanzado'] ? 'bg-emerald-500' : 'bg-amber-400' }}"
-                                            style="width: {{ $quorum['porcentaje'] }}%"></div>
                                     </div>
                                 </td>
 

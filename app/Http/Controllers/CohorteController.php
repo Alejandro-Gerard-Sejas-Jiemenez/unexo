@@ -73,11 +73,11 @@ class CohorteController extends Controller
         $datos = $request->validate([
             'docente_id' => ['nullable', 'uuid', Rule::exists('users', 'id')->where('rol', Rol::Docente->value)],
             'modalidad' => ['nullable', Rule::enum(Modalidad::class)],
-            'cupo_minimo' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'cupo_minimo' => ['nullable', 'integer', 'min:0', 'max:500'],
         ]);
 
         $docente = isset($datos['docente_id']) ? User::find($datos['docente_id']) : null;
-        $cupoMinimo = $datos['cupo_minimo'] ?? 20;
+        $cupoMinimo = ! empty($datos['cupo_minimo']) && (int) $datos['cupo_minimo'] > 0 ? (int) $datos['cupo_minimo'] : null;
         $modalidad = isset($datos['modalidad']) ? Modalidad::from($datos['modalidad']) : Modalidad::Virtual;
 
         $creados = $servicio->generarGruposParaCohorte($cohorte, $docente, $cupoMinimo, $modalidad);

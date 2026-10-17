@@ -25,7 +25,7 @@ class PlanificacionCohorteService
     public function generarGruposParaCohorte(
         Cohorte $cohorte,
         ?User $docente = null,
-        int $cupoMinimo = 20,
+        ?int $cupoMinimo = null,
         Modalidad $modalidad = Modalidad::Virtual
     ): Collection {
         $cohorte->loadMissing('programa.modulos');
@@ -86,7 +86,7 @@ class PlanificacionCohorteService
                     'fecha_fin' => $finModulo->format('Y-m-d'),
                     'modalidad' => $modalidad,
                     'enlace_videoconferencia' => $modalidad === Modalidad::Virtual ? 'https://meet.example.test/cohorte-'.substr($cohorte->id, 0, 8) : null,
-                    'cupo_minimo' => $cupoMinimo,
+                    'cupo_minimo' => ($cupoMinimo && $cupoMinimo > 0) ? $cupoMinimo : null,
                     'estado' => EstadoPlanificacion::Programado,
                 ]);
 
@@ -98,17 +98,19 @@ class PlanificacionCohorteService
     }
 
     /**
-     * Calcula métricas de quórum operativo para un grupo según la regla de negocio de NEXO (20 inscritos mín.).
+     * Calcula métricas de ocupación o quórum para un grupo.
+     * Si no tiene cupo_minimo configurado, se considera abierto y sin límite.
      *
-     * @return array{inscritos: int, minimo: int, alcanzado: bool, porcentaje: float, restante: int}
+     * @return array{inscritos: int, minimo: int, alcanzado: bool, porcentaje: float, restante: int, tiene_limite: bool}
      */
     public function calcularQuorum(Grupo $grupo): array
     {
         $inscritos = $grupo->inscripciones_count ?? $grupo->inscripciones()->count();
-        $minimo = $grupo->cupo_minimo ?? 20;
-        $alcanzado = $inscritos >= $minimo;
-        $porcentaje = $minimo > 0 ? min(100.0, round(($inscritos / $minimo) * 100, 1)) : 100.0;
-        $restante = max(0, $minimo - $inscritos);
+        $minimo = (int) ($grupo->cupo_minimo ?? 0);
+        $tieneLimite = $minimo > 0;
+        $alcanzado = $tieneLimite ? ($inscritos >= $minimo) : true;
+        $porcentaje = $tieneLimite ? min(100.0, round(($inscritos / $minimo) * 100, 1)) : 100.0;
+        $restante = $tieneLimite ? max(0, $minimo - $inscritos) : 0;
 
         return [
             'inscritos' => $inscritos,
@@ -116,6 +118,7 @@ class PlanificacionCohorteService
             'alcanzado' => $alcanzado,
             'porcentaje' => $porcentaje,
             'restante' => $restante,
+            'tiene_limite' => $tieneLimite,
         ];
     }
 

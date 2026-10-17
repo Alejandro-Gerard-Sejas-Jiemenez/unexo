@@ -301,6 +301,31 @@ class PlanificacionCohorteTest extends TestCase
         $this->assertEquals(100, $quorumCompleto['porcentaje']);
     }
 
+    public function test_grupo_sin_cupo_minimo_opera_sin_limite_de_quorum(): void
+    {
+        $docente = $this->docente();
+        $modulo = Modulo::create(['codigo' => 'MOD-OPEN-'.uniqid(), 'nombre' => 'Módulo Abierto']);
+
+        $grupo = Grupo::create([
+            'modulo_id' => $modulo->id,
+            'docente_id' => $docente->id,
+            'nombre' => 'Grupo Virtual Libre',
+            'fecha_inicio' => '2026-04-01',
+            'fecha_fin' => '2026-04-30',
+            'modalidad' => Modalidad::Virtual,
+            'cupo_minimo' => null,
+            'estado' => EstadoPlanificacion::Programado,
+        ]);
+
+        $quorum = $grupo->quorum;
+        $this->assertEquals(0, $quorum['inscritos']);
+        $this->assertEquals(0, $quorum['minimo']);
+        $this->assertTrue($quorum['alcanzado']);
+        $this->assertFalse($quorum['tiene_limite']);
+        $this->assertEquals(0, $quorum['restante']);
+        $this->assertEquals(100.0, $quorum['porcentaje']);
+    }
+
     public function test_filtros_de_tipo_en_listado_de_grupos(): void
     {
         $docente = $this->docente();

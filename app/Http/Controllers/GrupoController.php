@@ -52,7 +52,7 @@ class GrupoController extends Controller
             'estado' => EstadoPlanificacion::Programado,
             'modalidad' => Modalidad::Virtual,
             'cohorte_id' => $cohorteId,
-            'cupo_minimo' => 20,
+            'cupo_minimo' => null,
         ]);
 
         return view('grupos.form', $this->opciones($grupo, $cohorteId));
@@ -104,9 +104,13 @@ class GrupoController extends Controller
             'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio'],
             'modalidad' => ['required', Rule::enum(Modalidad::class)],
             'enlace_videoconferencia' => ['nullable', 'url', 'max:'.config('limites.grupos.enlace_videoconferencia')],
-            'cupo_minimo' => ['nullable', 'integer', 'min:1', 'max:'.config('limites.grupos.cupo_minimo')],
+            'cupo_minimo' => ['nullable', 'integer', 'min:0', 'max:'.config('limites.grupos.cupo_minimo')],
             'estado' => ['required', Rule::enum(EstadoPlanificacion::class)],
         ]);
+
+        if (empty($datos['cupo_minimo']) || (int) $datos['cupo_minimo'] <= 0) {
+            $datos['cupo_minimo'] = null;
+        }
 
         if (! empty($datos['cohorte_id'])) {
             $cohorte = Cohorte::with('programa.modulos')->find($datos['cohorte_id']);
@@ -148,7 +152,7 @@ class GrupoController extends Controller
             }
 
             $aula = Aula::find($datos['aula_id']);
-            if ($aula && $aula->capacidad && ! empty($datos['cupo_minimo']) && $aula->capacidad < $datos['cupo_minimo']) {
+            if ($aula && $aula->capacidad && ! empty($datos['cupo_minimo']) && (int) $datos['cupo_minimo'] > 0 && $aula->capacidad < (int) $datos['cupo_minimo']) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'aula_id' => "La capacidad del aula ({$aula->capacidad} personas) es inferior al cupo mínimo configurado ({$datos['cupo_minimo']}).",
                 ]);

@@ -91,9 +91,9 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100">
-                <x-campo nombre="cupo_minimo" limite="grupos.cupo_minimo" etiqueta="Cupo mínimo (Quórum)" tipo="number"
-                    min="1" :valor="$grupo->cupo_minimo ?? 20"
-                    ayuda="Regla de viabilidad operativa: mínimo 20 estudiantes inscritos." />
+                <x-campo nombre="cupo_minimo" limite="grupos.cupo_minimo" etiqueta="Cupo mínimo (Opcional)" tipo="number"
+                    min="0" :valor="$grupo->cupo_minimo ?? ''"
+                    ayuda="Opcional. Dejar vacío si no requiere límite mínimo (recomendado para modalidad virtual)." />
                 <x-campo-select nombre="estado" etiqueta="Estado de planificación" requerido
                     :opciones="collect(\App\Enums\EstadoPlanificacion::cases())->mapWithKeys(fn ($e) => [$e->value => $e->label()])"
                     :valor="$grupo->estado?->value" />
