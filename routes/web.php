@@ -13,6 +13,9 @@ use App\Http\Controllers\MisGruposController;
 use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\ProgramaController;
+use App\Http\Controllers\ReporteCatalogoController;
+use App\Http\Controllers\ReporteMatriculasController;
+use App\Http\Controllers\ReporteOcupacionController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +36,21 @@ Route::middleware('auth')->group(function () {
     Route::get('mis-cursos', [MisCursosController::class, 'index'])->middleware('rol:estudiante')->name('mis-cursos');
     Route::post('matriculas/{matricula}/comprobantes', [ComprobanteController::class, 'store'])->middleware('rol:estudiante')->name('comprobantes.store');
     Route::get('comprobantes/{comprobante}', [ComprobanteController::class, 'ver'])->middleware('rol:administrador,estudiante')->name('comprobantes.ver');
+
+    // Reportes: la autorización por rol (solo Administrador) vive en los Form Requests para devolver el texto exacto de RF-02.
+    Route::prefix('reportes')->name('reportes.')->group(function () {
+        Route::get('matriculas', [ReporteMatriculasController::class, 'index'])->name('matriculas');
+        Route::get('matriculas/pdf', [ReporteMatriculasController::class, 'pdf'])->name('matriculas.pdf');
+        Route::get('matriculas/excel', [ReporteMatriculasController::class, 'excel'])->name('matriculas.excel');
+
+        Route::get('ocupacion-grupos', [ReporteOcupacionController::class, 'index'])->name('ocupacion');
+        Route::get('ocupacion-grupos/pdf', [ReporteOcupacionController::class, 'pdf'])->name('ocupacion.pdf');
+        Route::get('ocupacion-grupos/excel', [ReporteOcupacionController::class, 'excel'])->name('ocupacion.excel');
+
+        Route::get('catalogo', [ReporteCatalogoController::class, 'index'])->name('catalogo');
+        Route::get('catalogo/pdf', [ReporteCatalogoController::class, 'pdf'])->name('catalogo.pdf');
+        Route::get('catalogo/excel', [ReporteCatalogoController::class, 'excel'])->name('catalogo.excel');
+    });
 
     Route::middleware('rol:docente')->group(function () {
         Route::get('mis-grupos', [MisGruposController::class, 'index'])->name('mis-grupos.index');

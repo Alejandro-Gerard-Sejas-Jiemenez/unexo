@@ -8,6 +8,12 @@ enum EstadoMatricula: string
     case Activo = 'activo';
     case Retirado = 'retirado';
 
+    /** @return array<int, self> Estados cuyas matrículas cuentan como inscritos de un grupo. */
+    public static function queCuentanComoInscritos(): array
+    {
+        return [self::Pendiente, self::Activo];
+    }
+
     public function label(): string
     {
         return match ($this) {

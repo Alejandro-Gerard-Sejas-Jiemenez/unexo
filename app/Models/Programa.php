@@ -38,6 +38,15 @@ class Programa extends Model
         return $consulta->where('estado_comercial', EstadoComercial::Abierto->value);
     }
 
+    /** Programas que el CRM ve con contenido: abiertos y con al menos un módulo abierto. */
+    public function scopeVisibleParaCrm(Builder $consulta): Builder
+    {
+        return $consulta->abierto()->whereHas(
+            'modulos',
+            fn(Builder $modulos) => $modulos->reorder()->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
+        );
+    }
+
     public function scopeAbiertoSinModulosAbiertos(Builder $consulta): Builder
     {
         return $consulta->abierto()->whereDoesntHave(

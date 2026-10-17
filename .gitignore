@@ -43,3 +43,8 @@ Homestead.yaml
 
 /output
 /generate_ea.php
+.styleci.yml
+
+# Fuentes del cliente para SDD (requerimientos, minuta del audio, brochure): solo locales
+/context
+/specs
