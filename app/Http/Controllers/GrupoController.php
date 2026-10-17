@@ -21,10 +21,13 @@ class GrupoController extends Controller
     public function index(Request $request): View
     {
         $estado = $request->query('estado');
+        $tipo = $request->query('tipo');
         $busqueda = trim((string) $request->query('q', ''));
 
         $grupos = Grupo::with(['modulo', 'docente', 'cohorte.programa'])
             ->withCount('inscripciones')
+            ->when($tipo === 'suelto', fn ($q) => $q->whereNull('cohorte_id'))
+            ->when($tipo === 'cohorte', fn ($q) => $q->whereNotNull('cohorte_id'))
             ->when(EstadoPlanificacion::tryFrom((string) $estado), fn ($q, $e) => $q->where('estado', $e->value))
             ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
                 ->where('nombre', 'like', "%{$busqueda}%")
@@ -32,21 +35,35 @@ class GrupoController extends Controller
             ->orderByDesc('fecha_inicio')
             ->paginate(config('limites.por_pagina'))->withQueryString();
 
-        return view('grupos.index', ['grupos' => $grupos, 'estadoFiltro' => $estado, 'busqueda' => $busqueda]);
+        return view('grupos.index', [
+            'grupos' => $grupos,
+            'estadoFiltro' => $estado,
+            'tipoFiltro' => $tipo,
+            'busqueda' => $busqueda,
+        ]);
     }
 
     public function create(Request $request): View
     {
-        return view('grupos.form', $this->opciones(new Grupo([
+        $cohorteId = $request->query('cohorte_id');
+
+        $grupo = new Grupo([
             'estado' => EstadoPlanificacion::Programado,
             'modalidad' => Modalidad::Virtual,
-            'cohorte_id' => $request->query('cohorte_id'),
-        ])));
+            'cohorte_id' => $cohorteId,
+            'cupo_minimo' => 20,
+        ]);
+
+        return view('grupos.form', $this->opciones($grupo, $cohorteId));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        Grupo::create($this->validar($request));
+        $grupo = Grupo::create($this->validar($request));
+
+        if ($grupo->cohorte_id) {
+            return redirect()->route('cohortes.show', $grupo->cohorte_id)->with('ok', 'Grupo aperturado correctamente en la cohorte.');
+        }
 
         return redirect()->route('grupos.index')->with('ok', 'Grupo creado correctamente.');
     }
@@ -60,19 +77,23 @@ class GrupoController extends Controller
 
     public function edit(Grupo $grupo): View
     {
-        return view('grupos.form', $this->opciones($grupo));
+        return view('grupos.form', $this->opciones($grupo, $grupo->cohorte_id));
     }
 
     public function update(Request $request, Grupo $grupo): RedirectResponse
     {
         $grupo->update($this->validar($request));
 
+        if ($grupo->cohorte_id) {
+            return redirect()->route('cohortes.show', $grupo->cohorte_id)->with('ok', 'Grupo actualizado correctamente.');
+        }
+
         return redirect()->route('grupos.index')->with('ok', 'Grupo actualizado correctamente.');
     }
 
     private function validar(Request $request): array
     {
-        return $request->validate([
+        $datos = $request->validate([
             'modulo_id' => ['required', 'uuid', Rule::exists('modulos', 'id')],
             'cohorte_id' => ['nullable', 'uuid', Rule::exists('cohortes', 'id')],
             'docente_id' => ['required', 'uuid', Rule::exists('users', 'id')->where('rol', Rol::Docente->value)],
@@ -85,11 +106,48 @@ class GrupoController extends Controller
             'cupo_minimo' => ['nullable', 'integer', 'min:1', 'max:'.config('limites.grupos.cupo_minimo')],
             'estado' => ['required', Rule::enum(EstadoPlanificacion::class)],
         ]);
+
+        if (! empty($datos['cohorte_id'])) {
+            $cohorte = Cohorte::with('programa.modulos')->find($datos['cohorte_id']);
+            if ($cohorte) {
+                $moduloPertenece = $cohorte->programa->modulos()->where('modulos.id', $datos['modulo_id'])->exists();
+                if (! $moduloPertenece) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'modulo_id' => 'El módulo seleccionado no pertenece al programa de esta cohorte ('.$cohorte->programa->nombre.').',
+                    ]);
+                }
+
+                if ($datos['fecha_inicio'] < $cohorte->fecha_inicio->format('Y-m-d')) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'fecha_inicio' => 'La fecha de inicio del grupo no puede ser anterior al inicio de la cohorte ('.$cohorte->fecha_inicio->format('d/m/Y').').',
+                    ]);
+                }
+
+                if ($datos['fecha_fin'] > $cohorte->fecha_fin->format('Y-m-d')) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'fecha_fin' => 'La fecha de fin del grupo no puede ser posterior al fin de la cohorte ('.$cohorte->fecha_fin->format('d/m/Y').').',
+                    ]);
+                }
+            }
+        }
+
+        return $datos;
     }
 
-    private function opciones(Grupo $grupo): array
+    private function opciones(Grupo $grupo, ?string $cohorteId = null): array
     {
-        [$modulos, $modulosTotal] = Opciones::limitar(Modulo::orderBy('nombre'), ['id', 'codigo', 'nombre']);
+        $cohorteSeleccionada = null;
+        if ($cohorteId) {
+            $cohorteSeleccionada = Cohorte::with('programa.modulos')->find($cohorteId);
+        }
+
+        if ($cohorteSeleccionada) {
+            $modulos = $cohorteSeleccionada->programa->modulos;
+            $modulosTotal = $modulos->count();
+        } else {
+            [$modulos, $modulosTotal] = Opciones::limitar(Modulo::orderBy('nombre'), ['id', 'codigo', 'nombre']);
+        }
+
         [$cohortes, $cohortesTotal] = Opciones::limitar(Cohorte::with('programa')->orderByDesc('fecha_inicio'));
         [$docentes, $docentesTotal] = Opciones::limitar(
             User::where('rol', Rol::Docente->value)->orderBy('apellidos'), ['id', 'nombres', 'apellidos']
@@ -98,7 +156,7 @@ class GrupoController extends Controller
 
         return compact(
             'grupo', 'modulos', 'modulosTotal', 'cohortes', 'cohortesTotal',
-            'docentes', 'docentesTotal', 'aulas', 'aulasTotal'
+            'docentes', 'docentesTotal', 'aulas', 'aulasTotal', 'cohorteSeleccionada'
         );
     }
 }

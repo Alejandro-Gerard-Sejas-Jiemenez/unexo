@@ -90,4 +90,32 @@ class Grupo extends Model
     {
         return $this->hasMany(InscripcionGrupo::class);
     }
+
+    /** Estado del quórum operativo respecto al cupo mínimo (NEXO). */
+    protected function quorum(): Attribute
+    {
+        return Attribute::get(function (): array {
+            $inscritos = $this->inscripciones_count ?? $this->inscripciones()->count();
+            $minimo = $this->cupo_minimo ?? 20;
+            $alcanzado = $inscritos >= $minimo;
+            $porcentaje = $minimo > 0 ? min(100.0, round(($inscritos / $minimo) * 100, 1)) : 100.0;
+            $restante = max(0, $minimo - $inscritos);
+
+            return compact('inscritos', 'minimo', 'alcanzado', 'porcentaje', 'restante');
+        });
+    }
+
+    public function scopeSueltos($query)
+    {
+        return $query->whereNull('cohorte_id');
+    }
+
+    public function scopeDeCohorte($query, ?string $cohorteId = null)
+    {
+        if ($cohorteId) {
+            return $query->where('cohorte_id', $cohorteId);
+        }
+
+        return $query->whereNotNull('cohorte_id');
+    }
 }

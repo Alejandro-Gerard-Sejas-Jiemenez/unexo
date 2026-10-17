@@ -34,4 +34,31 @@ class Cohorte extends Model
     {
         return $this->hasMany(Grupo::class);
     }
+
+    public function matriculas(): HasMany
+    {
+        return $this->hasMany(Matricula::class);
+    }
+
+    /**
+     * Módulos del programa que aún no tienen ningún grupo aperturado en esta cohorte.
+     */
+    public function modulosPendientes(): \Illuminate\Support\Collection
+    {
+        $modulosConGrupo = $this->grupos()->pluck('modulo_id')->all();
+
+        return $this->programa->modulos->reject(fn (Modulo $m) => in_array($m->id, $modulosConGrupo))->values();
+    }
+
+    public function tieneTodosLosModulosAperturados(): bool
+    {
+        $totalModulos = $this->programa?->modulos()->count() ?? 0;
+        if ($totalModulos === 0) {
+            return false;
+        }
+
+        $modulosDistintosConGrupo = $this->grupos()->distinct('modulo_id')->count('modulo_id');
+
+        return $modulosDistintosConGrupo >= $totalModulos;
+    }
 }

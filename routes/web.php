@@ -59,6 +59,8 @@ Route::middleware('auth')->group(function () {
         Route::resource('cohortes', CohorteController::class)
             ->parameters(['cohortes' => 'cohorte'])
             ->except(['destroy']);
+        Route::post('cohortes/{cohorte}/aperturar-grupos', [CohorteController::class, 'aperturarGrupos'])->name('cohortes.aperturar-grupos');
+        Route::patch('cohortes/{cohorte}/estado', [CohorteController::class, 'cambiarEstado'])->name('cohortes.estado');
 
         Route::resource('grupos', GrupoController::class)
             ->parameters(['grupos' => 'grupo'])
