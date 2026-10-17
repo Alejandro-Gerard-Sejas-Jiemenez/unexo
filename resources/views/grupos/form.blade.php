@@ -60,8 +60,9 @@
             @endif
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100">
-                <x-campo-select nombre="docente_id" :total="$docentesTotal" etiqueta="Docente" requerido
-                    :opciones="$docentes->mapWithKeys(fn ($d) => [$d->id => $d->apellidos.', '.$d->nombres])"
+                <x-campo-select nombre="docente_id" :total="$docentesTotal" etiqueta="Docente titular" requerido
+                    ayuda="Carga actual de grupos activos"
+                    :opciones="$docentes->mapWithKeys(fn ($d) => [$d->id => $d->apellidos.', '.$d->nombres.' ('.($d->grupos_activos_count > 0 ? $d->grupos_activos_count.' '.\Illuminate\Support\Str::plural('grupo', $d->grupos_activos_count).' activo(s)' : 'Disponible').')'])"
                     :valor="$grupo->docente_id" />
                 <x-campo-select nombre="modalidad" etiqueta="Modalidad" requerido
                     :opciones="collect(\App\Enums\Modalidad::cases())->mapWithKeys(fn ($m) => [$m->value => $m->label()])"
@@ -75,21 +76,25 @@
                     :valor="$grupo->fecha_fin?->format('Y-m-d')" />
             </div>
 
-            <x-campo nombre="enlace_videoconferencia" limite="grupos.enlace_videoconferencia"
-                etiqueta="Enlace de videoconferencia" tipo="url" :valor="$grupo->enlace_videoconferencia"
-                placeholder="https://meet…" ayuda="Para grupos virtuales" />
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100">
-                <x-campo-select nombre="aula_id" :total="$aulasTotal" etiqueta="Aula" ayuda="Para grupos presenciales"
-                    :opciones="collect(['' => '— Sin aula —'])->union($aulas->mapWithKeys(fn($a) => [$a->id => $a->nombre]))"
-                    :valor="$grupo->aula_id" />
-                <x-campo nombre="cupo_minimo" limite="grupos.cupo_minimo" etiqueta="Cupo mínimo (Quórum)" tipo="number"
-                    min="1" :valor="$grupo->cupo_minimo ?? 20"
-                    ayuda="Estándar operativo: mínimo 20 inscritos para viabilidad del grupo." />
+            {{-- Recursos Logísticos de Clase (CU5: Virtual vs Presencial) --}}
+            <div id="campo-virtual" class="mt-4 pt-4 border-t border-slate-100">
+                <x-campo nombre="enlace_videoconferencia" limite="grupos.enlace_videoconferencia"
+                    etiqueta="Enlace de videoconferencia (Google Meet / Zoom / Teams)" tipo="url" :valor="$grupo->enlace_videoconferencia"
+                    placeholder="https://meet.google.com/..." ayuda="Obligatorio para clases virtuales. Visible para alumnos con matrícula pagada." />
             </div>
 
-            <div class="max-w-xs mt-4 pt-4 border-t border-slate-100">
-                <x-campo-select nombre="estado" etiqueta="Estado" requerido
+            <div id="campo-presencial" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100">
+                <x-campo-select nombre="aula_id" :total="$aulasTotal" etiqueta="Aula física presencial"
+                    ayuda="Verifica que el aforo sea suficiente para el cupo"
+                    :opciones="collect(['' => '— Seleccionar aula física —'])->union($aulas->mapWithKeys(fn($a) => [$a->id => $a->nombre . ($a->capacidad ? ' (Aforo: '.$a->capacidad.' personas)' : '')]))"
+                    :valor="$grupo->aula_id" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100">
+                <x-campo nombre="cupo_minimo" limite="grupos.cupo_minimo" etiqueta="Cupo mínimo (Quórum)" tipo="number"
+                    min="1" :valor="$grupo->cupo_minimo ?? 20"
+                    ayuda="Regla de viabilidad operativa: mínimo 20 estudiantes inscritos." />
+                <x-campo-select nombre="estado" etiqueta="Estado de planificación" requerido
                     :opciones="collect(\App\Enums\EstadoPlanificacion::cases())->mapWithKeys(fn ($e) => [$e->value => $e->label()])"
                     :valor="$grupo->estado?->value" />
             </div>
@@ -97,4 +102,24 @@
             <x-form-acciones :cancelar="$cohorteSeleccionada ? route('cohortes.show', $cohorteSeleccionada) : route('grupos.index')" />
         </form>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectModalidad = document.querySelector('select[name="modalidad"]');
+            const bloqueVirtual = document.getElementById('campo-virtual');
+            const bloquePresencial = document.getElementById('campo-presencial');
+
+            function alternarModalidad() {
+                if (!selectModalidad || !bloqueVirtual || !bloquePresencial) return;
+                const esVirtual = selectModalidad.value === 'virtual';
+                bloqueVirtual.style.display = esVirtual ? 'block' : 'none';
+                bloquePresencial.style.display = esVirtual ? 'none' : 'grid';
+            }
+
+            if (selectModalidad) {
+                selectModalidad.addEventListener('change', alternarModalidad);
+                alternarModalidad();
+            }
+        });
+    </script>
 @endsection

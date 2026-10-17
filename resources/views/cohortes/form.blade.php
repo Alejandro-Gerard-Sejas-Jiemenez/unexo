@@ -32,7 +32,7 @@
                 :valor="$cohorte->estado?->value" />
         </div>
 
-        <x-form-acciones :cancelar="route('cohortes.index')" />
+        <x-form-acciones :cancelar="$cohorte->exists ? route('cohortes.show', $cohorte) : route('cohortes.index')" />
     </form>
 </div>
 @endsection

@@ -41,7 +41,7 @@
             $iniciales = mb_strtoupper(mb_substr($usuario->nombres, 0, 1) . mb_substr($usuario->apellidos, 0, 1));
         @endphp
 
-        <a class="sr-only focus:not-sr-only focus:absolute focus:p-4 focus:bg-white focus:text-indigo-600 focus:z-[60]"
+        <a class="sr-only focus:not-sr-only focus:absolute focus:p-4 focus:bg-white focus:text-indigo-600 focus:z-60"
             href="#contenido">Saltar al contenido</a>
 
         <!-- ===== Barra superior ===== -->
@@ -66,7 +66,7 @@
                 <summary
                     class="list-none flex items-center gap-2.5 p-1.5 pr-2.5 rounded-full hover:bg-slate-100 cursor-pointer transition-colors [&::-webkit-details-marker]:hidden">
                     <span
-                        class="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white font-bold text-sm shadow-sm"
+                        class="flex items-center justify-center w-9 h-9 rounded-full bg-linear-to-tr from-indigo-500 to-violet-500 text-white font-bold text-sm shadow-sm"
                         aria-hidden="true">{{ $iniciales }}</span>
                     <span class="hidden sm:flex flex-col items-start leading-tight">
                         <span class="text-sm font-semibold text-slate-800">{{ explode(' ', $usuario->nombres)[0] }}
@@ -108,7 +108,7 @@
                 </script>
 
                 <!-- Botón para colapsar/expandir (escritorio) y título del panel -->
-                <div class="flex items-center px-5 py-4 min-h-[64px]">
+                <div class="flex items-center px-5 py-4 min-h-16">
                     <button id="toggle-sidebar" type="button" class="sb-icono cursor-pointer focus:outline-none"
                         title="Expandir o colapsar el menú" aria-label="Expandir o colapsar el menú">
                         <x-icono nombre="sidebar" class="w-5 h-5 text-slate-500" />
@@ -120,9 +120,10 @@
                     </button>
                 </div>
                 <div class="px-6 pb-2 pt-1">
-                    <span class="sb-etiqueta text-[11px] font-bold uppercase tracking-wider text-slate-400">Plataforma</span>
+                    <span
+                        class="sb-etiqueta text-[11px] font-bold uppercase tracking-wider text-slate-400">Plataforma</span>
                 </div>
-                <nav class="flex-1 px-5 pt-1 pb-10 space-y-2 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                <nav class="flex-1 px-5 pt-1 pb-10 space-y-2 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar:none]"
                     aria-label="Navegación principal">
                     @foreach ($menu as [$etiqueta, $url, $patron, $icono])
                         <a href="{{ $url }}" title="{{ $etiqueta }}"
@@ -212,20 +213,31 @@
             const velo = document.getElementById('cargando');
             const barra = document.getElementById('cargando-barra');
             if (!velo || !barra) return;
-            let espera, seguridad;
+            let esperaBarra, esperaVelo, seguridad;
 
-            // Espera 120 ms: si la página responde más rápido, no se ve ningún parpadeo.
+            // Feedback progresivo:
+            // 1. La barra superior arranca rápido (60ms) dando respuesta inmediata al clic sin tapar la pantalla.
+            // 2. El velo modal translúcido con spinner solo se muestra si la página tarda más de 450ms,
+            //    eliminando por completo el molesto parpadeo en transiciones normales.
             const mostrar = () => {
-                clearTimeout(espera);
-                espera = setTimeout(() => {
+                clearTimeout(esperaBarra);
+                clearTimeout(esperaVelo);
+                clearTimeout(seguridad);
+
+                esperaBarra = setTimeout(() => {
+                    barra.classList.add('activa');
+                }, 60);
+
+                esperaVelo = setTimeout(() => {
                     velo.classList.add('activo');
                     velo.setAttribute('aria-hidden', 'false');
-                    barra.classList.add('activa');
-                    seguridad = setTimeout(ocultar, 15000); // por si la navegación no ocurre (descargas, errores)
-                }, 120);
+                }, 450);
+
+                seguridad = setTimeout(ocultar, 10000); // por si la navegación no ocurre (descargas, errores)
             };
             const ocultar = () => {
-                clearTimeout(espera);
+                clearTimeout(esperaBarra);
+                clearTimeout(esperaVelo);
                 clearTimeout(seguridad);
                 velo.classList.remove('activo');
                 velo.setAttribute('aria-hidden', 'true');

@@ -7,7 +7,17 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $programa_id
+ * @property string $nombre
+ * @property Carbon $fecha_inicio
+ * @property Carbon $fecha_fin
+ * @property EstadoPlanificacion $estado
+ * @property-read Programa $programa
+ */
 class Cohorte extends Model
 {
     use HasUuids;

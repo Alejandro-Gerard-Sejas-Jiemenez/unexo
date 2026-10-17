@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoPlanificacion;
+use App\Enums\Modalidad;
 use App\Enums\Rol;
 use App\Models\Cohorte;
 use App\Models\Programa;
@@ -55,7 +56,14 @@ class CohorteController extends Controller
         $modulosConGrupoIds = $cohorte->grupos->pluck('modulo_id')->all();
         $modulosPendientes = $modulosPrograma->reject(fn ($m) => in_array($m->id, $modulosConGrupoIds))->values();
         $totalMatriculados = $cohorte->matriculas()->count();
-        $docentes = User::where('rol', Rol::Docente->value)->where('estado', 'activo')->orderBy('apellidos')->get(['id', 'nombres', 'apellidos']);
+        $docentes = User::where('rol', Rol::Docente->value)
+            ->where('estado', 'activo')
+            ->withCount(['gruposComoDocente as grupos_activos_count' => fn ($q) => $q->whereIn('estado', [
+                EstadoPlanificacion::Programado->value,
+                EstadoPlanificacion::EnCurso->value,
+            ])])
+            ->orderBy('apellidos')
+            ->get(['id', 'nombres', 'apellidos']);
 
         return view('cohortes.show', compact('cohorte', 'modulosPrograma', 'modulosPendientes', 'totalMatriculados', 'docentes'));
     }
@@ -64,13 +72,15 @@ class CohorteController extends Controller
     {
         $datos = $request->validate([
             'docente_id' => ['nullable', 'uuid', Rule::exists('users', 'id')->where('rol', Rol::Docente->value)],
+            'modalidad' => ['nullable', Rule::enum(Modalidad::class)],
             'cupo_minimo' => ['nullable', 'integer', 'min:1', 'max:500'],
         ]);
 
         $docente = isset($datos['docente_id']) ? User::find($datos['docente_id']) : null;
         $cupoMinimo = $datos['cupo_minimo'] ?? 20;
+        $modalidad = isset($datos['modalidad']) ? Modalidad::from($datos['modalidad']) : Modalidad::Virtual;
 
-        $creados = $servicio->generarGruposParaCohorte($cohorte, $docente, $cupoMinimo);
+        $creados = $servicio->generarGruposParaCohorte($cohorte, $docente, $cupoMinimo, $modalidad);
 
         if ($creados->isEmpty()) {
             return redirect()->route('cohortes.show', $cohorte)

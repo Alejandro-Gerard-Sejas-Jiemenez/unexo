@@ -187,25 +187,25 @@
         z-index: 20;
         display: grid;
         place-items: center;
-        background: radial-gradient(circle at 50% 45%, rgb(255 255 255 / 0.88), rgb(240 242 245 / 0.7));
-        backdrop-filter: blur(6px);
+        background: radial-gradient(circle at 50% 45%, rgb(255 255 255 / 0.82), rgb(240 242 245 / 0.65));
+        backdrop-filter: blur(2px);
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+        transition: opacity 0.12s ease, visibility 0s linear 0.12s;
     }
 
     .cargando.activo {
         opacity: 1;
         visibility: visible;
-        transition: opacity 0.18s ease;
+        transition: opacity 0.12s ease;
     }
 
     .cargando-marca {
         position: relative;
         display: grid;
         place-items: center;
-        width: 5.5rem;
-        height: 5.5rem;
+        width: 4.5rem;
+        height: 4.5rem;
     }
 
     .cargando-anillo {
@@ -215,18 +215,18 @@
         background: conic-gradient(from 0deg, transparent 0 25%, #07b0b0 75%, #082f4e);
         -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
         mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-        animation: cargando-girar 1s linear infinite;
+        animation: cargando-girar 0.5s linear infinite;
     }
 
     .cargando-logo {
-        width: 2.75rem;
-        height: 2.75rem;
+        width: 2.25rem;
+        height: 2.25rem;
         object-fit: contain;
-        animation: cargando-latido 1.6s ease-in-out infinite;
+        animation: cargando-latido 0.75s ease-in-out infinite;
     }
 
     .cargando-texto {
-        margin-top: 1.1rem;
+        margin-top: 0.85rem;
         font-size: 0.7rem;
         font-weight: 600;
         letter-spacing: 0.22em;
@@ -251,13 +251,13 @@
 
     .cargando-barra.activa {
         opacity: 1;
-        animation: cargando-progreso 8s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
+        animation: cargando-progreso 0.5s cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
     }
 }
 
-/* Entrada suave del contenido al llegar a una página. */
+/* Entrada rápida y suave del contenido al llegar a una página. */
 .animate-fade-in {
-    animation: cargando-entrada 0.28s ease-out both;
+    animation: cargando-entrada 0.12s ease-out both;
 }
 
 @keyframes cargando-girar {
@@ -266,17 +266,17 @@
 
 @keyframes cargando-latido {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+    50% { transform: scale(1.06); }
 }
 
 @keyframes cargando-progreso {
     0% { transform: scaleX(0); }
-    25% { transform: scaleX(0.55); }
-    100% { transform: scaleX(0.93); }
+    40% { transform: scaleX(0.75); }
+    100% { transform: scaleX(0.96); }
 }
 
 @keyframes cargando-entrada {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(2px); }
     to { opacity: 1; transform: none; }
 }
 

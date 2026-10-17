@@ -153,7 +153,19 @@
                             class="text-xs rounded-lg border-slate-300 py-2 pl-3 pr-8 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
                             <option value="">— Docente inicial (automático) —</option>
                             @foreach ($docentes as $doc)
-                                <option value="{{ $doc->id }}">{{ $doc->apellidos }}, {{ $doc->nombres }}</option>
+                                <option value="{{ $doc->id }}">
+                                    {{ $doc->apellidos }}, {{ $doc->nombres }}
+                                    ({{ $doc->grupos_activos_count > 0 ? $doc->grupos_activos_count . ' ' . \Illuminate\Support\Str::plural('grupo', $doc->grupos_activos_count) : 'Disponible' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="modalidad_apertura" class="sr-only">Modalidad inicial</label>
+                        <select name="modalidad" id="modalidad_apertura"
+                            class="text-xs rounded-lg border-slate-300 py-2 pl-3 pr-8 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                            @foreach (\App\Enums\Modalidad::cases() as $mod)
+                                <option value="{{ $mod->value }}">{{ $mod->label() }}</option>
                             @endforeach
                         </select>
                     </div>

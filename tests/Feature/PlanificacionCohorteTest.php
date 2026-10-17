@@ -7,6 +7,7 @@ use App\Enums\EstadoMatricula;
 use App\Enums\EstadoPlanificacion;
 use App\Enums\Modalidad;
 use App\Enums\Rol;
+use App\Models\Aula;
 use App\Models\Cohorte;
 use App\Models\Grupo;
 use App\Models\InscripcionGrupo;
@@ -351,5 +352,94 @@ class PlanificacionCohorteTest extends TestCase
             ->assertOk();
         $responseSuelto->assertSee('Grupo Suelto');
         $responseSuelto->assertDontSee('Grupo Cohorte');
+    }
+
+    public function test_coherencia_logistica_presencial_exige_aula_y_valida_aforo(): void
+    {
+        $docente = $this->docente();
+        [$programa, $modulos] = $this->programaConModulos(1);
+
+        // Intento 1: Crear presencial sin aula debe fallar
+        $this->actingAs($this->admin())
+            ->post(route('grupos.store'), [
+                'modulo_id' => $modulos[0]->id,
+                'docente_id' => $docente->id,
+                'nombre' => 'Presencial Sin Aula',
+                'fecha_inicio' => '2026-04-01',
+                'fecha_fin' => '2026-04-30',
+                'modalidad' => Modalidad::Presencial->value,
+                'cupo_minimo' => 20,
+                'estado' => EstadoPlanificacion::Programado->value,
+            ])
+            ->assertSessionHasErrors('aula_id');
+
+        // Intento 2: Aula pequeña con capacidad insuficiente para el quórum de 20
+        $aulaPequena = Aula::create(['nombre' => 'Aula 101 Chica', 'capacidad' => 12]);
+
+        $this->actingAs($this->admin())
+            ->post(route('grupos.store'), [
+                'modulo_id' => $modulos[0]->id,
+                'docente_id' => $docente->id,
+                'aula_id' => $aulaPequena->id,
+                'nombre' => 'Presencial Sobrecupo',
+                'fecha_inicio' => '2026-04-01',
+                'fecha_fin' => '2026-04-30',
+                'modalidad' => Modalidad::Presencial->value,
+                'cupo_minimo' => 20,
+                'estado' => EstadoPlanificacion::Programado->value,
+            ])
+            ->assertSessionHasErrors('aula_id');
+
+        // Intento 3: Aula adecuada con capacidad >= 20
+        $aulaAdecuada = Aula::create(['nombre' => 'Aula Magna', 'capacidad' => 40]);
+
+        $this->actingAs($this->admin())
+            ->post(route('grupos.store'), [
+                'modulo_id' => $modulos[0]->id,
+                'docente_id' => $docente->id,
+                'aula_id' => $aulaAdecuada->id,
+                'enlace_videoconferencia' => 'https://meet.google.com/test-ignore',
+                'nombre' => 'Presencial Valido',
+                'fecha_inicio' => '2026-04-01',
+                'fecha_fin' => '2026-04-30',
+                'modalidad' => Modalidad::Presencial->value,
+                'cupo_minimo' => 20,
+                'estado' => EstadoPlanificacion::Programado->value,
+            ])
+            ->assertRedirect(route('grupos.index'))
+            ->assertSessionHas('ok');
+
+        $grupoPresencial = Grupo::where('nombre', 'Presencial Valido')->first();
+        $this->assertNotNull($grupoPresencial);
+        $this->assertEquals($aulaAdecuada->id, $grupoPresencial->aula_id);
+        $this->assertNull($grupoPresencial->enlace_videoconferencia, 'El enlace de videoconferencia debe limpiarse en grupos presenciales.');
+    }
+
+    public function test_coherencia_logistica_virtual_limpia_aula(): void
+    {
+        $docente = $this->docente();
+        [$programa, $modulos] = $this->programaConModulos(1);
+        $aula = Aula::create(['nombre' => 'Aula Extra', 'capacidad' => 50]);
+
+        $this->actingAs($this->admin())
+            ->post(route('grupos.store'), [
+                'modulo_id' => $modulos[0]->id,
+                'docente_id' => $docente->id,
+                'aula_id' => $aula->id,
+                'enlace_videoconferencia' => 'https://meet.google.com/abc-defg-hij',
+                'nombre' => 'Virtual con Aula',
+                'fecha_inicio' => '2026-04-01',
+                'fecha_fin' => '2026-04-30',
+                'modalidad' => Modalidad::Virtual->value,
+                'cupo_minimo' => 20,
+                'estado' => EstadoPlanificacion::Programado->value,
+            ])
+            ->assertRedirect(route('grupos.index'))
+            ->assertSessionHas('ok');
+
+        $grupoVirtual = Grupo::where('nombre', 'Virtual con Aula')->first();
+        $this->assertNotNull($grupoVirtual);
+        $this->assertNull($grupoVirtual->aula_id, 'El aula debe quedar null para modalidad virtual.');
+        $this->assertEquals('https://meet.google.com/abc-defg-hij', $grupoVirtual->enlace_videoconferencia);
     }
 }

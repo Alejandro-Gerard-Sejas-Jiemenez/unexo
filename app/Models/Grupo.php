@@ -9,7 +9,26 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $modulo_id
+ * @property string|null $cohorte_id
+ * @property string $docente_id
+ * @property string|null $aula_id
+ * @property string $nombre
+ * @property Carbon $fecha_inicio
+ * @property Carbon $fecha_fin
+ * @property Modalidad $modalidad
+ * @property string|null $enlace_videoconferencia
+ * @property int|null $cupo_minimo
+ * @property EstadoPlanificacion $estado
+ * @property-read Modulo $modulo
+ * @property-read Cohorte|null $cohorte
+ * @property-read User $docente
+ * @property-read Aula|null $aula
+ */
 class Grupo extends Model
 {
     use HasUuids;

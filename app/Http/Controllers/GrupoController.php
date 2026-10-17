@@ -13,6 +13,7 @@ use App\Models\Modulo;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -117,17 +118,40 @@ class GrupoController extends Controller
                     ]);
                 }
 
-                if ($datos['fecha_inicio'] < $cohorte->fecha_inicio->format('Y-m-d')) {
+                $fechaInicioCohorte = Carbon::parse($cohorte->fecha_inicio);
+                $fechaFinCohorte = Carbon::parse($cohorte->fecha_fin);
+
+                if ($datos['fecha_inicio'] < $fechaInicioCohorte->format('Y-m-d')) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
-                        'fecha_inicio' => 'La fecha de inicio del grupo no puede ser anterior al inicio de la cohorte ('.$cohorte->fecha_inicio->format('d/m/Y').').',
+                        'fecha_inicio' => 'La fecha de inicio del grupo no puede ser anterior al inicio de la cohorte ('.$fechaInicioCohorte->format('d/m/Y').').',
                     ]);
                 }
 
-                if ($datos['fecha_fin'] > $cohorte->fecha_fin->format('Y-m-d')) {
+                if ($datos['fecha_fin'] > $fechaFinCohorte->format('Y-m-d')) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
-                        'fecha_fin' => 'La fecha de fin del grupo no puede ser posterior al fin de la cohorte ('.$cohorte->fecha_fin->format('d/m/Y').').',
+                        'fecha_fin' => 'La fecha de fin del grupo no puede ser posterior al fin de la cohorte ('.$fechaFinCohorte->format('d/m/Y').').',
                     ]);
                 }
+            }
+        }
+
+        // Reglas de coherencia logística (CU5: Virtual vs Presencial)
+        if ($datos['modalidad'] === Modalidad::Virtual->value) {
+            $datos['aula_id'] = null;
+        } elseif ($datos['modalidad'] === Modalidad::Presencial->value) {
+            $datos['enlace_videoconferencia'] = null;
+
+            if (empty($datos['aula_id'])) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'aula_id' => 'Debe asignar un aula física para grupos en modalidad presencial.',
+                ]);
+            }
+
+            $aula = Aula::find($datos['aula_id']);
+            if ($aula && $aula->capacidad && ! empty($datos['cupo_minimo']) && $aula->capacidad < $datos['cupo_minimo']) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'aula_id' => "La capacidad del aula ({$aula->capacidad} personas) es inferior al cupo mínimo configurado ({$datos['cupo_minimo']}).",
+                ]);
             }
         }
 
@@ -145,14 +169,22 @@ class GrupoController extends Controller
             $modulos = $cohorteSeleccionada->programa->modulos;
             $modulosTotal = $modulos->count();
         } else {
-            [$modulos, $modulosTotal] = Opciones::limitar(Modulo::orderBy('nombre'), ['id', 'codigo', 'nombre']);
+            [$modulos, $modulosTotal] = Opciones::limitar(Modulo::query()->orderBy('nombre'), ['id', 'codigo', 'nombre']);
         }
 
-        [$cohortes, $cohortesTotal] = Opciones::limitar(Cohorte::with('programa')->orderByDesc('fecha_inicio'));
+        [$cohortes, $cohortesTotal] = Opciones::limitar(Cohorte::query()->with('programa')->orderByDesc('fecha_inicio'));
         [$docentes, $docentesTotal] = Opciones::limitar(
-            User::where('rol', Rol::Docente->value)->orderBy('apellidos'), ['id', 'nombres', 'apellidos']
+            User::query()
+                ->where('rol', Rol::Docente->value)
+                ->where('estado', 'activo')
+                ->withCount(['gruposComoDocente as grupos_activos_count' => fn ($q) => $q->whereIn('estado', [
+                    EstadoPlanificacion::Programado->value,
+                    EstadoPlanificacion::EnCurso->value,
+                ])])
+                ->orderBy('apellidos'),
+            ['id', 'nombres', 'apellidos']
         );
-        [$aulas, $aulasTotal] = Opciones::limitar(Aula::orderBy('nombre'), ['id', 'nombre']);
+        [$aulas, $aulasTotal] = Opciones::limitar(Aula::query()->orderBy('nombre'), ['id', 'nombre', 'capacidad']);
 
         return compact(
             'grupo', 'modulos', 'modulosTotal', 'cohortes', 'cohortesTotal',
