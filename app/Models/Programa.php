@@ -61,4 +61,9 @@ class Programa extends Model
             ->withPivot('orden')
             ->orderBy('programa_modulo.orden');
     }
+
+    public function cohortes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Cohorte::class);
+    }
 }

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoComercial;
+use App\Enums\EstadoPlanificacion;
 use App\Enums\Rol;
 use App\Models\Modulo;
 use App\Models\Programa;
 use App\Services\MisClasesService;
 use App\Services\ResumenCatalogoService;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PanelController extends Controller
@@ -31,17 +33,48 @@ class PanelController extends Controller
         };
     }
 
-    public function catalogo(): View
+    public function catalogo(Request $request): View
     {
-        $programas = Programa::with(['modulos' => fn ($q) => $q->where('modulos.estado_comercial', EstadoComercial::Abierto->value)])
-            ->where('estado_comercial', EstadoComercial::Abierto->value)
+        $busqueda = trim((string) $request->query('q', ''));
+        $tab = $request->query('tab', 'todos');
+
+        $programas = Programa::visibleParaCrm()
+            ->with([
+                'modulos' => fn ($q) => $q->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
+                'cohortes' => fn ($q) => $q->whereIn('estado', [
+                    EstadoPlanificacion::Programado->value,
+                    EstadoPlanificacion::EnCurso->value,
+                ])->orderBy('fecha_inicio'),
+                'cohortes.grupos' => fn ($q) => $q->with(['modulo', 'docente', 'aula'])->orderBy('fecha_inicio'),
+            ])
+            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
+                ->where('nombre', 'like', "%{$busqueda}%")
+                ->orWhere('codigo', 'like', "%{$busqueda}%")
+                ->orWhere('descripcion', 'like', "%{$busqueda}%")
+                ->orWhere('nivel_academico', 'like', "%{$busqueda}%")
+            ))
             ->orderBy('nombre')
             ->get();
 
-        $modulos = Modulo::where('estado_comercial', EstadoComercial::Abierto->value)
+        $modulos = Modulo::visibleParaCrm()
+            ->with([
+                'programas',
+                'grupos' => fn ($q) => $q->whereNull('cohorte_id')
+                    ->whereIn('estado', [
+                        EstadoPlanificacion::Programado->value,
+                        EstadoPlanificacion::EnCurso->value,
+                    ])
+                    ->with(['docente', 'aula'])
+                    ->orderBy('fecha_inicio'),
+            ])
+            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
+                ->where('nombre', 'like', "%{$busqueda}%")
+                ->orWhere('codigo', 'like', "%{$busqueda}%")
+                ->orWhere('descripcion', 'like', "%{$busqueda}%")
+            ))
             ->orderBy('nombre')
             ->get();
 
-        return view('catalogo.index', compact('programas', 'modulos'));
+        return view('catalogo.index', compact('programas', 'modulos', 'busqueda', 'tab'));
     }
 }

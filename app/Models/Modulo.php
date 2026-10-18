@@ -42,4 +42,9 @@ class Modulo extends Model
     {
         return $this->belongsToMany(Programa::class, 'programa_modulo')->withPivot('orden');
     }
+
+    public function grupos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Grupo::class);
+    }
 }
