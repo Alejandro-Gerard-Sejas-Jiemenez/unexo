@@ -17,28 +17,102 @@
     @auth
         @php
             $usuario = auth()->user();
-            $menu = [
-                ['Inicio', route('panel'), 'panel', 'inicio'],
-                ['Catálogo', route('catalogo'), 'catalogo', 'catalogo'],
-            ];
-            if ($usuario->rol === \App\Enums\Rol::Estudiante) {
-                $menu[] = ['Mis cursos', route('mis-cursos'), 'mis-cursos', 'video'];
-                $menu[] = ['Calendario', route('calendario'), 'calendario', 'calendario'];
-            }
-            if ($usuario->rol === \App\Enums\Rol::Docente) {
-                $menu[] = ['Mis grupos', route('mis-grupos.index'), 'mis-grupos.*', 'usuarios'];
-                $menu[] = ['Calendario', route('calendario'), 'calendario', 'calendario'];
-            }
+
+            $menu = [];
+
             if ($usuario->rol === \App\Enums\Rol::Administrador) {
-                $menu[] = ['Programas', route('programas.index'), 'programas.*', 'modulos'];
-                $menu[] = ['Módulos', route('modulos.index'), 'modulos.*', 'modulos'];
-                $menu[] = ['Cohortes', route('cohortes.index'), 'cohortes.*', 'calendario'];
-                $menu[] = ['Grupos', route('grupos.index'), 'grupos.*', 'usuarios'];
-                $menu[] = ['Matrículas', route('matriculas.index'), 'matriculas.*', 'mas'];
-                $menu[] = ['Usuarios', route('usuarios.index'), 'usuarios.*', 'usuarios'];
-                $menu[] = ['Reportes', route('reportes.matriculas'), 'reportes.*', 'reportes'];
-                $menu[] = ['Acceso API', route('clientes-api.index'), 'clientes-api.*', 'candado'];
+                $menu = [
+                    [
+                        'tipo' => 'enlace',
+                        'etiqueta' => 'Inicio',
+                        'url' => route('panel'),
+                        'patron' => 'panel',
+                        'icono' => 'inicio',
+                    ],
+                    [
+                        'tipo' => 'submenu',
+                        'etiqueta' => 'Programas',
+                        'icono' => 'programa',
+                        'items' => [
+                            ['Catálogo', route('catalogo'), 'catalogo', 'catalogo'],
+                            ['Módulos', route('modulos.index'), 'modulos.*', 'modulos'],
+                            ['Programas', route('programas.index'), 'programas.*', 'programa'],
+                            ['Cohortes', route('cohortes.index'), 'cohortes.*', 'calendario'],
+                            ['Grupos', route('grupos.index'), 'grupos.*', 'usuarios'],
+                            ['Matrículas', route('matriculas.index'), 'matriculas.*', 'matricula'],
+                        ],
+                    ],
+                    [
+                        'tipo' => 'enlace',
+                        'etiqueta' => 'Reportes',
+                        'url' => route('reportes.matriculas'),
+                        'patron' => 'reportes.*',
+                        'icono' => 'reportes',
+                    ],
+                    [
+                        'tipo' => 'submenu',
+                        'etiqueta' => 'Configuración y Seguridad',
+                        'icono' => 'candado',
+                        'items' => [
+                            ['Usuarios', route('usuarios.index'), 'usuarios.*', 'usuarios'],
+                            ['Acceso API', route('clientes-api.index'), 'clientes-api.*', 'candado'],
+                        ],
+                    ],
+                ];
+            } elseif ($usuario->rol === \App\Enums\Rol::Docente) {
+                $menu = [
+                    [
+                        'tipo' => 'enlace',
+                        'etiqueta' => 'Inicio',
+                        'url' => route('panel'),
+                        'patron' => 'panel',
+                        'icono' => 'inicio',
+                    ],
+                    [
+                        'tipo' => 'enlace',
+                        'etiqueta' => 'Catálogo',
+                        'url' => route('catalogo'),
+                        'patron' => 'catalogo',
+                        'icono' => 'catalogo',
+                    ],
+                    [
+                        'tipo' => 'submenu',
+                        'etiqueta' => 'Docencia',
+                        'icono' => 'usuarios',
+                        'items' => [
+                            ['Mis grupos', route('mis-grupos.index'), 'mis-grupos.*', 'usuarios'],
+                            ['Calendario', route('calendario'), 'calendario', 'calendario'],
+                        ],
+                    ],
+                ];
+            } elseif ($usuario->rol === \App\Enums\Rol::Estudiante) {
+                $menu = [
+                    [
+                        'tipo' => 'enlace',
+                        'etiqueta' => 'Inicio',
+                        'url' => route('panel'),
+                        'patron' => 'panel',
+                        'icono' => 'inicio',
+                    ],
+                    [
+                        'tipo' => 'enlace',
+                        'etiqueta' => 'Catálogo',
+                        'url' => route('catalogo'),
+                        'patron' => 'catalogo',
+                        'icono' => 'catalogo',
+                    ],
+                    [
+                        'tipo' => 'submenu',
+                        'etiqueta' => 'Mis Estudios',
+                        'icono' => 'video',
+                        'items' => [
+                            ['Mis cursos', route('mis-cursos'), 'mis-cursos', 'video'],
+                            ['Calendario', route('calendario'), 'calendario', 'calendario'],
+                        ],
+                    ],
+                ];
             }
+
             $iniciales = mb_strtoupper(mb_substr($usuario->nombres, 0, 1) . mb_substr($usuario->apellidos, 0, 1));
         @endphp
 
@@ -120,22 +194,57 @@
                         <x-icono nombre="cerrar" class="w-5 h-5" />
                     </button>
                 </div>
-                <div class="px-6 pb-2 pt-1">
-                    <span
-                        class="sb-etiqueta text-[11px] font-bold uppercase tracking-wider text-slate-400">Plataforma</span>
-                </div>
-                <nav class="flex-1 px-5 pt-1 pb-10 space-y-2 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar:none]"
+                <nav class="flex-1 px-3 pt-1 pb-10 space-y-1.5 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar:none]"
                     aria-label="Navegación principal">
-                    @foreach ($menu as [$etiqueta, $url, $patron, $icono])
-                        <a href="{{ $url }}" title="{{ $etiqueta }}"
-                            class="sb-fila {{ request()->routeIs($patron) ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}"
-                            @if (request()->routeIs($patron)) aria-current="page" @endif>
-                            <span class="sb-icono">
-                                <x-icono :nombre="$icono"
-                                    class="w-5 h-5 {{ request()->routeIs($patron) ? 'text-white' : 'text-slate-400' }}" />
-                            </span>
-                            <span class="sb-etiqueta">{{ $etiqueta }}</span>
-                        </a>
+                    @foreach ($menu as $elemento)
+                        @if ($elemento['tipo'] === 'enlace')
+                            @php
+                                $activo = request()->routeIs($elemento['patron']);
+                            @endphp
+                            <a href="{{ $elemento['url'] }}" title="{{ $elemento['etiqueta'] }}"
+                                class="sb-fila {{ $activo ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}"
+                                @if ($activo) aria-current="page" @endif>
+                                <span class="sb-icono">
+                                    <x-icono :nombre="$elemento['icono']"
+                                        class="w-5 h-5 {{ $activo ? 'text-white' : 'text-slate-400' }}" />
+                                </span>
+                                <span class="sb-etiqueta">{{ $elemento['etiqueta'] }}</span>
+                            </a>
+                        @elseif ($elemento['tipo'] === 'submenu')
+                            @php
+                                $subActivo = collect($elemento['items'])->contains(fn($it) => request()->routeIs($it[2]));
+                            @endphp
+                            <details class="group/sub sb-grupo" {{ $subActivo ? 'open' : '' }}>
+                                <summary title="{{ $elemento['etiqueta'] }}"
+                                    class="sb-fila cursor-pointer list-none select-none transition-colors [&::-webkit-details-marker]:hidden {{ $subActivo ? 'text-indigo-700 bg-indigo-50/70 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+                                    <span class="sb-icono">
+                                        <x-icono :nombre="$elemento['icono']"
+                                            class="w-5 h-5 {{ $subActivo ? 'text-indigo-600' : 'text-slate-400' }}" />
+                                    </span>
+                                    <span class="sb-etiqueta flex items-center justify-between flex-1 pr-2">
+                                        <span class="truncate">{{ $elemento['etiqueta'] }}</span>
+                                        <x-icono nombre="chevron"
+                                            class="w-4 h-4 text-slate-400 transition-transform duration-200 group-open/sub:rotate-180 shrink-0" />
+                                    </span>
+                                </summary>
+
+                                <div class="sb-sub-lista">
+                                    @foreach ($elemento['items'] as [$subEtiqueta, $subUrl, $subPatron, $subIcono])
+                                        @php
+                                            $itemActivo = request()->routeIs($subPatron);
+                                        @endphp
+                                        <a href="{{ $subUrl }}" title="{{ $subEtiqueta }}"
+                                            class="sb-sub-fila {{ $itemActivo ? 'activo' : '' }}"
+                                            @if ($itemActivo) aria-current="page" @endif>
+                                            <span class="sb-sub-icono">
+                                                <x-icono :nombre="$subIcono" class="w-4 h-4" />
+                                            </span>
+                                            <span class="truncate">{{ $subEtiqueta }}</span>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </details>
+                        @endif
                     @endforeach
                 </nav>
 
@@ -185,6 +294,16 @@
                     try { localStorage.setItem('sidebar-pinned', sidebar.classList.contains('is-pinned')); } catch (err) { }
                 };
                 toggle?.addEventListener('click', (e) => { if (escritorio.matches) fijar(e); });
+
+                // Escritorio colapsado: al hacer clic en un submenú, expandir primero a 18rem
+                sidebar.querySelectorAll('details.sb-grupo summary').forEach((sum) => {
+                    sum.addEventListener('click', () => {
+                        if (escritorio.matches && !sidebar.classList.contains('is-pinned')) {
+                            sidebar.classList.add('is-pinned');
+                            try { localStorage.setItem('sidebar-pinned', 'true'); } catch (err) {}
+                        }
+                    });
+                });
 
                 // Móvil: cajón con fondo.
                 const mostrar = (v) => {
