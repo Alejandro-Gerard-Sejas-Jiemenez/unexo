@@ -40,9 +40,15 @@ class CohorteController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $cohorte = Cohorte::create($this->validar($request));
+        $datos = $this->validar($request);
 
-        return redirect()->route('cohortes.show', $cohorte)->with('ok', 'Cohorte creada. Ahora puedes aperturar sus grupos operativos.');
+        if (empty($datos['nombre'])) {
+            $datos['nombre'] = Cohorte::generarNombreEdicion($datos['programa_id']);
+        }
+
+        $cohorte = Cohorte::create($datos);
+
+        return redirect()->route('cohortes.show', $cohorte)->with('ok', 'Edición creada exitosamente. Ahora puedes aperturar sus grupos operativos.');
     }
 
     public function show(Cohorte $cohorte): View
@@ -84,11 +90,11 @@ class CohorteController extends Controller
 
         if ($creados->isEmpty()) {
             return redirect()->route('cohortes.show', $cohorte)
-                ->with('info', 'Todos los módulos de este programa ya tienen grupos aperturados en esta cohorte.');
+                ->with('info', 'Todos los módulos de este programa ya tienen grupos aperturados en esta edición.');
         }
 
         return redirect()->route('cohortes.show', $cohorte)
-            ->with('ok', "Apertura completada: Se generaron {$creados->count()} grupos operativos secuenciales para la cohorte.");
+            ->with('ok', "Apertura completada: Se generaron {$creados->count()} grupos operativos secuenciales para la edición.");
     }
 
     public function cambiarEstado(Request $request, Cohorte $cohorte, PlanificacionCohorteService $servicio): RedirectResponse
@@ -102,7 +108,7 @@ class CohorteController extends Controller
         $servicio->cambiarEstadoCohorte($cohorte, $nuevo, (bool) ($datos['propagar_a_grupos'] ?? false));
 
         return redirect()->route('cohortes.show', $cohorte)
-            ->with('ok', 'Estado de la cohorte actualizado a '.$nuevo->label().'.');
+            ->with('ok', 'Estado de la edición actualizado a '.$nuevo->label().'.');
     }
 
     public function edit(Cohorte $cohorte): View
@@ -112,16 +118,22 @@ class CohorteController extends Controller
 
     public function update(Request $request, Cohorte $cohorte): RedirectResponse
     {
-        $cohorte->update($this->validar($request));
+        $datos = $this->validar($request, $cohorte);
 
-        return redirect()->route('cohortes.show', $cohorte)->with('ok', 'Cohorte actualizada correctamente.');
+        if (empty($datos['nombre'])) {
+            $datos['nombre'] = $cohorte->nombre;
+        }
+
+        $cohorte->update($datos);
+
+        return redirect()->route('cohortes.show', $cohorte)->with('ok', 'Edición actualizada correctamente.');
     }
 
-    private function validar(Request $request): array
+    private function validar(Request $request, ?Cohorte $cohorte = null): array
     {
         return $request->validate([
             'programa_id' => ['required', 'uuid', Rule::exists('programas', 'id')],
-            'nombre' => ['required', 'string', 'max:'.config('limites.cohortes.nombre')],
+            'nombre' => [$cohorte ? 'required' : 'nullable', 'string', 'max:'.config('limites.cohortes.nombre')],
             'fecha_inicio' => ['required', 'date'],
             'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio'],
             'estado' => ['required', Rule::enum(EstadoPlanificacion::class)],

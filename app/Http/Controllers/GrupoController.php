@@ -139,7 +139,7 @@ class GrupoController extends Controller
             }
         }
 
-        // Reglas de coherencia logística (CU5: Virtual vs Presencial)
+        // Reglas de coherencia logística (CU5: Virtual vs Presencial vs Mixta)
         if ($datos['modalidad'] === Modalidad::Virtual->value) {
             $datos['aula_id'] = null;
         } elseif ($datos['modalidad'] === Modalidad::Presencial->value) {
@@ -156,6 +156,15 @@ class GrupoController extends Controller
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'aula_id' => "La capacidad del aula ({$aula->capacidad} personas) es inferior al cupo mínimo configurado ({$datos['cupo_minimo']}).",
                 ]);
+            }
+        } elseif ($datos['modalidad'] === Modalidad::Mixta->value) {
+            if (! empty($datos['aula_id'])) {
+                $aula = Aula::find($datos['aula_id']);
+                if ($aula && $aula->capacidad && ! empty($datos['cupo_minimo']) && (int) $datos['cupo_minimo'] > 0 && $aula->capacidad < (int) $datos['cupo_minimo']) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'aula_id' => "La capacidad del aula ({$aula->capacidad} personas) es inferior al cupo mínimo configurado ({$datos['cupo_minimo']}).",
+                    ]);
+                }
             }
         }
 

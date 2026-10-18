@@ -1,14 +1,14 @@
 @extends('layouts.app')
-@section('titulo', 'Cohortes')
+@section('titulo', 'Ediciones')
 @section('contenido')
     <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Cohortes</h1>
-            <p class="text-sm text-slate-500 mt-1">Aperturas de un programa con fecha de inicio y fin.</p>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Ediciones</h1>
+            <p class="text-sm text-slate-500 mt-1">Aperturas de un programa con fecha de inicio y fin (gestiones académicas / semestres).</p>
         </div>
         <a class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 shadow-sm transition-all focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             href="{{ route('cohortes.create') }}">
-            <x-icono nombre="mas" class="w-5 h-5" /> Nueva cohorte
+            <x-icono nombre="mas" class="w-5 h-5" /> Nueva edición
         </a>
     </div>
 
@@ -32,7 +32,7 @@
 
         <!-- Buscador -->
         <div class="w-full lg:w-auto lg:min-w-75">
-            @include('partials.buscador', ['ruta' => route('cohortes.index'), 'busqueda' => $busqueda, 'placeholder' => 'Buscar por cohorte o programa…'])
+            @include('partials.buscador', ['ruta' => route('cohortes.index'), 'busqueda' => $busqueda, 'placeholder' => 'Buscar por edición o programa…'])
         </div>
     </div>
 
@@ -42,8 +42,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-slate-900">No hay cohortes con ese filtro</h3>
-            <p class="mt-1 text-sm text-slate-500">Crea una cohorte para abrir un programa a inscripción.</p>
+            <h3 class="mt-2 text-sm font-medium text-slate-900">No hay ediciones con ese filtro</h3>
+            <p class="mt-1 text-sm text-slate-500">Crea una edición para abrir un programa a inscripción.</p>
         </div>
     @else
         <div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
@@ -56,7 +56,7 @@
                                 Programa</th>
                             <th scope="col"
                                 class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                Cohorte</th>
+                                Edición</th>
                             <th scope="col"
                                 class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Inicio
                             </th>

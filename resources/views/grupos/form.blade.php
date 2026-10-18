@@ -6,7 +6,7 @@
         @if ($cohorteSeleccionada)
             <a href="{{ route('cohortes.show', $cohorteSeleccionada) }}"
                 class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
-                <x-icono nombre="volver" class="w-4 h-4" /> Volver a la cohorte {{ $cohorteSeleccionada->nombre }}
+                <x-icono nombre="volver" class="w-4 h-4" /> Volver a la edición {{ $cohorteSeleccionada->nombre }}
             </a>
         @else
             <a href="{{ route('grupos.index') }}"
@@ -23,10 +23,10 @@
         <div class="mb-6 bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start gap-3 max-w-4xl">
             <x-icono nombre="informacion" class="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
             <div class="text-sm">
-                <p class="font-semibold text-indigo-900">Grupo vinculado a la Cohorte: {{ $cohorteSeleccionada->nombre }}</p>
+                <p class="font-semibold text-indigo-900">Grupo vinculado a la Edición: {{ $cohorteSeleccionada->nombre }}</p>
                 <p class="text-indigo-700 mt-0.5">
                     Programa: <span class="font-medium">{{ $cohorteSeleccionada->programa->nombre }}</span> |
-                    Vigencia de la cohorte: <span class="font-medium">{{ $cohorteSeleccionada->fecha_inicio->format('d/m/Y') }}
+                    Vigencia de la edición: <span class="font-medium">{{ $cohorteSeleccionada->fecha_inicio->format('d/m/Y') }}
                         al {{ $cohorteSeleccionada->fecha_fin->format('d/m/Y') }}</span>.
                     Las fechas del grupo deben estar comprendidas dentro de este rango.
                 </p>
@@ -54,8 +54,8 @@
             </div>
 
             @if (!$cohorteSeleccionada)
-                <x-campo-select nombre="cohorte_id" :total="$cohortesTotal" etiqueta="Cohorte"
-                    ayuda="Déjalo en módulo suelto si no pertenece a una cohorte" :opciones="collect(['' => '— Módulo suelto (sin cohorte) —'])->union($cohortes->mapWithKeys(fn($c) => [$c->id => $c->programa->nombre . ' · ' . $c->nombre]))"
+                <x-campo-select nombre="cohorte_id" :total="$cohortesTotal" etiqueta="Edición"
+                    ayuda="Déjalo en módulo suelto si no pertenece a una edición" :opciones="collect(['' => '— Módulo suelto (sin edición) —'])->union($cohortes->mapWithKeys(fn($c) => [$c->id => $c->programa->nombre . ' · ' . $c->nombre]))"
                     :valor="$grupo->cohorte_id" />
             @endif
 
@@ -76,7 +76,7 @@
                     :valor="$grupo->fecha_fin?->format('Y-m-d')" />
             </div>
 
-            {{-- Recursos Logísticos de Clase (CU5: Virtual vs Presencial) --}}
+            {{-- Recursos Logísticos de Clase (CU5: Virtual vs Presencial vs Mixta) --}}
             <div id="campo-virtual" class="mt-4 pt-4 border-t border-slate-100">
                 <x-campo nombre="enlace_videoconferencia" limite="grupos.enlace_videoconferencia"
                     etiqueta="Enlace de videoconferencia (Google Meet / Zoom / Teams)" tipo="url" :valor="$grupo->enlace_videoconferencia"
@@ -112,8 +112,11 @@
             function alternarModalidad() {
                 if (!selectModalidad || !bloqueVirtual || !bloquePresencial) return;
                 const esVirtual = selectModalidad.value === 'virtual';
-                bloqueVirtual.style.display = esVirtual ? 'block' : 'none';
-                bloquePresencial.style.display = esVirtual ? 'none' : 'grid';
+                const esPresencial = selectModalidad.value === 'presencial';
+                const esMixta = selectModalidad.value === 'mixta';
+
+                bloqueVirtual.style.display = (esVirtual || esMixta) ? 'block' : 'none';
+                bloquePresencial.style.display = (esPresencial || esMixta) ? 'grid' : 'none';
             }
 
             if (selectModalidad) {

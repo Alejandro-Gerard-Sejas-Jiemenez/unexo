@@ -37,7 +37,7 @@
                             ['Catálogo', route('catalogo'), 'catalogo', 'catalogo'],
                             ['Módulos', route('modulos.index'), 'modulos.*', 'modulos'],
                             ['Programas', route('programas.index'), 'programas.*', 'programa'],
-                            ['Cohortes', route('cohortes.index'), 'cohortes.*', 'calendario'],
+                            ['Ediciones', route('cohortes.index'), 'cohortes.*', 'calendario'],
                             ['Grupos', route('grupos.index'), 'grupos.*', 'usuarios'],
                             ['Matrículas', route('matriculas.index'), 'matriculas.*', 'matricula'],
                         ],

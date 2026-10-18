@@ -23,17 +23,17 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
                 <x-campo-select nombre="tipo" etiqueta="Tipo de matrícula" requerido
-                    :opciones="['cohorte' => 'Programa completo (cohorte)', 'suelto' => 'Módulo suelto']"
+                    :opciones="['cohorte' => 'Programa completo (edición)', 'suelto' => 'Módulo suelto']"
                     :valor="old('tipo', 'cohorte')" />
             </div>
 
             <div data-tipo="cohorte">
-                <x-campo-select nombre="cohorte_id" :total="$cohortesTotal" etiqueta="Cohorte"
-                    :opciones="collect(['' => '— Selecciona una cohorte —'])->union($cohortes->mapWithKeys(fn ($c) => [$c->id => $c->programa->nombre.' · '.$c->nombre.' ('.$c->grupos_count.' grupos)']))"
+                <x-campo-select nombre="cohorte_id" :total="$cohortesTotal" etiqueta="Edición"
+                    :opciones="collect(['' => '— Selecciona una edición —'])->union($cohortes->mapWithKeys(fn ($c) => [$c->id => $c->programa->nombre.' · '.$c->nombre.' ('.$c->grupos_count.' grupos)']))"
                     :valor="old('cohorte_id')" />
                 @if ($cohortes->isEmpty())
                     <p class="mt-2 text-sm text-amber-600 bg-amber-50 p-2.5 rounded border border-amber-100">
-                        No hay cohortes creadas. <a href="{{ route('cohortes.create') }}" class="font-medium underline hover:text-amber-800">Crea una cohorte</a> primero.
+                        No hay ediciones creadas. <a href="{{ route('cohortes.create') }}" class="font-medium underline hover:text-amber-800">Crea una edición</a> primero.
                     </p>
                 @endif
             </div>
@@ -44,7 +44,7 @@
                     :valor="old('grupo_id')" />
                 @if ($gruposSueltos->isEmpty())
                     <p class="mt-2 text-sm text-amber-600 bg-amber-50 p-2.5 rounded border border-amber-100">
-                        No hay grupos de módulo suelto. <a href="{{ route('grupos.create') }}" class="font-medium underline hover:text-amber-800">Crea un grupo</a> sin cohorte.
+                        No hay grupos de módulo suelto. <a href="{{ route('grupos.create') }}" class="font-medium underline hover:text-amber-800">Crea un grupo</a> sin edición.
                     </p>
                 @endif
             </div>

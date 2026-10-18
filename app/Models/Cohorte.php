@@ -35,6 +35,38 @@ class Cohorte extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (Cohorte $cohorte) {
+            if (empty($cohorte->nombre) && ! empty($cohorte->programa_id)) {
+                $cohorte->nombre = static::generarNombreEdicion($cohorte->programa_id);
+            }
+        });
+    }
+
+    /**
+     * Genera automáticamente el nombre correlativo de edición para un programa (Edición 1, Edición 2, etc.)
+     */
+    public static function generarNombreEdicion(string $programaId): string
+    {
+        $nombres = static::where('programa_id', $programaId)->pluck('nombre');
+
+        $maxNum = 0;
+        foreach ($nombres as $nombre) {
+            if (preg_match('/Edici[oó]n\s+(\d+)/iu', (string) $nombre, $m)) {
+                $maxNum = max($maxNum, (int) $m[1]);
+            }
+        }
+
+        $siguiente = $maxNum > 0 ? $maxNum + 1 : 1;
+
+        while ($nombres->contains("Edición {$siguiente}")) {
+            $siguiente++;
+        }
+
+        return "Edición {$siguiente}";
+    }
+
     public function programa(): BelongsTo
     {
         return $this->belongsTo(Programa::class);

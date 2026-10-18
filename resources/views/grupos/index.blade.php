@@ -4,7 +4,7 @@
     <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Grupos</h1>
-            <p class="text-sm text-slate-500 mt-1">Dictados de un módulo, dentro de una cohorte o como módulo suelto.</p>
+            <p class="text-sm text-slate-500 mt-1">Dictados de un módulo, dentro de una edición o como módulo suelto.</p>
         </div>
         <div class="flex items-center gap-3">
             <a class="inline-flex items-center justify-center px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 shadow-sm transition-colors"
@@ -31,7 +31,7 @@
                 <a href="{{ route('grupos.index', ['tipo' => null, 'estado' => $estadoFiltro ?: null, 'q' => $busqueda ?: null]) }}"
                     class="{{ empty($tipoFiltro) ? $tabActivo : $tabInactivo }}">Todos</a>
                 <a href="{{ route('grupos.index', ['tipo' => 'cohorte', 'estado' => $estadoFiltro ?: null, 'q' => $busqueda ?: null]) }}"
-                    class="{{ $tipoFiltro === 'cohorte' ? $tabActivo : $tabInactivo }}">De Cohorte</a>
+                    class="{{ $tipoFiltro === 'cohorte' ? $tabActivo : $tabInactivo }}">De Edición</a>
                 <a href="{{ route('grupos.index', ['tipo' => 'suelto', 'estado' => $estadoFiltro ?: null, 'q' => $busqueda ?: null]) }}"
                     class="{{ $tipoFiltro === 'suelto' ? $tabActivo : $tabInactivo }}">Módulos Sueltos</a>
             </div>
@@ -84,7 +84,7 @@
                             </th>
                             <th scope="col"
                                 class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                Cohorte / Programa</th>
+                                Edición / Programa</th>
                             <th scope="col"
                                 class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                 Docente</th>

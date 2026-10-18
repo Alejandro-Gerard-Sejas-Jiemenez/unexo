@@ -4,7 +4,7 @@
     <div class="mb-4">
         <a href="{{ route('cohortes.index') }}"
             class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
-            <x-icono nombre="volver" class="w-4 h-4" /> Volver a cohortes
+            <x-icono nombre="volver" class="w-4 h-4" /> Volver a ediciones
         </a>
     </div>
 
@@ -67,7 +67,7 @@
 
             <a class="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-white text-slate-700 font-medium rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition-all focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-xs"
                 href="{{ route('cohortes.edit', $cohorte) }}">
-                <x-icono nombre="editar" class="w-3.5 h-3.5" /> Editar Cohorte
+                <x-icono nombre="editar" class="w-3.5 h-3.5" /> Editar edición
             </a>
         </div>
     </div>
@@ -114,7 +114,7 @@
                 {{ $totalMatriculados }}
             </div>
             <div class="text-xs text-slate-500 mt-1">
-                Estudiantes en cohorte
+                Estudiantes en la edición
             </div>
         </div>
     </div>
@@ -129,7 +129,7 @@
                         <span>Apertura Asistida de Grupos Operativos</span>
                     </div>
                     <p class="text-xs sm:text-sm text-slate-600">
-                        Esta cohorte tiene <span class="font-bold text-indigo-700">{{ $modulosPendientes->count() }} módulo(s)
+                        Esta edición tiene <span class="font-bold text-indigo-700">{{ $modulosPendientes->count() }} módulo(s)
                             pendiente(s)</span> de apertura. El generador creará automáticamente los grupos en secuencia
                         cronológica, distribuyendo los tramos de fechas sugeridos para cada módulo.
                     </p>
@@ -195,7 +195,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
-            <h3 class="text-base font-bold text-slate-800 mb-1">Esta cohorte no tiene grupos aperturados</h3>
+            <h3 class="text-base font-bold text-slate-800 mb-1">Esta edición no tiene grupos aperturados</h3>
             <p class="text-sm text-slate-500 max-w-md mx-auto mb-4">Utiliza la apertura asistida superior para generar
                 automáticamente los grupos de los módulos en orden secuencial.</p>
         </div>

@@ -467,4 +467,84 @@ class PlanificacionCohorteTest extends TestCase
         $this->assertNull($grupoVirtual->aula_id, 'El aula debe quedar null para modalidad virtual.');
         $this->assertEquals('https://meet.google.com/abc-defg-hij', $grupoVirtual->enlace_videoconferencia);
     }
+
+    public function test_se_puede_crear_un_grupo_en_modalidad_mixta_con_aula_y_enlace(): void
+    {
+        $docente = $this->docente();
+        [$programa, $modulos] = $this->programaConModulos(1);
+        $aula = Aula::create(['nombre' => 'Aula Magna Mixta', 'capacidad' => 40]);
+
+        $this->actingAs($this->admin())
+            ->post(route('grupos.store'), [
+                'modulo_id' => $modulos[0]->id,
+                'docente_id' => $docente->id,
+                'aula_id' => $aula->id,
+                'enlace_videoconferencia' => 'https://meet.google.com/mix-semi-pres',
+                'nombre' => 'Grupo Mixto Semipresencial',
+                'fecha_inicio' => '2026-05-01',
+                'fecha_fin' => '2026-05-30',
+                'modalidad' => Modalidad::Mixta->value,
+                'cupo_minimo' => 15,
+                'estado' => EstadoPlanificacion::Programado->value,
+            ])
+            ->assertRedirect(route('grupos.index'))
+            ->assertSessionHas('ok');
+
+        $grupoMixto = Grupo::where('nombre', 'Grupo Mixto Semipresencial')->first();
+        $this->assertNotNull($grupoMixto);
+        $this->assertEquals(Modalidad::Mixta, $grupoMixto->modalidad);
+        $this->assertEquals($aula->id, $grupoMixto->aula_id, 'En modalidad mixta se preserva el aula física.');
+        $this->assertEquals('https://meet.google.com/mix-semi-pres', $grupoMixto->enlace_videoconferencia, 'En modalidad mixta se preserva el enlace virtual.');
+    }
+
+    public function test_creacion_de_edicion_asigna_nombre_autoincremental_por_programa(): void
+    {
+        [$programaA] = $this->programaConModulos(1);
+        [$programaB] = $this->programaConModulos(1);
+
+        // Primera edición para Programa A sin especificar nombre
+        $this->actingAs($this->admin())
+            ->post(route('cohortes.store'), [
+                'programa_id' => $programaA->id,
+                'fecha_inicio' => '2026-03-01',
+                'fecha_fin' => '2026-07-31',
+                'estado' => EstadoPlanificacion::Programado->value,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('cohortes', [
+            'programa_id' => $programaA->id,
+            'nombre' => 'Edición 1',
+        ]);
+
+        // Segunda edición para el mismo Programa A sin especificar nombre
+        $this->actingAs($this->admin())
+            ->post(route('cohortes.store'), [
+                'programa_id' => $programaA->id,
+                'fecha_inicio' => '2026-08-01',
+                'fecha_fin' => '2026-12-31',
+                'estado' => EstadoPlanificacion::Programado->value,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('cohortes', [
+            'programa_id' => $programaA->id,
+            'nombre' => 'Edición 2',
+        ]);
+
+        // Primera edición para el Programa B (debe empezar en Edición 1)
+        $this->actingAs($this->admin())
+            ->post(route('cohortes.store'), [
+                'programa_id' => $programaB->id,
+                'fecha_inicio' => '2026-03-01',
+                'fecha_fin' => '2026-07-31',
+                'estado' => EstadoPlanificacion::Programado->value,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('cohortes', [
+            'programa_id' => $programaB->id,
+            'nombre' => 'Edición 1',
+        ]);
+    }
 }
