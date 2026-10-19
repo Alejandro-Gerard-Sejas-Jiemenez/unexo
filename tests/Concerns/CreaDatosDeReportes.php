@@ -91,13 +91,14 @@ trait CreaDatosDeReportes
         $cohorte = $atributos['cohorte'] ?? null;
         unset($atributos['cohorte']);
 
-        return Grupo::create($atributos + [
+        // Un grupo de edición no guarda fechas propias: usa las de su cohorte (009 D4).
+        $fechasPropias = $cohorte ? [] : ['fecha_inicio' => '2026-03-01', 'fecha_fin' => '2026-03-30'];
+
+        return Grupo::create($atributos + $fechasPropias + [
             'modulo_id' => $this->modulo()->id,
             'cohorte_id' => $cohorte?->id,
             'docente_id' => $this->docente()->id,
             'nombre' => "DEMO Grupo $n",
-            'fecha_inicio' => '2026-03-01',
-            'fecha_fin' => '2026-03-30',
             'estado' => EstadoPlanificacion::Programado,
         ]);
     }

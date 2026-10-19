@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 /** Estado de las matrículas para el CRM (CU7). Solo lectura. */
 class MatriculaApiController extends Controller
 {
-    private const RELACIONES = ['estudiante', 'cohorte.programa', 'inscripciones.grupo.modulo'];
+    private const RELACIONES = ['estudiante', 'cohorte.programa', 'inscripciones.grupo.modulo', 'inscripciones.grupo.cohorte'];
 
     public function index(Request $request): AnonymousResourceCollection
     {

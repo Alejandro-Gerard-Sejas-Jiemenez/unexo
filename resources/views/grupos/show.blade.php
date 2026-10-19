@@ -29,8 +29,8 @@
             <p class="text-base text-slate-800 font-medium">{{ $grupo->docente->nombre_completo }}</p>
         </div>
         <div>
-            <h3 class="text-sm font-medium text-slate-500 mb-1">Fechas</h3>
-            <p class="text-base text-slate-800 font-medium">{{ $grupo->fecha_inicio->format('d/m/Y') }} al {{ $grupo->fecha_fin->format('d/m/Y') }}</p>
+            <h3 class="text-sm font-medium text-slate-500 mb-1">Período</h3>
+            <p class="text-base text-slate-800 font-medium">{{ $grupo->periodo_texto }}</p>
         </div>
         <div>
             <h3 class="text-sm font-medium text-slate-500 mb-1">Modalidad</h3>
@@ -51,6 +51,11 @@
         </div>
         @endif
     </div>
+</div>
+
+<div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden mb-8 p-6">
+    <h2 class="text-xl font-bold text-slate-800 mb-3">Horarios</h2>
+    @include('partials.horarios-grupo', ['horarios' => $grupo->horarios])
 </div>
 
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

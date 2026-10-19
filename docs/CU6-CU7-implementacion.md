@@ -54,7 +54,7 @@ Una matrícula con su estudiante, programa, cohorte y grupos.
 { "data": { "id": "…", "estado": "pendiente", "origen": "crm", "fecha_matricula": "2026-10-15",
   "fecha_retiro": null, "estudiante": { "id": "…", "id_externo_crm": "CRM-100", "nombre": "Ana Rojas", "email": "…" },
   "programa": "Diplomado", "cohorte": "C1",
-  "grupos": [ { "id": "…", "modulo": "Excel", "nombre": "A", "fecha_inicio": "2026-09-01", "fecha_fin": "2026-10-01" } ] } }
+  "grupos": [ { "id": "…", "modulo": "Excel", "nombre": "Grupo 1", "fecha_inicio": "2026-09-01", "fecha_fin": "2026-12-18" } ] } }
 ```
 
 Ejemplo:
@@ -161,7 +161,7 @@ El token lo genera el administrador del SIS en "Acceso API" y se entrega una sol
     "programa": "Análisis de Datos",
     "cohorte": "Cohorte 2026-2",
     "grupos": [
-      { "id": "…", "modulo": "Excel", "nombre": "Grupo A", "fecha_inicio": "2026-09-21", "fecha_fin": "2026-10-09" }
+      { "id": "…", "modulo": "Excel", "nombre": "Grupo 1", "fecha_inicio": "2026-09-21", "fecha_fin": "2026-12-18" }
     ]
   }
 }

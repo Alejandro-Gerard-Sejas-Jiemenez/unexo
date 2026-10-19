@@ -9,6 +9,12 @@ enum EstadoPlanificacion: string
     case Finalizado = 'finalizado';
     case Cancelado = 'cancelado';
 
+    /** @return array<int, self> Estados que el CRM puede ver. */
+    public static function visiblesParaCrm(): array
+    {
+        return [self::Programado, self::EnCurso];
+    }
+
     public function label(): string
     {
         return match ($this) {

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\Opciones;
 use App\Enums\EstadoMatricula;
 use App\Enums\Rol;
 use App\Models\Cohorte;
@@ -10,6 +9,7 @@ use App\Models\Grupo;
 use App\Models\Matricula;
 use App\Models\User;
 use App\Services\MatriculaService;
+use App\Support\Opciones;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -82,7 +82,7 @@ class MatriculaController extends Controller
 
     public function show(Matricula $matricula): View
     {
-        $matricula->load(['estudiante', 'cohorte.programa', 'inscripciones.grupo.modulo', 'inscripciones.grupo.docente', 'comprobantes.subidoPor']);
+        $matricula->load(['estudiante', 'cohorte.programa', 'inscripciones.grupo.modulo', 'inscripciones.grupo.docente', 'inscripciones.grupo.cohorte', 'comprobantes.subidoPor']);
 
         return view('matriculas.show', compact('matricula'));
     }

@@ -18,23 +18,34 @@ class MisClasesService
     {
         return InscripcionGrupo::query()
             ->whereHas('matricula', fn ($q) => $q->where('estudiante_id', $estudiante->id))
-            ->with(['matricula', 'grupo.modulo', 'grupo.docente', 'grupo.aula', 'grupo.cohorte.programa'])
+            ->with(['matricula', 'grupo.modulo', 'grupo.docente', 'grupo.aula', 'grupo.cohorte.programa', 'grupo.horarios'])
             ->get()
-            ->sortBy(fn (InscripcionGrupo $inscripcion) => $inscripcion->grupo->fecha_inicio)
+            ->sortBy(fn (InscripcionGrupo $inscripcion) => $this->inicioDelPeriodo($inscripcion->grupo))
             ->values();
+    }
+
+    /** Inscripción vigente (pendiente de pago o activa) del estudiante en el grupo. */
+    public function estudianteTieneAcceso(User $estudiante, Grupo $grupo): bool
+    {
+        return $grupo->inscripciones()
+            ->whereHas('matricula', fn ($q) => $q
+                ->where('estudiante_id', $estudiante->id)
+                ->whereIn('estado', array_map(fn (EstadoMatricula $estado) => $estado->value, EstadoMatricula::queCuentanComoInscritos())))
+            ->exists();
     }
 
     public function gruposDelDocente(User $docente): Collection
     {
         return Grupo::query()
             ->where('docente_id', $docente->id)
-            ->with(['modulo', 'cohorte.programa', 'aula'])
+            ->with(['modulo', 'cohorte.programa', 'aula', 'horarios'])
             ->withCount(['inscripciones as inscritos_count' => fn ($q) => $q->whereHas(
                 'matricula',
                 fn ($matricula) => $matricula->where('estado', '!=', EstadoMatricula::Retirado->value),
             )])
-            ->orderBy('fecha_inicio')
-            ->get();
+            ->get()
+            ->sortBy(fn (Grupo $grupo) => $this->inicioDelPeriodo($grupo))
+            ->values();
     }
 
     /** Estudiantes inscritos en un grupo, ordenados por apellido. */
@@ -80,6 +91,12 @@ class MisClasesService
         }
 
         return $conteo;
+    }
+
+    /** Los grupos sin período definido van al final. */
+    private function inicioDelPeriodo(Grupo $grupo): int
+    {
+        return $grupo->periodo_inicio?->getTimestamp() ?? PHP_INT_MAX;
     }
 
     private function textoBuscable(Grupo $grupo): string

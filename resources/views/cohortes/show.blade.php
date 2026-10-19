@@ -130,8 +130,8 @@
                     </div>
                     <p class="text-xs sm:text-sm text-slate-600">
                         Esta edición tiene <span class="font-bold text-indigo-700">{{ $modulosPendientes->count() }} módulo(s)
-                            pendiente(s)</span> de apertura. El generador creará automáticamente los grupos en secuencia
-                        cronológica, distribuyendo los tramos de fechas sugeridos para cada módulo.
+                            pendiente(s)</span> de apertura. El generador creará un grupo por módulo con el período de
+                        esta edición; los horarios se agregan luego al editar cada grupo.
                     </p>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         @foreach ($modulosPendientes as $pend)
@@ -181,11 +181,11 @@
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h2 class="text-xl font-bold text-slate-800">Grupos Operativos</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Control de fechas secuenciales, estudiantes inscritos y estado de cada grupo.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Período, estudiantes inscritos y estado de cada grupo.</p>
         </div>
         <a class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-700 font-medium rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition-all focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-xs"
             href="{{ route('grupos.create', ['cohorte_id' => $cohorte->id]) }}">
-            <x-icono nombre="mas" class="w-4 h-4" /> Añadir grupo paralelo (ej. Grupo B)
+            <x-icono nombre="mas" class="w-4 h-4" /> Añadir grupo paralelo
         </a>
     </div>
 
@@ -197,7 +197,7 @@
             </svg>
             <h3 class="text-base font-bold text-slate-800 mb-1">Esta edición no tiene grupos aperturados</h3>
             <p class="text-sm text-slate-500 max-w-md mx-auto mb-4">Utiliza la apertura asistida superior para generar
-                automáticamente los grupos de los módulos en orden secuencial.</p>
+                automáticamente un grupo por módulo.</p>
         </div>
     @else
         <div class="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden mb-8">
@@ -208,7 +208,7 @@
                             class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                             <th class="px-6 py-4">Módulo</th>
                             <th class="px-6 py-4">Grupo</th>
-                            <th class="px-6 py-4">Tramo de Fechas</th>
+                            <th class="px-6 py-4">Período</th>
                             <th class="px-6 py-4">Fase / Estado</th>
                             <th class="px-6 py-4">Inscritos</th>
                             <th class="px-6 py-4 text-right">Acciones</th>
@@ -241,10 +241,11 @@
 
                                 {{-- Fechas --}}
                                 <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
-                                    <div class="font-medium text-slate-800">{{ $grupo->fecha_inicio->format('d/m/Y') }} –
-                                        {{ $grupo->fecha_fin->format('d/m/Y') }}</div>
-                                    <div class="text-slate-400 mt-0.5">{{ $grupo->fecha_inicio->diffInDays($grupo->fecha_fin) + 1 }}
-                                        días</div>
+                                    <div class="font-medium text-slate-800">{{ $grupo->periodo_texto }}</div>
+                                    @if ($grupo->periodo_inicio && $grupo->periodo_fin)
+                                        <div class="text-slate-400 mt-0.5">{{ $grupo->periodo_inicio->diffInDays($grupo->periodo_fin) + 1 }}
+                                            días</div>
+                                    @endif
                                 </td>
 
                                 {{-- Fase / Estado --}}
@@ -289,7 +290,7 @@
                                             <x-icono nombre="usuarios" class="w-3.5 h-3.5" /> Ver
                                         </a>
                                         <a class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 rounded-md transition-colors text-xs font-medium shadow-2xs"
-                                            href="{{ route('grupos.edit', $grupo) }}" title="Editar fechas o cupo">
+                                            href="{{ route('grupos.edit', $grupo) }}" title="Editar horarios o cupo">
                                             <x-icono nombre="editar" class="w-3.5 h-3.5" /> Editar
                                         </a>
                                     </div>

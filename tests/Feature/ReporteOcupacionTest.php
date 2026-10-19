@@ -8,6 +8,7 @@ use App\Models\Grupo;
 use App\Models\User;
 use App\Support\Reporte;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CreaDatosDeReportes;
 use Tests\TestCase;
 
@@ -69,8 +70,6 @@ class ReporteOcupacionTest extends TestCase
             'modulo_id' => $modulo->id,
             'cohorte' => $cohorte,
             'docente_id' => $docente->id,
-            'fecha_inicio' => '2026-03-01',
-            'fecha_fin' => '2026-03-30',
             'cupo_minimo' => 5,
         ]);
 
@@ -79,8 +78,9 @@ class ReporteOcupacionTest extends TestCase
         $this->assertSame('DEMO Python', $fila[1]);
         $this->assertSame('DEMO Cohorte A', $fila[2]);
         $this->assertSame('Carlos Mendoza Rojas', $fila[3]);
+        // CA-40: Inicio y Fin salen de la edición (2026-03-01 a 2026-08-30)
         $this->assertSame('2026-03-01', $fila[4]->format('Y-m-d'));
-        $this->assertSame('2026-03-30', $fila[5]->format('Y-m-d'));
+        $this->assertSame('2026-08-30', $fila[5]->format('Y-m-d'));
         $this->assertSame('Programado', $fila[6]);
         $this->assertSame(2, $fila[7]);
         $this->assertSame(5, $fila[8]);
@@ -180,6 +180,52 @@ class ReporteOcupacionTest extends TestCase
         $this->assertSame(['DEMO Marzo'], $this->nombres($this->reporte(['desde' => '2026-03-10', 'hasta' => '2026-03-12'])));
     }
 
+    // RF-11 / CA-33 / CA-40: el grupo de edición se solapa por el período de su edición
+    public function test_el_solapamiento_de_un_grupo_de_edicion_usa_el_periodo_de_la_edicion(): void
+    {
+        $this->grupo(['nombre' => 'DEMO Edición', 'cohorte' => $this->cohorte()]); // 2026-03-01 a 2026-08-30
+
+        $this->assertSame(['DEMO Edición'], $this->nombres($this->reporte(['desde' => '2026-08-30'])));
+        $this->assertSame([], $this->nombres($this->reporte(['desde' => '2026-08-31'])));
+        $this->assertSame(['DEMO Edición'], $this->nombres($this->reporte(['hasta' => '2026-03-01'])));
+        $this->assertSame([], $this->nombres($this->reporte(['hasta' => '2026-02-28'])));
+        $this->assertSame(['DEMO Edición'], $this->nombres($this->reporte(['desde' => '2026-06-01', 'hasta' => '2026-06-02'])));
+    }
+
+    // CA-40: la columna Grupo conserva el nombre y el período sale de la edición
+    public function test_un_grupo_de_edicion_muestra_su_nombre_automatico_y_el_periodo_de_la_edicion(): void
+    {
+        $cohorte = $this->cohorte(nombre: 'DEMO Edición 2');
+        $this->grupo(['nombre' => 'DEMO Módulo – Edición 2 – Grupo 1', 'cohorte' => $cohorte]);
+
+        $fila = $this->filaDe($this->reporte(), 'DEMO Módulo – Edición 2 – Grupo 1');
+
+        $this->assertSame('DEMO Edición 2', $fila[2]);
+        $this->assertSame('01/03/2026', $fila[4]->format('d/m/Y'));
+        $this->assertSame('30/08/2026', $fila[5]->format('d/m/Y'));
+    }
+
+    // CA-40: sin N+1 al cargar la edición de cada grupo
+    public function test_la_cantidad_de_consultas_no_crece_con_los_grupos_de_edicion(): void
+    {
+        $this->grupo(['cohorte' => $this->cohorte()]);
+        $admin = $this->admin();
+        $contar = function () use ($admin): int {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->actingAs($admin)->get(route('reportes.ocupacion'))->assertOk();
+
+            return count(DB::getQueryLog());
+        };
+        $con1 = $contar();
+
+        foreach (range(1, 4) as $i) {
+            $this->grupo(['cohorte' => $this->cohorte()]);
+        }
+
+        $this->assertSame($con1, $contar());
+    }
+
     // RF-12 / CA-12
     public function test_totales_de_grupos_y_de_los_que_no_alcanzan(): void
     {
@@ -230,6 +276,21 @@ class ReporteOcupacionTest extends TestCase
         $this->grupo(['nombre' => 'DEMO Nuevo', 'fecha_inicio' => '2026-05-01', 'fecha_fin' => '2026-06-01']);
 
         $this->assertSame(['DEMO Nuevo', 'DEMO A', 'DEMO B'], $this->nombres($this->reporte()));
+    }
+
+    // CA-40: el orden usa el inicio efectivo, también el de la edición
+    public function test_el_orden_por_inicio_descendente_incluye_grupos_de_edicion(): void
+    {
+        $cohorteTardia = $this->cohorte();
+        $cohorteTardia->update(['fecha_inicio' => '2026-04-01', 'fecha_fin' => '2026-09-30']);
+        $this->grupo(['nombre' => 'DEMO Suelto marzo', 'fecha_inicio' => '2026-03-01']);
+        $this->grupo(['nombre' => 'DEMO Suelto mayo', 'fecha_inicio' => '2026-05-01', 'fecha_fin' => '2026-06-01']);
+        $this->grupo(['nombre' => 'DEMO Edición abril', 'cohorte' => $cohorteTardia]);
+
+        $this->assertSame(
+            ['DEMO Suelto mayo', 'DEMO Edición abril', 'DEMO Suelto marzo'],
+            $this->nombres($this->reporte()),
+        );
     }
 
     // RNF-02

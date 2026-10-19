@@ -70,8 +70,8 @@
                         <dd class="text-slate-900 mt-0.5">{{ $grupo->docente->nombre_completo }}</dd>
                     </div>
                     <div>
-                        <dt class="font-medium text-slate-500">Fechas</dt>
-                        <dd class="text-slate-900 mt-0.5">{{ $grupo->fecha_inicio->format('d/m/Y') }} al {{ $grupo->fecha_fin->format('d/m/Y') }}</dd>
+                        <dt class="font-medium text-slate-500">Período</dt>
+                        <dd class="text-slate-900 mt-0.5">{{ $grupo->periodo_texto }}</dd>
                     </div>
                     <div>
                         <dt class="font-medium text-slate-500">Modalidad</dt>
@@ -81,7 +81,12 @@
                     </div>
                 </dl>
                 
-                <div class="mt-auto pt-4 border-t border-slate-100">
+                <div class="mt-auto pt-4 border-t border-slate-100 space-y-3">
+                    @if (! $esRetirado)
+                        <a href="{{ route('mis-cursos.show', $grupo) }}" class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                            Ver detalle<span class="sr-only"> de {{ $grupo->modulo->nombre }}</span>
+                        </a>
+                    @endif
                     @if ($activa && $enCurso && $grupo->enlace_videoconferencia)
                         <a href="{{ $grupo->enlace_videoconferencia }}" target="_blank" rel="noopener" class="w-full inline-flex justify-center items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             <x-icono nombre="video" class="w-4 h-4" /> Entrar a la clase

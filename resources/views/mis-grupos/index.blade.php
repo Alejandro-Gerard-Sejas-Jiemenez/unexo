@@ -47,7 +47,7 @@
                     </div>
                     <div>
                         <dt class="font-medium text-slate-500">Fechas</dt>
-                        <dd class="text-slate-900 mt-0.5">{{ $grupo->fecha_inicio->format('d/m/Y') }} al {{ $grupo->fecha_fin->format('d/m/Y') }}</dd>
+                        <dd class="text-slate-900 mt-0.5">{{ $grupo->periodo_texto }}</dd>
                     </div>
                     <div>
                         <dt class="font-medium text-slate-500">Modalidad</dt>

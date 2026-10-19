@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\Certificado;
 use App\Enums\EstadoComercial;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Programa extends Model
 {
@@ -21,12 +24,19 @@ class Programa extends Model
         'descripcion',
         'estado_comercial',
         'precio',
-        'nivel_academico',
         'imagen_portada_url',
         'requisitos_ingreso',
-        'perfil_egreso',
         'certificado_otorga',
     ];
+
+    /** Tolerante: un texto antiguo (previo al Enum) se lee como "no definido" en vez de fallar. */
+    protected function certificadoOtorga(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $valor) => $valor === null ? null : Certificado::tryFrom($valor),
+            set: fn (Certificado|string|null $valor) => $valor instanceof Certificado ? $valor->value : $valor,
+        );
+    }
 
     protected function casts(): array
     {
@@ -43,7 +53,7 @@ class Programa extends Model
     {
         return $consulta->abierto()->whereHas(
             'modulos',
-            fn(Builder $modulos) => $modulos->reorder()->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
+            fn (Builder $modulos) => $modulos->reorder()->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
         );
     }
 
@@ -51,7 +61,7 @@ class Programa extends Model
     {
         return $consulta->abierto()->whereDoesntHave(
             'modulos',
-            fn(Builder $modulos) => $modulos->reorder()->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
+            fn (Builder $modulos) => $modulos->reorder()->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
         );
     }
 
@@ -62,7 +72,7 @@ class Programa extends Model
             ->orderBy('programa_modulo.orden');
     }
 
-    public function cohortes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function cohortes(): HasMany
     {
         return $this->hasMany(Cohorte::class);
     }

@@ -45,14 +45,12 @@ class PanelController extends Controller
                     EstadoPlanificacion::Programado->value,
                     EstadoPlanificacion::EnCurso->value,
                 ])->orderBy('fecha_inicio'),
-                'cohortes.grupos' => fn ($q) => $q->with(['modulo', 'docente', 'aula'])->orderBy('fecha_inicio'),
+                'cohortes.grupos' => fn ($q) => $q->with(['modulo', 'docente', 'aula', 'cohorte']),
             ])
             ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
                 ->where('nombre', 'like', "%{$busqueda}%")
                 ->orWhere('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('descripcion', 'like', "%{$busqueda}%")
-                ->orWhere('nivel_academico', 'like', "%{$busqueda}%")
-            ))
+                ->orWhere('descripcion', 'like', "%{$busqueda}%")))
             ->orderBy('nombre')
             ->get();
 

@@ -26,9 +26,8 @@
                 <p class="font-semibold text-indigo-900">Grupo vinculado a la Edición: {{ $cohorteSeleccionada->nombre }}</p>
                 <p class="text-indigo-700 mt-0.5">
                     Programa: <span class="font-medium">{{ $cohorteSeleccionada->programa->nombre }}</span> |
-                    Vigencia de la edición: <span class="font-medium">{{ $cohorteSeleccionada->fecha_inicio->format('d/m/Y') }}
+                    Período de la edición: <span class="font-medium">{{ $cohorteSeleccionada->fecha_inicio->format('d/m/Y') }}
                         al {{ $cohorteSeleccionada->fecha_fin->format('d/m/Y') }}</span>.
-                    Las fechas del grupo deben estar comprendidas dentro de este rango.
                 </p>
             </div>
         </div>
@@ -40,7 +39,18 @@
             @csrf
             @if ($grupo->exists) @method('PUT') @endif
 
-            @if ($cohorteSeleccionada)
+            @php
+                $edicionActual = old('cohorte_id', $cohorteSeleccionada?->id ?? $grupo->cohorte_id);
+                $esSuelto = blank($edicionActual);
+            @endphp
+
+            @php
+                $modalidadActual = old('modalidad', $grupo->modalidad?->value);
+                $muestraEnlace = in_array($modalidadActual, ['virtual', 'mixta'], true);
+                $muestraAula = in_array($modalidadActual, ['presencial', 'mixta'], true);
+            @endphp
+
+            @if ($edicionFija)
                 <input type="hidden" name="cohorte_id" value="{{ $cohorteSeleccionada->id }}">
             @endif
 
@@ -49,15 +59,13 @@
                     :ayuda="$cohorteSeleccionada ? 'Módulos correspondientes a '.$cohorteSeleccionada->programa->nombre : null"
                     :opciones="$modulos->mapWithKeys(fn($m) => [$m->id => $m->codigo . ' · ' . $m->nombre])"
                     :valor="$grupo->modulo_id" />
-                <x-campo nombre="nombre" limite="grupos.nombre" etiqueta="Nombre del grupo" requerido
-                    :valor="$grupo->nombre" placeholder="Ej. Grupo A" />
+                @unless ($edicionFija)
+                    <x-campo-select nombre="cohorte_id" :total="$cohortesTotal" etiqueta="Edición"
+                        ayuda="Elige una edición o déjalo como módulo suelto"
+                        :opciones="collect(['' => 'Módulo suelto (sin edición)'])->union($cohortes->mapWithKeys(fn($c) => [$c->id => $c->programa->nombre . ' · ' . $c->nombre]))"
+                        :valor="$grupo->cohorte_id" />
+                @endunless
             </div>
-
-            @if (!$cohorteSeleccionada)
-                <x-campo-select nombre="cohorte_id" :total="$cohortesTotal" etiqueta="Edición"
-                    ayuda="Déjalo en módulo suelto si no pertenece a una edición" :opciones="collect(['' => '— Módulo suelto (sin edición) —'])->union($cohortes->mapWithKeys(fn($c) => [$c->id => $c->programa->nombre . ' · ' . $c->nombre]))"
-                    :valor="$grupo->cohorte_id" />
-            @endif
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100">
                 <x-campo-select nombre="docente_id" :total="$docentesTotal" etiqueta="Docente titular" requerido
@@ -69,22 +77,22 @@
                     :valor="$grupo->modalidad?->value" />
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2">
+            <div data-bloque-fechas class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2" @if (! $esSuelto) style="display: none" @endif>
                 <x-campo nombre="fecha_inicio" etiqueta="Fecha de inicio" tipo="date" requerido
-                    :valor="$grupo->fecha_inicio?->format('Y-m-d')" />
+                    :disabled="! $esSuelto" :valor="$grupo->fecha_inicio?->format('Y-m-d')" />
                 <x-campo nombre="fecha_fin" etiqueta="Fecha de fin" tipo="date" requerido
-                    :valor="$grupo->fecha_fin?->format('Y-m-d')" />
+                    :disabled="! $esSuelto" :valor="$grupo->fecha_fin?->format('Y-m-d')" />
             </div>
 
             {{-- Recursos Logísticos de Clase (CU5: Virtual vs Presencial vs Mixta) --}}
-            <div id="campo-virtual" class="mt-4 pt-4 border-t border-slate-100">
-                <x-campo nombre="enlace_videoconferencia" limite="grupos.enlace_videoconferencia"
+            <div id="campo-virtual" class="mt-4 pt-4 border-t border-slate-100" @unless ($muestraEnlace) style="display: none" @endunless>
+                <x-campo nombre="enlace_videoconferencia" :disabled="! $muestraEnlace" limite="grupos.enlace_videoconferencia"
                     etiqueta="Enlace de videoconferencia (Google Meet / Zoom / Teams)" tipo="url" :valor="$grupo->enlace_videoconferencia"
                     placeholder="https://meet.google.com/..." ayuda="Obligatorio para clases virtuales. Visible para alumnos con matrícula pagada." />
             </div>
 
-            <div id="campo-presencial" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100">
-                <x-campo-select nombre="aula_id" :total="$aulasTotal" etiqueta="Aula física presencial"
+            <div id="campo-presencial" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2 mt-4 pt-4 border-t border-slate-100" @unless ($muestraAula) style="display: none" @endunless>
+                <x-campo-select nombre="aula_id" :disabled="! $muestraAula" :total="$aulasTotal" etiqueta="Aula física presencial"
                     ayuda="Verifica que el aforo sea suficiente para el cupo"
                     :opciones="collect(['' => '— Seleccionar aula física —'])->union($aulas->mapWithKeys(fn($a) => [$a->id => $a->nombre . ($a->capacidad ? ' (Aforo: '.$a->capacidad.' personas)' : '')]))"
                     :valor="$grupo->aula_id" />
@@ -99,30 +107,10 @@
                     :valor="$grupo->estado?->value" />
             </div>
 
+            @include('grupos._horarios')
+
             <x-form-acciones :cancelar="$cohorteSeleccionada ? route('cohortes.show', $cohorteSeleccionada) : route('grupos.index')" />
         </form>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const selectModalidad = document.querySelector('select[name="modalidad"]');
-            const bloqueVirtual = document.getElementById('campo-virtual');
-            const bloquePresencial = document.getElementById('campo-presencial');
-
-            function alternarModalidad() {
-                if (!selectModalidad || !bloqueVirtual || !bloquePresencial) return;
-                const esVirtual = selectModalidad.value === 'virtual';
-                const esPresencial = selectModalidad.value === 'presencial';
-                const esMixta = selectModalidad.value === 'mixta';
-
-                bloqueVirtual.style.display = (esVirtual || esMixta) ? 'block' : 'none';
-                bloquePresencial.style.display = (esPresencial || esMixta) ? 'grid' : 'none';
-            }
-
-            if (selectModalidad) {
-                selectModalidad.addEventListener('change', alternarModalidad);
-                alternarModalidad();
-            }
-        });
-    </script>
 @endsection

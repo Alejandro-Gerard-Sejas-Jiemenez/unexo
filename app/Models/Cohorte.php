@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * @property string $id
@@ -72,6 +73,17 @@ class Cohorte extends Model
         return $this->belongsTo(Programa::class);
     }
 
+    /** Ediciones que el CRM puede ver: estado visible y programa visible. */
+    public function scopeVisibleParaCrm($query)
+    {
+        return $query
+            ->whereIn('estado', array_map(
+                fn (EstadoPlanificacion $estado) => $estado->value,
+                EstadoPlanificacion::visiblesParaCrm(),
+            ))
+            ->whereHas('programa', fn ($programas) => $programas->visibleParaCrm());
+    }
+
     public function grupos(): HasMany
     {
         return $this->hasMany(Grupo::class);
@@ -85,7 +97,7 @@ class Cohorte extends Model
     /**
      * Módulos del programa que aún no tienen ningún grupo aperturado en esta cohorte.
      */
-    public function modulosPendientes(): \Illuminate\Support\Collection
+    public function modulosPendientes(): Collection
     {
         $modulosConGrupo = $this->grupos()->pluck('modulo_id')->all();
 

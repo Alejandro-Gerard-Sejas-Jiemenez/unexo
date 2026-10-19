@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\DiaSemana;
 use App\Enums\EstadoMatricula;
 use App\Enums\EstadoPlanificacion;
 use App\Enums\Modalidad;
@@ -9,6 +10,7 @@ use App\Enums\OrigenMatricula;
 use App\Models\Aula;
 use App\Models\Cohorte;
 use App\Models\Grupo;
+use App\Models\HorarioGrupo;
 use App\Models\InscripcionGrupo;
 use App\Models\Matricula;
 use App\Models\Modulo;
@@ -35,29 +37,30 @@ class PlanificacionDemoSeeder extends Seeder
             ['fecha_inicio' => '2026-09-21', 'fecha_fin' => '2026-12-18', 'estado' => EstadoPlanificacion::EnCurso],
         );
 
-        $tramos = [
-            'DEMO-M01' => ['2026-09-21', '2026-10-09', $carlos],
-            'DEMO-M02' => ['2026-10-12', '2026-11-06', $carlos],
-            'DEMO-M03' => ['2026-11-09', '2026-12-04', $lucia],
-            'DEMO-M04' => ['2026-12-07', '2026-12-18', $lucia],
+        $docentesPorModulo = [
+            'DEMO-M01' => $carlos,
+            'DEMO-M02' => $carlos,
+            'DEMO-M03' => $lucia,
+            'DEMO-M04' => $lucia,
         ];
 
         $gruposCohorte = [];
-        foreach ($tramos as $codigo => [$inicio, $fin, $docente]) {
+        foreach ($docentesPorModulo as $codigo => $docente) {
             $modulo = Modulo::where('codigo', $codigo)->firstOrFail();
-            $gruposCohorte[] = Grupo::firstOrCreate(
+            $grupo = Grupo::firstOrCreate(
                 ['modulo_id' => $modulo->id, 'cohorte_id' => $cohorte->id],
                 [
                     'docente_id' => $docente->id,
-                    'nombre' => 'Grupo A',
-                    'fecha_inicio' => $inicio,
-                    'fecha_fin' => $fin,
+                    'nombre' => 'Grupo 1',
+                    'numero' => 1,
                     'modalidad' => Modalidad::Virtual,
                     'enlace_videoconferencia' => 'https://meet.example.test/demo-'.strtolower($codigo),
                     'cupo_minimo' => 20,
                     'estado' => EstadoPlanificacion::Programado,
                 ],
             );
+            $this->asignarHorarios($grupo);
+            $gruposCohorte[] = $grupo;
         }
 
         $aula = Aula::firstOrCreate(['nombre' => 'DEMO Aula 101'], ['capacidad' => 30]);
@@ -66,7 +69,8 @@ class PlanificacionDemoSeeder extends Seeder
             [
                 'docente_id' => $lucia->id,
                 'aula_id' => $aula->id,
-                'nombre' => 'Grupo B (módulo suelto)',
+                'nombre' => 'Grupo 1',
+                'numero' => 1,
                 'fecha_inicio' => '2026-09-28',
                 'fecha_fin' => '2026-10-30',
                 'modalidad' => Modalidad::Presencial,
@@ -75,9 +79,21 @@ class PlanificacionDemoSeeder extends Seeder
             ],
         );
 
+        $this->asignarHorarios($grupoSuelto);
+
         $this->matricular($andres, $cohorte, EstadoMatricula::Activo, $gruposCohorte);
         $this->matricular($daniela, $cohorte, EstadoMatricula::Pendiente, $gruposCohorte);
         $this->matricular($mateo, null, EstadoMatricula::Activo, [$grupoSuelto]);
+    }
+
+    private function asignarHorarios(Grupo $grupo): void
+    {
+        foreach ([DiaSemana::Lunes, DiaSemana::Miercoles] as $dia) {
+            HorarioGrupo::firstOrCreate(
+                ['grupo_id' => $grupo->id, 'dia_semana' => $dia],
+                ['hora_inicio' => '19:00', 'hora_fin' => '21:00'],
+            );
+        }
     }
 
     /** @param  array<int, Grupo>  $grupos */

@@ -208,9 +208,26 @@
                 <div class="p-5 text-sm text-slate-600">
                     <p class="mb-3 text-xs leading-relaxed">
                         Devuelve la <strong>oferta comercial completa</strong>: programas abiertos con su lista ordenada de
-                        módulos, sus ediciones planificadas (Edición 1, Edición 2...), grupos operativos con modalidad
-                        (Virtual, Presencial, Mixta), y los módulos independientes con fechas de inicio.
+                        módulos, sus ediciones (Edición 1, Edición 2...), los grupos de cada edición con modalidad
+                        (virtual, presencial o mixta) y horarios, y los módulos abiertos que se pueden tomar sueltos.
                     </p>
+                    <ul class="mb-3 text-xs leading-relaxed list-disc pl-5 space-y-1">
+                        <li><strong>Qué se publica:</strong> solo programas abiertos que tengan al menos un módulo abierto,
+                            módulos abiertos, y ediciones y grupos en estado programado o en curso. Las ediciones y grupos
+                            finalizados o cancelados no se envían.</li>
+                        <li><strong>Precio:</strong> en bolivianos (BOB), sin descuentos. Los descuentos y promociones los
+                            aplica el CRM.</li>
+                        <li><strong>Fechas del grupo:</strong> <code>fecha_inicio</code> y <code>fecha_fin</code> son el
+                            período real de cursado. En un grupo de una edición son las fechas de la edición; en un grupo
+                            suelto son las propias del grupo.</li>
+                        <li><strong>Nombre del grupo:</strong> lo genera el sistema ("Grupo 1", "Grupo 2"...). No dependas
+                            de su texto.</li>
+                        <li><strong>Docente:</strong> solo se envía su nombre, nunca correo, documento ni teléfono.</li>
+                        <li><strong>Certificado:</strong> <code>certificado_otorga</code> vale <code>certificado</code>,
+                            <code>sin_certificado</code> o <code>no_definido</code>; <code>certificado_otorga_label</code>
+                            trae el texto listo para mostrar.</li>
+                        <li><strong>Horarios:</strong> son informativos y están en hora de Bolivia.</li>
+                    </ul>
                     <details class="group">
                         <summary
                             class="text-xs font-semibold text-indigo-600 cursor-pointer hover:underline list-none flex items-center gap-1">
@@ -223,34 +240,62 @@
       "exito": true,
       "fecha_consulta": "{{ now()->toIso8601String() }}",
       "resumen": {
-        "total_programas_abiertos": 3,
-        "total_modulos_libres": 8
+        "total_programas_abiertos": 1,
+        "total_modulos_libres": 2
       },
       "programas": [
         {
           "id": "uuid-programa-1",
-          "codigo": "DIP-AI",
-          "nombre": "Diplomado en Inteligencia Artificial",
+          "codigo": "DEMO-P01",
+          "nombre": "DEMO Diplomado en Análisis de Datos",
           "version": "1.0",
-          "descripcion": "Especialización avanzada en modelos de aprendizaje...",
-          "nivel_academico": "Postgrado",
+          "descripcion": "Programa de formación en análisis de datos...",
           "precio": 4500.00,
           "moneda": "BOB",
-          "total_modulos": 5,
-          "duracion_total_horas": 160,
-          "total_creditos": 16,
+          "requisitos_ingreso": "Licenciatura o experiencia afín",
+          "certificado_otorga": "certificado",
+          "certificado_otorga_label": "Certificado",
+          "imagen_portada_url": null,
+          "estado_comercial": "abierto",
+          "total_modulos": 2,
+          "duracion_total_horas": 70,
           "modulos": [
-            { "id": "uuid-mod-1", "codigo": "MOD-1", "nombre": "Fundamentos de IA", "orden": 1, "duracion_horas": 30, "creditos": 3 }
+            {
+              "id": "uuid-mod-1",
+              "codigo": "DEMO-M01",
+              "nombre": "DEMO Fundamentos de Excel",
+              "orden": 1,
+              "duracion_horas": 30,
+              "prerrequisito": null,
+              "pdf_temario_url": null,
+              "descripcion": "..."
+            }
           ],
           "ediciones_disponibles": [
             {
               "id": "uuid-edicion-1",
               "nombre": "Edición 1",
-              "fecha_inicio": "2026-09-01",
-              "fecha_fin": "2026-12-15",
-              "estado": "programado",
+              "fecha_inicio": "2026-09-21",
+              "fecha_fin": "2026-12-18",
+              "estado": "en_curso",
+              "estado_label": "En curso",
+              "grupos_abiertos_count": 1,
               "grupos": [
-                { "id": "uuid-grupo-1", "nombre": "Grupo A", "modalidad": "mixta", "fecha_inicio": "2026-09-01", "aula": "Aula Magna" }
+                {
+                  "id": "uuid-grupo-1",
+                  "modulo_id": "uuid-mod-1",
+                  "modulo_nombre": "DEMO Fundamentos de Excel",
+                  "nombre": "Grupo 1",
+                  "modalidad": "presencial",
+                  "fecha_inicio": "2026-09-21",
+                  "fecha_fin": "2026-12-18",
+                  "cupo_minimo": 20,
+                  "aula": "DEMO Aula 101",
+                  "docente": "Carlos Mendoza",
+                  "horarios": [
+                    { "dia_semana": 2, "dia": "martes", "hora_inicio": "18:00", "hora_fin": "20:00" }
+                  ]
+                }
               ]
             }
           ]
@@ -259,12 +304,30 @@
       "modulos_libres": [
         {
           "id": "uuid-mod-indep",
-          "codigo": "CUR-PY",
-          "nombre": "Python para Análisis de Datos",
+          "codigo": "DEMO-M04",
+          "nombre": "DEMO Python para Análisis de Datos",
           "duracion_horas": 40,
-          "creditos": 4,
+          "prerrequisito": "Conocimientos básicos de Excel",
+          "pdf_temario_url": null,
+          "descripcion": "...",
+          "estado_comercial": "abierto",
+          "programas": [],
           "grupos_disponibles": [
-            { "id": "uuid-g-suelto", "nombre": "Grupo A", "modalidad": "virtual", "fecha_inicio": "2026-09-10" }
+            {
+              "id": "uuid-g-suelto",
+              "modulo_id": "uuid-mod-indep",
+              "modulo_nombre": "DEMO Python para Análisis de Datos",
+              "nombre": "Grupo 1",
+              "modalidad": "virtual",
+              "fecha_inicio": "2026-10-05",
+              "fecha_fin": "2026-11-06",
+              "cupo_minimo": 10,
+              "aula": null,
+              "docente": "Carlos Mendoza",
+              "horarios": [
+                { "dia_semana": 1, "dia": "lunes", "hora_inicio": "19:00", "hora_fin": "21:00" }
+              ]
+            }
           ]
         }
       ]
@@ -281,13 +344,13 @@
                     <div class="flex items-center gap-3">
                         <span class="px-2.5 py-1 bg-emerald-600 text-white rounded font-mono font-bold text-xs">GET</span>
                         <code
-                            class="font-mono text-sm font-semibold text-slate-800">/api/v1/crm/programas?q={busqueda}&nivel={nivel}</code>
+                            class="font-mono text-sm font-semibold text-slate-800">/api/v1/crm/programas?q={busqueda}</code>
                     </div>
-                    <span class="text-xs text-slate-500 font-medium">Búsqueda y filtrado de programas</span>
+                    <span class="text-xs text-slate-500 font-medium">Búsqueda de programas</span>
                 </div>
                 <div class="p-4 text-xs text-slate-600">
-                    Permite al CRM filtrar programas por texto (nombre, código o descripción) y nivel académico. Devuelve la
-                    lista en formato <code>CrmProgramaResource</code>.
+                    Permite al CRM buscar programas por texto (nombre, código o descripción). Solo devuelve programas abiertos
+                    con al menos un módulo abierto. Cada programa trae el mismo formato que en el catálogo completo.
                 </div>
             </div>
 
@@ -299,15 +362,85 @@
                         <span class="px-2.5 py-1 bg-emerald-600 text-white rounded font-mono font-bold text-xs">GET</span>
                         <code class="font-mono text-sm font-semibold text-slate-800">/api/v1/crm/programas/{id}</code>
                     </div>
-                    <span class="text-xs text-slate-500 font-medium">Ficha técnica por ID</span>
+                    <span class="text-xs text-slate-500 font-medium">Ficha por ID</span>
                 </div>
                 <div class="p-4 text-xs text-slate-600">
-                    Obtiene toda la información curricular, perfil de egreso, requisitos de ingreso, certificación, precio y
-                    ediciones de un único programa.
+                    Obtiene un único programa con sus módulos (con prerrequisito y temario), requisitos de ingreso,
+                    certificado, precio en BOB y ediciones con sus grupos y horarios. Si el programa no está disponible
+                    (cerrado, en borrador o sin módulos abiertos) responde 404.
                 </div>
             </div>
 
-            {{-- Endpoint 4: Módulos Libres --}}
+            {{-- Endpoint 4: Ediciones --}}
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+                <div
+                    class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2.5 py-1 bg-emerald-600 text-white rounded font-mono font-bold text-xs">GET</span>
+                        <code
+                            class="font-mono text-sm font-semibold text-slate-800">/api/v1/crm/ediciones?programa_id={id}&estado={estado}</code>
+                    </div>
+                    <span class="text-xs text-slate-500 font-medium">Ediciones de los programas</span>
+                </div>
+                <div class="p-5 text-sm text-slate-600">
+                    <p class="mb-3 text-xs leading-relaxed">
+                        Lista las ediciones programadas o en curso de los programas publicados, con sus grupos y horarios.
+                        Filtros opcionales: <code>programa_id</code> (solo las ediciones de ese programa) y
+                        <code>estado</code> (<code>programado</code> o <code>en_curso</code>; cualquier otro valor se
+                        ignora). El detalle de una sola edición está en
+                        <code>/api/v1/crm/ediciones/{id}</code> y responde 404 si la edición no está disponible.
+                    </p>
+                    <details class="group">
+                        <summary
+                            class="text-xs font-semibold text-indigo-600 cursor-pointer hover:underline list-none flex items-center gap-1">
+                            <x-icono nombre="chevron" class="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
+                            Ver ejemplo de respuesta JSON
+                        </summary>
+                        <div
+                            class="mt-3 p-4 bg-slate-900 rounded-lg text-emerald-400 font-mono text-xs overflow-x-auto leading-relaxed shadow-inner">
+                            <pre>{
+      "data": [
+        {
+          "id": "uuid-edicion-1",
+          "programa": {
+            "id": "uuid-programa-1",
+            "codigo": "DEMO-P01",
+            "nombre": "DEMO Diplomado en Análisis de Datos",
+            "version": "1.0"
+          },
+          "nombre": "Edición 1",
+          "fecha_inicio": "2026-09-21",
+          "fecha_fin": "2026-12-18",
+          "estado": "en_curso",
+          "estado_label": "En curso",
+          "grupos_abiertos_count": 1,
+          "grupos": [
+            {
+              "id": "uuid-grupo-1",
+              "modulo_id": "uuid-mod-1",
+              "modulo_nombre": "DEMO Fundamentos de Excel",
+              "nombre": "Grupo 1",
+              "modalidad": "presencial",
+              "fecha_inicio": "2026-09-21",
+              "fecha_fin": "2026-12-18",
+              "cupo_minimo": 20,
+              "aula": "DEMO Aula 101",
+              "docente": "Carlos Mendoza",
+              "horarios": [
+                { "dia_semana": 2, "dia": "martes", "hora_inicio": "18:00", "hora_fin": "19:00" },
+                { "dia_semana": 2, "dia": "martes", "hora_inicio": "19:00", "hora_fin": "20:00" }
+              ]
+            }
+          ]
+        }
+      ]
+    }</pre>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            {{-- Endpoint 5: Módulos Libres --}}
             <div class="border border-slate-200 rounded-xl overflow-hidden">
                 <div
                     class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -318,12 +451,13 @@
                     <span class="text-xs text-slate-500 font-medium">Cursos y módulos sueltos</span>
                 </div>
                 <div class="p-4 text-xs text-slate-600">
-                    Lista los módulos abiertos que los prospectos pueden tomar individualmente, con enlaces a temario en PDF
-                    y grupos disponibles.
+                    Lista los módulos abiertos que los prospectos pueden tomar individualmente, con su prerrequisito, el
+                    enlace al temario en PDF y los grupos disponibles (con horarios y período). El detalle de un módulo
+                    está en <code>/api/v1/crm/modulos/{id}</code>.
                 </div>
             </div>
 
-            {{-- Endpoint 5: Convertir Prospecto desde CRM --}}
+            {{-- Endpoint 6: Convertir Prospecto desde CRM --}}
             <div class="border border-slate-200 rounded-xl overflow-hidden">
                 <div
                     class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">

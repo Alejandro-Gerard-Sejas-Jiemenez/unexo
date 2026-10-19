@@ -21,9 +21,9 @@ return [
         'telefono' => 30,
         'password' => 100,
     ],
-    'programas' => ['codigo' => 30, 'nombre' => 255, 'version' => 20, 'descripcion' => 2000],
-    'modulos' => ['codigo' => 30, 'nombre' => 255, 'duracion_horas' => 1000],
+    'programas' => ['codigo' => 30, 'nombre' => 255, 'version' => 20, 'descripcion' => 2000, 'portada_kb' => 2048],
+    'modulos' => ['codigo' => 30, 'nombre' => 255, 'duracion_horas' => 1000, 'prerrequisito' => 500],
     'cohortes' => ['nombre' => 150],
-    'grupos' => ['nombre' => 80, 'enlace_videoconferencia' => 255, 'cupo_minimo' => 1000],
+    'grupos' => ['enlace_videoconferencia' => 255, 'cupo_minimo' => 1000, 'horarios_max' => 14],
     'aulas' => ['nombre' => 80, 'capacidad' => 1000],
 ];

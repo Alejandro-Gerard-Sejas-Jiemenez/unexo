@@ -2,10 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Matricula;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\Matricula */
+/** @mixin Matricula */
 class MatriculaResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -28,8 +29,8 @@ class MatriculaResource extends JsonResource
                 'id' => $i->grupo->id,
                 'modulo' => $i->grupo->modulo->nombre,
                 'nombre' => $i->grupo->nombre,
-                'fecha_inicio' => $i->grupo->fecha_inicio->toDateString(),
-                'fecha_fin' => $i->grupo->fecha_fin->toDateString(),
+                'fecha_inicio' => $i->grupo->periodo_inicio?->toDateString(),
+                'fecha_fin' => $i->grupo->periodo_fin?->toDateString(),
             ])->values(),
         ];
     }

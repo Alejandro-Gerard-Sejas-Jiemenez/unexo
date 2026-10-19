@@ -9,7 +9,6 @@ use App\Models\Cohorte;
 use App\Models\Grupo;
 use App\Models\Modulo;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -18,7 +17,7 @@ class PlanificacionCohorteService
 {
     /**
      * Apertura asistida de los grupos para todos los módulos del programa de la cohorte.
-     * Mantiene el orden oficial del programa y calcula tramos de fechas proporcionales sugeridos.
+     * Mantiene el orden oficial del programa; los grupos toman el período de la edición y se crean sin horarios.
      *
      * @return Collection<int, Grupo>
      */
@@ -56,45 +55,17 @@ class PlanificacionCohorteService
             return collect();
         }
 
-        return DB::transaction(function () use ($cohorte, $modulosParaAperturar, $docenteAsignado, $cupoMinimo, $modalidad) {
-            $totalModulos = $modulosParaAperturar->count();
-            $fechaInicioGlobal = Carbon::parse($cohorte->fecha_inicio);
-            $fechaFinGlobal = Carbon::parse($cohorte->fecha_fin);
+        $grupos = app(GrupoService::class);
 
-            $diasTotales = max(1, $fechaInicioGlobal->diffInDays($fechaFinGlobal));
-            $diasPorModulo = max(1, (int) floor($diasTotales / $totalModulos));
-
-            $gruposCreados = collect();
-
-            foreach ($modulosParaAperturar as $indice => $modulo) {
-                $inicioModulo = $fechaInicioGlobal->copy()->addDays($indice * $diasPorModulo);
-                $finModulo = ($indice === $totalModulos - 1)
-                    ? $fechaFinGlobal->copy()
-                    : $inicioModulo->copy()->addDays($diasPorModulo - 1);
-
-                // Si el cálculo sobrepasa la fecha final de la cohorte, ajustar a la fecha final
-                if ($finModulo->gt($fechaFinGlobal)) {
-                    $finModulo = $fechaFinGlobal->copy();
-                }
-
-                $grupo = Grupo::create([
-                    'modulo_id' => $modulo->id,
-                    'cohorte_id' => $cohorte->id,
-                    'docente_id' => $docenteAsignado->id,
-                    'nombre' => 'Grupo A',
-                    'fecha_inicio' => $inicioModulo->format('Y-m-d'),
-                    'fecha_fin' => $finModulo->format('Y-m-d'),
-                    'modalidad' => $modalidad,
-                    'enlace_videoconferencia' => $modalidad === Modalidad::Virtual ? 'https://meet.example.test/cohorte-'.substr($cohorte->id, 0, 8) : null,
-                    'cupo_minimo' => ($cupoMinimo && $cupoMinimo > 0) ? $cupoMinimo : null,
-                    'estado' => EstadoPlanificacion::Programado,
-                ]);
-
-                $gruposCreados->push($grupo);
-            }
-
-            return $gruposCreados;
-        });
+        return DB::transaction(fn () => $modulosParaAperturar->map(fn (Modulo $modulo) => $grupos->crear([
+            'modulo_id' => $modulo->id,
+            'cohorte_id' => $cohorte->id,
+            'docente_id' => $docenteAsignado->id,
+            'modalidad' => $modalidad,
+            'enlace_videoconferencia' => $modalidad === Modalidad::Virtual ? 'https://meet.example.test/cohorte-'.substr($cohorte->id, 0, 8) : null,
+            'cupo_minimo' => $cupoMinimo,
+            'estado' => EstadoPlanificacion::Programado,
+        ])));
     }
 
     /**

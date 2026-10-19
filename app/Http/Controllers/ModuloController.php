@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoComercial;
+use App\Http\Requests\StoreModuloRequest;
+use App\Http\Requests\UpdateModuloRequest;
 use App\Models\Modulo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ModuloController extends Controller
@@ -32,9 +33,9 @@ class ModuloController extends Controller
         return view('modulos.form', ['modulo' => new Modulo(['estado_comercial' => EstadoComercial::Borrador])]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreModuloRequest $request): RedirectResponse
     {
-        Modulo::create($this->datos($request, null));
+        Modulo::create($request->validated());
 
         return redirect()->route('modulos.index')->with('ok', 'Módulo creado correctamente.');
     }
@@ -44,24 +45,10 @@ class ModuloController extends Controller
         return view('modulos.form', compact('modulo'));
     }
 
-    public function update(Request $request, Modulo $modulo): RedirectResponse
+    public function update(UpdateModuloRequest $request, Modulo $modulo): RedirectResponse
     {
-        $modulo->update($this->datos($request, $modulo));
+        $modulo->update($request->validated());
 
         return redirect()->route('modulos.index')->with('ok', 'Módulo actualizado.');
-    }
-
-    private function datos(Request $request, ?Modulo $modulo): array
-    {
-        return $request->validate([
-            'codigo' => ['required', 'string', 'max:'.config('limites.modulos.codigo'), Rule::unique('modulos', 'codigo')->ignore($modulo)],
-            'nombre' => ['required', 'string', 'max:'.config('limites.modulos.nombre')],
-            'duracion_horas' => ['nullable', 'integer', 'min:1', 'max:'.config('limites.modulos.duracion_horas')],
-            'estado_comercial' => ['required', Rule::enum(EstadoComercial::class)],
-            'descripcion' => ['nullable', 'string'],
-            'creditos' => ['nullable', 'integer', 'min:1'],
-            'tipo_evaluacion' => ['nullable', 'string', 'max:50'],
-            'pdf_temario_url' => ['nullable', 'url', 'max:255'],
-        ]);
     }
 }

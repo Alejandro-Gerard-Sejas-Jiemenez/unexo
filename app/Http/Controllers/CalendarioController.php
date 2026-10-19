@@ -49,17 +49,19 @@ class CalendarioController extends Controller
         return CarbonImmutable::now()->startOfMonth();
     }
 
-    /** Un evento de inicio y uno de fin por grupo, con su fecha y módulo. */
+    /** Un evento de inicio y uno de fin por grupo, con las fechas del período efectivo, el módulo y el grupo. */
     private function eventosDeGrupos(Collection $grupos): Collection
     {
-        return $grupos->flatMap(function ($grupo) {
-            $titulo = $grupo->modulo->nombre;
+        return $grupos
+            ->filter(fn ($grupo) => $grupo->periodo_inicio && $grupo->periodo_fin)
+            ->flatMap(function ($grupo) {
+                $titulo = $grupo->modulo->nombre.' · '.$grupo->nombre;
 
-            return [
-                ['fecha' => CarbonImmutable::parse($grupo->fecha_inicio), 'tipo' => 'inicio', 'texto' => 'Inicia: '.$titulo],
-                ['fecha' => CarbonImmutable::parse($grupo->fecha_fin), 'tipo' => 'fin', 'texto' => 'Termina: '.$titulo],
-            ];
-        });
+                return [
+                    ['fecha' => CarbonImmutable::parse($grupo->periodo_inicio), 'tipo' => 'inicio', 'texto' => 'Inicia: '.$titulo],
+                    ['fecha' => CarbonImmutable::parse($grupo->periodo_fin), 'tipo' => 'fin', 'texto' => 'Termina: '.$titulo],
+                ];
+            });
     }
 
     /** Matriz de semanas (lunes a domingo) con los días del mes y sus eventos. */

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoMatricula;
+use App\Models\Grupo;
 use App\Models\Matricula;
 use App\Services\MisClasesService;
 use Illuminate\Http\Request;
@@ -31,5 +32,14 @@ class MisCursosController extends Controller
             'fase' => $fase,
             'busqueda' => $busqueda,
         ]);
+    }
+
+    public function show(Request $request, Grupo $grupo, MisClasesService $clases): View
+    {
+        abort_unless($clases->estudianteTieneAcceso($request->user(), $grupo), 403, 'No tienes acceso a este grupo.');
+
+        $grupo->load(['modulo', 'docente', 'aula', 'cohorte.programa', 'horarios']);
+
+        return view('mis-cursos.show', ['grupo' => $grupo]);
     }
 }

@@ -47,7 +47,7 @@ class EstudianteConvertidoController extends Controller
 
         return response()->json([
             'estudiante' => $this->estudiante($estudiante),
-            'matricula' => $matricula ? new MatriculaResource($matricula->load('estudiante', 'cohorte.programa', 'inscripciones.grupo.modulo')) : null,
+            'matricula' => $matricula ? new MatriculaResource($matricula->load('estudiante', 'cohorte.programa', 'inscripciones.grupo.modulo', 'inscripciones.grupo.cohorte')) : null,
         ], $creado ? 201 : 200);
     }
 

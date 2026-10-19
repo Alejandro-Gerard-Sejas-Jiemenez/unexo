@@ -119,6 +119,22 @@ class ReporteCatalogoTest extends TestCase
             ->assertDontSee('2,500');
     }
 
+    // CA-40 (parte negativa): el reporte no muestra créditos ni nivel y no lista grupos
+    public function test_no_muestra_creditos_ni_nivel_ni_lista_grupos(): void
+    {
+        $programa = $this->programa(EstadoComercial::Abierto, 'DEMO Programa catálogo');
+        $this->conModulo($programa, EstadoComercial::Abierto);
+        $this->grupo(['nombre' => 'DEMO Grupo oculto']);
+
+        $respuesta = $this->actingAs($this->admin())->get(route('reportes.catalogo'))->assertOk();
+
+        $respuesta->assertDontSee('Créditos')
+            ->assertDontSee('Nivel')
+            ->assertDontSee('DEMO Grupo oculto');
+        $titulos = array_column($respuesta->viewData('reporte')->secciones, 'titulo');
+        $this->assertNotContains('Grupos', $titulos);
+    }
+
     // CA-37
     public function test_sin_datos_muestra_ceros_y_el_aviso(): void
     {

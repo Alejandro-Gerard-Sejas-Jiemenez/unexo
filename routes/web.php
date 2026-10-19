@@ -34,6 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::get('calendario', [CalendarioController::class, 'index'])->middleware('rol:docente,estudiante')->name('calendario');
 
     Route::get('mis-cursos', [MisCursosController::class, 'index'])->middleware('rol:estudiante')->name('mis-cursos');
+    Route::get('mis-cursos/{grupo}', [MisCursosController::class, 'show'])->whereUuid('grupo')->middleware('rol:estudiante')->name('mis-cursos.show');
     Route::post('matriculas/{matricula}/comprobantes', [ComprobanteController::class, 'store'])->middleware('rol:estudiante')->name('comprobantes.store');
     Route::get('comprobantes/{comprobante}', [ComprobanteController::class, 'ver'])->middleware('rol:administrador,estudiante')->name('comprobantes.ver');
 

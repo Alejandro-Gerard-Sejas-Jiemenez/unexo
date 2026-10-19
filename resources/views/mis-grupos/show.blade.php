@@ -29,12 +29,16 @@
     <div class="p-6">
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
             <div>
-                <dt class="text-sm font-medium text-slate-500 mb-1">Fechas</dt>
-                <dd class="text-base text-slate-900">{{ $grupo->fecha_inicio->format('d/m/Y') }} al {{ $grupo->fecha_fin->format('d/m/Y') }}</dd>
+                <dt class="text-sm font-medium text-slate-500 mb-1">Período</dt>
+                <dd class="text-base text-slate-900">{{ $grupo->periodo_texto }}</dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-slate-500 mb-1">Modalidad</dt>
                 <dd class="text-base text-slate-900">{{ $grupo->modalidad->label() }}@if ($grupo->aula) · {{ $grupo->aula->nombre }}@endif</dd>
+            </div>
+            <div class="sm:col-span-2">
+                <dt class="text-sm font-medium text-slate-500 mb-1">Horarios</dt>
+                <dd>@include('partials.horarios-grupo', ['horarios' => $grupo->horarios])</dd>
             </div>
             @if ($grupo->enlace_videoconferencia)
                 <div class="sm:col-span-2">

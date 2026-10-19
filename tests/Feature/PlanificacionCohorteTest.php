@@ -81,18 +81,21 @@ class PlanificacionCohorteTest extends TestCase
         $this->assertCount(3, $cohorte->grupos);
         $this->assertTrue($cohorte->tieneTodosLosModulosAperturados());
 
-        $grupos = $cohorte->grupos()->orderBy('fecha_inicio')->get();
+        $grupos = $cohorte->grupos()->with('horarios')->get()->keyBy('modulo_id');
 
         // Verificar que cada módulo del programa tiene su grupo con cupo mínimo 20
-        foreach ($modulos as $index => $modulo) {
-            $grupo = $grupos[$index];
+        foreach ($modulos as $modulo) {
+            $grupo = $grupos[$modulo->id];
             $this->assertEquals($modulo->id, $grupo->modulo_id);
             $this->assertEquals(20, $grupo->cupo_minimo);
             $this->assertEquals($docente->id, $grupo->docente_id);
-            // Las fechas deben estar dentro del rango de la cohorte
-            $this->assertTrue($grupo->fecha_inicio >= $cohorte->fecha_inicio);
-            $this->assertTrue($grupo->fecha_fin <= $cohorte->fecha_fin);
-            $this->assertTrue($grupo->fecha_fin >= $grupo->fecha_inicio);
+            // Sin tramos: el grupo no guarda fechas propias y toma el período de la edición
+            $this->assertNull($grupo->fecha_inicio);
+            $this->assertNull($grupo->fecha_fin);
+            $this->assertEquals($cohorte->fecha_inicio->toDateString(), $grupo->periodo_inicio->toDateString());
+            $this->assertEquals($cohorte->fecha_fin->toDateString(), $grupo->periodo_fin->toDateString());
+            $this->assertSame('Grupo 1', $grupo->nombre);
+            $this->assertCount(0, $grupo->horarios);
         }
 
         // Si se llama de nuevo, no duplica módulos
@@ -174,58 +177,12 @@ class PlanificacionCohorteTest extends TestCase
                 'modulo_id' => $moduloAjeno->id,
                 'cohorte_id' => $cohorte->id,
                 'docente_id' => $docente->id,
-                'nombre' => 'Grupo G1',
-                'fecha_inicio' => '2026-03-05',
-                'fecha_fin' => '2026-03-25',
                 'modalidad' => Modalidad::Virtual->value,
                 'cupo_minimo' => 20,
                 'estado' => EstadoPlanificacion::Programado->value,
+                'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
             ->assertSessionHasErrors('modulo_id');
-    }
-
-    public function test_validacion_fechas_del_grupo_no_pueden_desbordar_la_cohorte(): void
-    {
-        $docente = $this->docente();
-        [$programa, $modulos] = $this->programaConModulos(1);
-
-        $cohorte = Cohorte::create([
-            'programa_id' => $programa->id,
-            'nombre' => 'Cohorte Gamma',
-            'fecha_inicio' => Carbon::parse('2026-03-01'),
-            'fecha_fin' => Carbon::parse('2026-05-31'),
-            'estado' => EstadoPlanificacion::Programado,
-        ]);
-
-        // Fecha anterior al inicio de la cohorte
-        $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
-                'modulo_id' => $modulos[0]->id,
-                'cohorte_id' => $cohorte->id,
-                'docente_id' => $docente->id,
-                'nombre' => 'Grupo G1',
-                'fecha_inicio' => '2026-02-15',
-                'fecha_fin' => '2026-03-15',
-                'modalidad' => Modalidad::Virtual->value,
-                'cupo_minimo' => 20,
-                'estado' => EstadoPlanificacion::Programado->value,
-            ])
-            ->assertSessionHasErrors('fecha_inicio');
-
-        // Fecha posterior al fin de la cohorte
-        $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
-                'modulo_id' => $modulos[0]->id,
-                'cohorte_id' => $cohorte->id,
-                'docente_id' => $docente->id,
-                'nombre' => 'Grupo G2',
-                'fecha_inicio' => '2026-04-01',
-                'fecha_fin' => '2026-06-15',
-                'modalidad' => Modalidad::Virtual->value,
-                'cupo_minimo' => 20,
-                'estado' => EstadoPlanificacion::Programado->value,
-            ])
-            ->assertSessionHasErrors('fecha_fin');
     }
 
     public function test_creacion_de_grupo_modulo_suelto_sin_cohorte(): void
@@ -238,18 +195,19 @@ class PlanificacionCohorteTest extends TestCase
                 'modulo_id' => $modulo->id,
                 'cohorte_id' => null,
                 'docente_id' => $docente->id,
-                'nombre' => 'Taller Abierto 1',
                 'fecha_inicio' => '2026-04-01',
                 'fecha_fin' => '2026-04-30',
                 'modalidad' => Modalidad::Virtual->value,
                 'cupo_minimo' => 20,
                 'estado' => EstadoPlanificacion::Programado->value,
+                'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
             ->assertRedirect(route('grupos.index'))
             ->assertSessionHas('ok');
 
-        $grupo = Grupo::where('nombre', 'Taller Abierto 1')->first();
+        $grupo = Grupo::where('modulo_id', $modulo->id)->first();
         $this->assertNotNull($grupo);
+        $this->assertSame('Grupo 1', $grupo->nombre);
         $this->assertNull($grupo->cohorte_id);
 
         $this->assertEquals(1, Grupo::sueltos()->count());
@@ -389,12 +347,12 @@ class PlanificacionCohorteTest extends TestCase
             ->post(route('grupos.store'), [
                 'modulo_id' => $modulos[0]->id,
                 'docente_id' => $docente->id,
-                'nombre' => 'Presencial Sin Aula',
                 'fecha_inicio' => '2026-04-01',
                 'fecha_fin' => '2026-04-30',
                 'modalidad' => Modalidad::Presencial->value,
                 'cupo_minimo' => 20,
                 'estado' => EstadoPlanificacion::Programado->value,
+                'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
             ->assertSessionHasErrors('aula_id');
 
@@ -406,12 +364,12 @@ class PlanificacionCohorteTest extends TestCase
                 'modulo_id' => $modulos[0]->id,
                 'docente_id' => $docente->id,
                 'aula_id' => $aulaPequena->id,
-                'nombre' => 'Presencial Sobrecupo',
                 'fecha_inicio' => '2026-04-01',
                 'fecha_fin' => '2026-04-30',
                 'modalidad' => Modalidad::Presencial->value,
                 'cupo_minimo' => 20,
                 'estado' => EstadoPlanificacion::Programado->value,
+                'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
             ->assertSessionHasErrors('aula_id');
 
@@ -424,17 +382,17 @@ class PlanificacionCohorteTest extends TestCase
                 'docente_id' => $docente->id,
                 'aula_id' => $aulaAdecuada->id,
                 'enlace_videoconferencia' => 'https://meet.google.com/test-ignore',
-                'nombre' => 'Presencial Valido',
                 'fecha_inicio' => '2026-04-01',
                 'fecha_fin' => '2026-04-30',
                 'modalidad' => Modalidad::Presencial->value,
                 'cupo_minimo' => 20,
                 'estado' => EstadoPlanificacion::Programado->value,
+                'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
             ->assertRedirect(route('grupos.index'))
             ->assertSessionHas('ok');
 
-        $grupoPresencial = Grupo::where('nombre', 'Presencial Valido')->first();
+        $grupoPresencial = Grupo::where('modulo_id', $modulos[0]->id)->latest('created_at')->first();
         $this->assertNotNull($grupoPresencial);
         $this->assertEquals($aulaAdecuada->id, $grupoPresencial->aula_id);
         $this->assertNull($grupoPresencial->enlace_videoconferencia, 'El enlace de videoconferencia debe limpiarse en grupos presenciales.');
@@ -452,17 +410,17 @@ class PlanificacionCohorteTest extends TestCase
                 'docente_id' => $docente->id,
                 'aula_id' => $aula->id,
                 'enlace_videoconferencia' => 'https://meet.google.com/abc-defg-hij',
-                'nombre' => 'Virtual con Aula',
                 'fecha_inicio' => '2026-04-01',
                 'fecha_fin' => '2026-04-30',
                 'modalidad' => Modalidad::Virtual->value,
                 'cupo_minimo' => 20,
                 'estado' => EstadoPlanificacion::Programado->value,
+                'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
             ->assertRedirect(route('grupos.index'))
             ->assertSessionHas('ok');
 
-        $grupoVirtual = Grupo::where('nombre', 'Virtual con Aula')->first();
+        $grupoVirtual = Grupo::where('modulo_id', $modulos[0]->id)->latest('created_at')->first();
         $this->assertNotNull($grupoVirtual);
         $this->assertNull($grupoVirtual->aula_id, 'El aula debe quedar null para modalidad virtual.');
         $this->assertEquals('https://meet.google.com/abc-defg-hij', $grupoVirtual->enlace_videoconferencia);
@@ -480,17 +438,17 @@ class PlanificacionCohorteTest extends TestCase
                 'docente_id' => $docente->id,
                 'aula_id' => $aula->id,
                 'enlace_videoconferencia' => 'https://meet.google.com/mix-semi-pres',
-                'nombre' => 'Grupo Mixto Semipresencial',
                 'fecha_inicio' => '2026-05-01',
                 'fecha_fin' => '2026-05-30',
                 'modalidad' => Modalidad::Mixta->value,
                 'cupo_minimo' => 15,
                 'estado' => EstadoPlanificacion::Programado->value,
+                'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
             ->assertRedirect(route('grupos.index'))
             ->assertSessionHas('ok');
 
-        $grupoMixto = Grupo::where('nombre', 'Grupo Mixto Semipresencial')->first();
+        $grupoMixto = Grupo::where('modulo_id', $modulos[0]->id)->latest('created_at')->first();
         $this->assertNotNull($grupoMixto);
         $this->assertEquals(Modalidad::Mixta, $grupoMixto->modalidad);
         $this->assertEquals($aula->id, $grupoMixto->aula_id, 'En modalidad mixta se preserva el aula física.');

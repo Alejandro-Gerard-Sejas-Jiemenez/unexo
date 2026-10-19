@@ -37,7 +37,7 @@ class MatriculasApiTest extends TestCase
         $cohorte = Cohorte::create(['programa_id' => $programa->id, 'nombre' => 'C1', 'fecha_inicio' => '2026-09-01', 'fecha_fin' => '2026-12-01', 'estado' => EstadoPlanificacion::Programado]);
         $docente = User::factory()->create(['rol' => Rol::Docente]);
         $modulo = Modulo::create(['codigo' => 'M-1', 'nombre' => 'Excel', 'estado_comercial' => EstadoComercial::Abierto]);
-        Grupo::create(['modulo_id' => $modulo->id, 'cohorte_id' => $cohorte->id, 'docente_id' => $docente->id, 'nombre' => 'A', 'fecha_inicio' => '2026-09-01', 'fecha_fin' => '2026-10-01', 'modalidad' => 'virtual', 'estado' => EstadoPlanificacion::Programado]);
+        Grupo::create(['modulo_id' => $modulo->id, 'cohorte_id' => $cohorte->id, 'docente_id' => $docente->id, 'nombre' => 'A', 'modalidad' => 'virtual', 'estado' => EstadoPlanificacion::Programado]);
 
         return $cohorte;
     }

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Modulo extends Model
 {
@@ -20,8 +21,7 @@ class Modulo extends Model
         'duracion_horas',
         'estado_comercial',
         'descripcion',
-        'creditos',
-        'tipo_evaluacion',
+        'prerrequisito',
         'pdf_temario_url',
     ];
 
@@ -43,7 +43,7 @@ class Modulo extends Model
         return $this->belongsToMany(Programa::class, 'programa_modulo')->withPivot('orden');
     }
 
-    public function grupos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function grupos(): HasMany
     {
         return $this->hasMany(Grupo::class);
     }

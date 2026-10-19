@@ -65,11 +65,11 @@ class GestionAdminTest extends TestCase
         $this->actingAs($this->admin())->post(route('grupos.store'), [
             'modulo_id' => $modulo->id,
             'docente_id' => $estudiante->id,
-            'nombre' => 'Grupo A',
             'fecha_inicio' => '2026-09-01',
             'fecha_fin' => '2026-10-01',
             'modalidad' => 'virtual',
             'estado' => EstadoPlanificacion::Programado->value,
+            'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
         ])->assertSessionHasErrors('docente_id');
     }
 
@@ -81,7 +81,7 @@ class GestionAdminTest extends TestCase
         $cohorte = Cohorte::create(['programa_id' => $programa->id, 'nombre' => 'C1', 'fecha_inicio' => '2026-09-01', 'fecha_fin' => '2026-12-01', 'estado' => EstadoPlanificacion::Programado]);
         foreach (['Excel', 'Power BI'] as $n) {
             $m = Modulo::create(['codigo' => 'M-'.$n, 'nombre' => $n, 'estado_comercial' => EstadoComercial::Abierto]);
-            Grupo::create(['modulo_id' => $m->id, 'cohorte_id' => $cohorte->id, 'docente_id' => $docente->id, 'nombre' => 'A', 'fecha_inicio' => '2026-09-01', 'fecha_fin' => '2026-10-01', 'modalidad' => 'virtual', 'estado' => EstadoPlanificacion::Programado]);
+            Grupo::create(['modulo_id' => $m->id, 'cohorte_id' => $cohorte->id, 'docente_id' => $docente->id, 'nombre' => 'Grupo 1', 'modalidad' => 'virtual', 'estado' => EstadoPlanificacion::Programado]);
         }
 
         $this->actingAs($this->admin())->post(route('matriculas.store'), [

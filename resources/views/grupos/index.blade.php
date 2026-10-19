@@ -87,6 +87,9 @@
                                 Edición / Programa</th>
                             <th scope="col"
                                 class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                Período</th>
+                            <th scope="col"
+                                class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                 Docente</th>
                             <th scope="col"
                                 class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Inscritos</th>
@@ -122,6 +125,7 @@
                                         </span>
                                     @endif
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ $grupo->periodo_texto }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 flex items-center gap-2">
                                     <span
                                         class="w-6 h-6 rounded-full bg-slate-200 text-xs font-bold text-slate-600 flex items-center justify-center uppercase">{{ mb_substr($grupo->docente->nombres, 0, 1) . mb_substr($grupo->docente->apellidos, 0, 1) }}</span>

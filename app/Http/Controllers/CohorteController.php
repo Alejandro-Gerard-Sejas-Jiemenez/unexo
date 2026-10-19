@@ -55,10 +55,20 @@ class CohorteController extends Controller
     {
         $cohorte->load([
             'programa.modulos',
-            'grupos' => fn ($q) => $q->with(['modulo', 'docente', 'aula'])->withCount('inscripciones')->orderBy('fecha_inicio'),
+            'grupos' => fn ($q) => $q->with(['modulo', 'docente', 'aula'])->withCount('inscripciones'),
         ]);
 
         $modulosPrograma = $cohorte->programa->modulos;
+        $posicionModulo = $modulosPrograma->pluck('id')->flip();
+        $cohorte->setRelation('grupos', $cohorte->grupos
+            ->each(fn ($grupo) => $grupo->setRelation('cohorte', $cohorte))
+            ->sortBy([
+                fn ($a, $b) => ($posicionModulo[$a->modulo_id] ?? PHP_INT_MAX) <=> ($posicionModulo[$b->modulo_id] ?? PHP_INT_MAX),
+                fn ($a, $b) => ($a->numero ?? PHP_INT_MAX) <=> ($b->numero ?? PHP_INT_MAX),
+                fn ($a, $b) => strcmp((string) $a->nombre, (string) $b->nombre),
+                fn ($a, $b) => strcmp($a->id, $b->id),
+            ])
+            ->values());
         $modulosConGrupoIds = $cohorte->grupos->pluck('modulo_id')->all();
         $modulosPendientes = $modulosPrograma->reject(fn ($m) => in_array($m->id, $modulosConGrupoIds))->values();
         $totalMatriculados = $cohorte->matriculas()->count();

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Certificado;
 use App\Enums\EstadoComercial;
 use App\Models\Modulo;
 use App\Models\Programa;
@@ -16,21 +17,20 @@ class CatalogoDemoSeeder extends Seeder
     {
         $modulos = [];
         $datosModulos = [
-            ['DEMO-M01', 'Fundamentos de Excel', 20, EstadoComercial::Abierto, 'Introducción a hojas de cálculo', 2, 'Examen'],
-            ['DEMO-M02', 'Excel Intermedio', 24, EstadoComercial::Abierto, 'Manejo avanzado y macros', 3, 'Proyecto Final'],
-            ['DEMO-M03', 'Análisis de datos con Power BI', 30, EstadoComercial::Abierto, 'Inteligencia de negocios', 4, 'Proyecto Final'],
-            ['DEMO-M04', 'Comunicación efectiva', 16, EstadoComercial::Abierto, 'Habilidades blandas', 2, 'Asistencia'],
-            ['DEMO-M05', 'Gestión del tiempo', 12, EstadoComercial::Borrador, 'Optimización personal', 1, 'Asistencia'],
+            ['DEMO-M01', 'Fundamentos de Excel', 20, EstadoComercial::Abierto, 'Introducción a hojas de cálculo', 'DEMO: conocimientos básicos de Windows'],
+            ['DEMO-M02', 'Excel Intermedio', 24, EstadoComercial::Abierto, 'Manejo avanzado y macros', 'DEMO: conocimientos básicos de Excel'],
+            ['DEMO-M03', 'Análisis de datos con Power BI', 30, EstadoComercial::Abierto, 'Inteligencia de negocios', null],
+            ['DEMO-M04', 'Comunicación efectiva', 16, EstadoComercial::Abierto, 'Habilidades blandas', null],
+            ['DEMO-M05', 'Gestión del tiempo', 12, EstadoComercial::Borrador, 'Optimización personal', null],
         ];
 
-        foreach ($datosModulos as [$codigo, $nombre, $horas, $estado, $descripcion, $creditos, $evaluacion]) {
+        foreach ($datosModulos as [$codigo, $nombre, $horas, $estado, $descripcion, $prerrequisito]) {
             $modulos[$codigo] = Modulo::firstOrCreate(['codigo' => $codigo], [
                 'nombre' => $nombre,
                 'duracion_horas' => $horas,
                 'estado_comercial' => $estado,
                 'descripcion' => $descripcion,
-                'creditos' => $creditos,
-                'tipo_evaluacion' => $evaluacion,
+                'prerrequisito' => $prerrequisito,
                 'pdf_temario_url' => 'https://ejemplo.com/temario.pdf',
             ]);
         }
@@ -41,11 +41,9 @@ class CatalogoDemoSeeder extends Seeder
             'descripcion' => 'Programa demo: de Excel a Power BI.',
             'estado_comercial' => EstadoComercial::Abierto,
             'precio' => 1500.50,
-            'nivel_academico' => 'Diplomado',
             'imagen_portada_url' => 'https://ejemplo.com/portada1.jpg',
             'requisitos_ingreso' => 'Manejo básico de Windows.',
-            'perfil_egreso' => 'Especialista capaz de procesar y visualizar grandes volúmenes de datos.',
-            'certificado_otorga' => 'Especialista en Data Analytics',
+            'certificado_otorga' => Certificado::Certificado,
         ]);
 
         $habilidades = Programa::firstOrCreate(['codigo' => 'DEMO-P02'], [
@@ -54,11 +52,9 @@ class CatalogoDemoSeeder extends Seeder
             'descripcion' => 'Programa demo en borrador.',
             'estado_comercial' => EstadoComercial::Borrador,
             'precio' => 500.00,
-            'nivel_academico' => 'Curso',
             'imagen_portada_url' => 'https://ejemplo.com/portada2.jpg',
             'requisitos_ingreso' => 'Ninguno.',
-            'perfil_egreso' => 'Profesional con liderazgo.',
-            'certificado_otorga' => 'Certificado en Liderazgo',
+            'certificado_otorga' => Certificado::SinCertificado,
         ]);
 
         if ($analisis->modulos()->count() === 0) {

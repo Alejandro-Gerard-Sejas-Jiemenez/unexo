@@ -156,7 +156,7 @@
                         <td class="px-6 py-4 font-medium text-slate-900">{{ $grupo->modulo->nombre }}</td>
                         <td class="px-6 py-4 text-slate-700">{{ $grupo->nombre }}</td>
                         <td class="px-6 py-4 text-slate-500">{{ $grupo->docente->nombre_completo }}</td>
-                        <td class="px-6 py-4 text-slate-500">{{ $grupo->fecha_inicio->format('d/m/Y') }} – {{ $grupo->fecha_fin->format('d/m/Y') }}</td>
+                        <td class="px-6 py-4 text-slate-500">{{ $grupo->periodo_texto }}</td>
                     </tr>
                 @endforeach
                 </tbody>

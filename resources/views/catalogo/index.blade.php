@@ -108,11 +108,6 @@
                                         class="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded text-xs font-mono font-bold tracking-wider">
                                         {{ $programa->codigo }} · v{{ $programa->version }}
                                     </span>
-                                    @if ($programa->nivel_academico)
-                                        <span class="px-2 py-0.5 bg-black/20 rounded text-xs font-semibold">
-                                            {{ $programa->nivel_academico }}
-                                        </span>
-                                    @endif
                                 </div>
                                 <h3 class="text-lg font-bold leading-snug line-clamp-2">{{ $programa->nombre }}</h3>
                                 @if ($programa->precio)
@@ -161,9 +156,6 @@
                                     </span>
                                     @if ($programa->modulos->sum('duracion_horas') > 0)
                                         <span>{{ $programa->modulos->sum('duracion_horas') }} hrs</span>
-                                    @endif
-                                    @if ($programa->modulos->sum('creditos') > 0)
-                                        <span>{{ $programa->modulos->sum('creditos') }} créd.</span>
                                     @endif
                                 </div>
                             </div>
@@ -251,9 +243,6 @@
                                         class="px-2 py-0.5 bg-white border border-slate-200 rounded text-xs font-mono font-bold text-slate-700">
                                         {{ $modulo->codigo }}
                                     </span>
-                                    @if ($modulo->creditos)
-                                        <span class="text-xs font-semibold text-slate-500">{{ $modulo->creditos }} créditos</span>
-                                    @endif
                                 </div>
                                 <h3 class="text-base font-bold text-slate-900 leading-snug">{{ $modulo->nombre }}</h3>
                             </div>
@@ -288,7 +277,7 @@
                                                 class="text-[10px] uppercase font-bold text-emerald-700">{{ $modulo->grupos->first()->modalidad->value }}</span>
                                         </div>
                                         <div class="text-emerald-700 mt-1">
-                                            Inicia: <strong>{{ $modulo->grupos->first()->fecha_inicio?->format('d/m/Y') }}</strong>
+                                            Inicia: <strong>{{ $modulo->grupos->first()->periodo_inicio?->format('d/m/Y') }}</strong>
                                         </div>
                                     </div>
                                 @endif

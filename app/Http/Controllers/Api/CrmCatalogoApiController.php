@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\EstadoComercial;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CrmEdicionResource;
 use App\Http\Resources\CrmModuloResource;
 use App\Http\Resources\CrmProgramaResource;
-use App\Models\Modulo;
-use App\Models\Programa;
+use App\Services\CrmCatalogoService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -17,29 +17,15 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 class CrmCatalogoApiController extends Controller
 {
+    public function __construct(private readonly CrmCatalogoService $catalogo) {}
+
     /**
      * Paquete completo de oferta académica disponible (programas, módulos y ediciones abiertas).
      */
     public function index(): JsonResponse
     {
-        $programas = Programa::visibleParaCrm()
-            ->with([
-                'modulos' => fn ($q) => $q->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
-                'cohortes' => fn ($q) => $q->orderBy('fecha_inicio'),
-                'cohortes.grupos.modulo',
-                'cohortes.grupos.docente',
-                'cohortes.grupos.aula',
-            ])
-            ->orderBy('nombre')
-            ->get();
-
-        $modulos = Modulo::visibleParaCrm()
-            ->with([
-                'programas',
-                'grupos' => fn ($q) => $q->whereNull('cohorte_id')->with(['docente', 'aula'])->orderBy('fecha_inicio'),
-            ])
-            ->orderBy('nombre')
-            ->get();
+        $programas = $this->catalogo->programasVisibles();
+        $modulos = $this->catalogo->modulosVisibles();
 
         return response()->json([
             'exito' => true,
@@ -54,94 +40,71 @@ class CrmCatalogoApiController extends Controller
     }
 
     /**
-     * Listado de programas abiertos para el CRM con opción de búsqueda.
+     * Listado de programas visibles; el parámetro `nivel` ya no existe y se ignora.
      */
     public function programas(Request $request): AnonymousResourceCollection
     {
         $busqueda = trim((string) $request->query('q', ''));
-        $nivel = trim((string) $request->query('nivel', ''));
 
-        $programas = Programa::visibleParaCrm()
-            ->with([
-                'modulos' => fn ($q) => $q->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
-                'cohortes' => fn ($q) => $q->orderBy('fecha_inicio'),
-                'cohortes.grupos.modulo',
-                'cohortes.grupos.docente',
-                'cohortes.grupos.aula',
-            ])
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('nombre', 'like', "%{$busqueda}%")
-                ->orWhere('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('descripcion', 'like', "%{$busqueda}%")
-            ))
-            ->when($nivel !== '', fn ($q) => $q->where('nivel_academico', $nivel))
-            ->orderBy('nombre')
-            ->get();
-
-        return CrmProgramaResource::collection($programas);
+        return CrmProgramaResource::collection($this->catalogo->programasVisibles($busqueda));
     }
 
     /**
-     * Detalle técnico y oferta comercial de un programa específico.
+     * Detalle técnico y oferta comercial de un programa visible.
      */
-    public function programa(Programa $programa): CrmProgramaResource
+    public function programa(string $programa): CrmProgramaResource
     {
-        abort_unless(
-            $programa->estado_comercial === EstadoComercial::Abierto,
-            404,
-            'El programa solicitado no está disponible comercialmente.'
+        try {
+            return new CrmProgramaResource($this->catalogo->programaVisible($programa));
+        } catch (ModelNotFoundException) {
+            abort(404, 'El programa solicitado no está disponible comercialmente.');
+        }
+    }
+
+    /**
+     * Ediciones programadas o en curso de programas visibles, con sus grupos.
+     */
+    public function ediciones(Request $request): AnonymousResourceCollection
+    {
+        $ediciones = $this->catalogo->edicionesVisibles(
+            $request->query('programa_id'),
+            $request->query('estado'),
         );
 
-        $programa->loadMissing([
-            'modulos' => fn ($q) => $q->where('modulos.estado_comercial', EstadoComercial::Abierto->value),
-            'cohortes' => fn ($q) => $q->orderBy('fecha_inicio'),
-            'cohortes.grupos.modulo',
-            'cohortes.grupos.docente',
-            'cohortes.grupos.aula',
-        ]);
-
-        return new CrmProgramaResource($programa);
+        return CrmEdicionResource::collection($ediciones);
     }
 
     /**
-     * Listado de módulos abiertos ofertables como cursos independientes.
+     * Detalle de una edición visible.
+     */
+    public function edicion(string $cohorte): CrmEdicionResource
+    {
+        try {
+            return new CrmEdicionResource($this->catalogo->edicionVisible($cohorte));
+        } catch (ModelNotFoundException) {
+            abort(404, 'La edición solicitada no está disponible.');
+        }
+    }
+
+    /**
+     * Listado de módulos abiertos ofertables.
      */
     public function modulos(Request $request): AnonymousResourceCollection
     {
         $busqueda = trim((string) $request->query('q', ''));
 
-        $modulos = Modulo::visibleParaCrm()
-            ->with([
-                'programas',
-                'grupos' => fn ($q) => $q->whereNull('cohorte_id')->with(['docente', 'aula'])->orderBy('fecha_inicio'),
-            ])
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('nombre', 'like', "%{$busqueda}%")
-                ->orWhere('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('descripcion', 'like', "%{$busqueda}%")
-            ))
-            ->orderBy('nombre')
-            ->get();
-
-        return CrmModuloResource::collection($modulos);
+        return CrmModuloResource::collection($this->catalogo->modulosVisibles($busqueda));
     }
 
     /**
-     * Detalle de un módulo individual ofertable.
+     * Detalle de un módulo abierto.
      */
-    public function modulo(Modulo $modulo): CrmModuloResource
+    public function modulo(string $modulo): CrmModuloResource
     {
-        abort_unless(
-            $modulo->estado_comercial === EstadoComercial::Abierto,
-            404,
-            'El módulo solicitado no está disponible comercialmente.'
-        );
-
-        $modulo->loadMissing([
-            'programas',
-            'grupos' => fn ($q) => $q->whereNull('cohorte_id')->with(['docente', 'aula'])->orderBy('fecha_inicio'),
-        ]);
-
-        return new CrmModuloResource($modulo);
+        try {
+            return new CrmModuloResource($this->catalogo->moduloVisible($modulo));
+        } catch (ModelNotFoundException) {
+            abort(404, 'El módulo solicitado no está disponible comercialmente.');
+        }
     }
 }

@@ -25,25 +25,16 @@
             
             <x-campo nombre="nombre" limite="programas.nombre" etiqueta="Nombre" requerido :valor="$programa->nombre" />
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-2">
-                <x-campo nombre="nivel_academico" etiqueta="Nivel Académico" :valor="$programa->nivel_academico" />
-                <x-campo nombre="certificado_otorga" etiqueta="Certificado que otorga" :valor="$programa->certificado_otorga" />
-            </div>
+            <x-campo-select nombre="certificado_otorga" etiqueta="Certificado que otorga"
+                :opciones="['' => '— No definido —'] + collect(\App\Enums\Certificado::cases())->mapWithKeys(fn ($c) => [$c->value => $c->label()])->all()"
+                :valor="$programa->certificado_otorga?->value" />
         </div>
 
         <!-- Sección 2: Contenido y Difusión -->
         <div class="mb-8">
             <h2 class="text-lg font-semibold text-slate-800 mb-4 border-b border-slate-200 pb-2">2. Contenido y Difusión</h2>
-            <div class="mb-4">
-                <x-campo nombre="imagen_portada_url" etiqueta="Imagen de Portada" tipo="file" />
-                @if ($programa->imagen_portada_url)
-                    <div class="mt-2 text-sm text-slate-500">
-                        Imagen actual: <a href="{{ asset($programa->imagen_portada_url) }}" target="_blank" class="text-indigo-600 hover:underline">Ver imagen</a>
-                    </div>
-                @endif
-            </div>
+            <x-zona-portada nombre="imagen_portada_url" :portada="$programa->imagen_portada_url ?? null" />
             <x-campo-area nombre="descripcion" limite="programas.descripcion" etiqueta="Descripción breve" :valor="$programa->descripcion" />
-            <x-campo-area nombre="perfil_egreso" etiqueta="Perfil de Egreso (Propuesta de valor)" :valor="$programa->perfil_egreso" />
             <x-campo-area nombre="requisitos_ingreso" etiqueta="Conocimientos previos recomendados" :valor="$programa->requisitos_ingreso" />
         </div>
 
@@ -51,7 +42,7 @@
         <div class="mb-8">
             <h2 class="text-lg font-semibold text-slate-800 mb-4 border-b border-slate-200 pb-2">3. Configuración Comercial y API</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-                <x-campo nombre="precio" etiqueta="Precio Base" tipo="number" min="0" step="0.01" :valor="$programa->precio" />
+                <x-campo nombre="precio" etiqueta="Precio base (Bs)"tipo="number" min="0" step="0.01" :valor="$programa->precio" />
                 <x-campo-select nombre="estado_comercial" etiqueta="Estado comercial" requerido
                     :opciones="collect(\App\Enums\EstadoComercial::cases())->mapWithKeys(fn ($e) => [$e->value => $e->label()])"
                     :valor="$programa->estado_comercial?->value" />

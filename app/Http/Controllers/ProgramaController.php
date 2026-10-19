@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoComercial;
+use App\Http\Requests\StoreProgramaRequest;
+use App\Http\Requests\UpdateProgramaRequest;
 use App\Models\Modulo;
 use App\Models\Programa;
 use App\Services\OrdenModulosService;
 use App\Support\Opciones;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -42,16 +45,9 @@ class ProgramaController extends Controller
         return view('programas.form', ['programa' => new Programa(['version' => '1.0', 'estado_comercial' => EstadoComercial::Borrador])]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreProgramaRequest $request): RedirectResponse
     {
-        $data = $request->validate($this->reglas(null));
-
-        if ($request->hasFile('imagen_portada_url')) {
-            $path = $request->file('imagen_portada_url')->store('programas', 'public');
-            $data['imagen_portada_url'] = '/storage/' . $path;
-        }
-
-        $programa = Programa::create($data);
+        $programa = Programa::create($this->datosConPortada($request));
 
         return redirect()->route('programas.show', $programa)->with('ok', 'Programa creado. Ahora agrega sus módulos.');
     }
@@ -72,18 +68,9 @@ class ProgramaController extends Controller
         return view('programas.form', compact('programa'));
     }
 
-    public function update(Request $request, Programa $programa): RedirectResponse
+    public function update(UpdateProgramaRequest $request, Programa $programa): RedirectResponse
     {
-        $data = $request->validate($this->reglas($programa));
-
-        if ($request->hasFile('imagen_portada_url')) {
-            $path = $request->file('imagen_portada_url')->store('programas', 'public');
-            $data['imagen_portada_url'] = '/storage/' . $path;
-        } else {
-            unset($data['imagen_portada_url']);
-        }
-
-        $programa->update($data);
+        $programa->update($this->datosConPortada($request));
 
         return redirect()->route('programas.show', $programa)->with('ok', 'Programa actualizado.');
     }
@@ -115,25 +102,18 @@ class ProgramaController extends Controller
         return back();
     }
 
-    private function reglas(?Programa $programa): array
+    /** Sin archivo nuevo el campo se descarta para conservar la portada actual (RF-09). */
+    private function datosConPortada(FormRequest $request): array
     {
-        return [
-            'codigo' => ['required', 'string', 'max:'.config('limites.programas.codigo'), Rule::unique('programas', 'codigo')->ignore($programa)],
-            'nombre' => [
-                'required', 'string', 'max:'.config('limites.programas.nombre'),
-                Rule::unique('programas', 'nombre')
-                    ->where(fn ($q) => $q->where('version', request('version')))
-                    ->ignore($programa),
-            ],
-            'version' => ['required', 'string', 'max:'.config('limites.programas.version')],
-            'descripcion' => ['nullable', 'string', 'max:'.config('limites.programas.descripcion')],
-            'estado_comercial' => ['required', Rule::enum(EstadoComercial::class)],
-            'precio' => ['nullable', 'numeric', 'min:0'],
-            'nivel_academico' => ['nullable', 'string', 'max:100'],
-            'imagen_portada_url' => ['nullable', 'image', 'max:2048'],
-            'requisitos_ingreso' => ['nullable', 'string'],
-            'perfil_egreso' => ['nullable', 'string'],
-            'certificado_otorga' => ['nullable', 'string', 'max:255'],
-        ];
+        $data = $request->validated();
+
+        if ($request->hasFile('imagen_portada_url')) {
+            $path = $request->file('imagen_portada_url')->store('programas', 'public');
+            $data['imagen_portada_url'] = '/storage/'.$path;
+        } else {
+            unset($data['imagen_portada_url']);
+        }
+
+        return $data;
     }
 }

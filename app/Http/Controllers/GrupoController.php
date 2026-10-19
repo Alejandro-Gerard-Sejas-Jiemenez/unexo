@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\Opciones;
 use App\Enums\EstadoPlanificacion;
 use App\Enums\Modalidad;
 use App\Enums\Rol;
+use App\Http\Requests\StoreGrupoRequest;
+use App\Http\Requests\UpdateGrupoRequest;
 use App\Models\Aula;
 use App\Models\Cohorte;
 use App\Models\Grupo;
 use App\Models\Modulo;
 use App\Models\User;
+use App\Services\GrupoService;
+use App\Support\Opciones;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class GrupoController extends Controller
@@ -33,7 +34,7 @@ class GrupoController extends Controller
             ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
                 ->where('nombre', 'like', "%{$busqueda}%")
                 ->orWhereHas('modulo', fn ($m) => $m->where('nombre', 'like', "%{$busqueda}%"))))
-            ->orderByDesc('fecha_inicio')
+            ->ordenadoPorPeriodo('desc')
             ->paginate(config('limites.por_pagina'))->withQueryString();
 
         return view('grupos.index', [
@@ -55,12 +56,12 @@ class GrupoController extends Controller
             'cupo_minimo' => null,
         ]);
 
-        return view('grupos.form', $this->opciones($grupo, $cohorteId));
+        return view('grupos.form', $this->opciones($grupo, $cohorteId, (bool) $cohorteId));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreGrupoRequest $request): RedirectResponse
     {
-        $grupo = Grupo::create($this->validar($request));
+        $grupo = app(GrupoService::class)->crear($request->validated());
 
         if ($grupo->cohorte_id) {
             return redirect()->route('cohortes.show', $grupo->cohorte_id)->with('ok', 'Grupo aperturado correctamente en la cohorte.');
@@ -71,19 +72,21 @@ class GrupoController extends Controller
 
     public function show(Grupo $grupo): View
     {
-        $grupo->load(['modulo', 'docente', 'aula', 'cohorte.programa', 'inscripciones.matricula.estudiante']);
+        $grupo->load(['modulo', 'docente', 'aula', 'cohorte.programa', 'horarios', 'inscripciones.matricula.estudiante']);
 
         return view('grupos.show', compact('grupo'));
     }
 
     public function edit(Grupo $grupo): View
     {
-        return view('grupos.form', $this->opciones($grupo, $grupo->cohorte_id));
+        $grupo->load('horarios');
+
+        return view('grupos.form', $this->opciones($grupo, $grupo->cohorte_id, false));
     }
 
-    public function update(Request $request, Grupo $grupo): RedirectResponse
+    public function update(UpdateGrupoRequest $request, Grupo $grupo): RedirectResponse
     {
-        $grupo->update($this->validar($request));
+        app(GrupoService::class)->actualizar($grupo, $request->validated());
 
         if ($grupo->cohorte_id) {
             return redirect()->route('cohortes.show', $grupo->cohorte_id)->with('ok', 'Grupo actualizado correctamente.');
@@ -92,93 +95,12 @@ class GrupoController extends Controller
         return redirect()->route('grupos.index')->with('ok', 'Grupo actualizado correctamente.');
     }
 
-    private function validar(Request $request): array
+    /** @param  bool  $edicionFija  Alta desde una edición: los módulos se limitan a su programa y la edición no se cambia. */
+    private function opciones(Grupo $grupo, ?string $cohorteId, bool $edicionFija): array
     {
-        $datos = $request->validate([
-            'modulo_id' => ['required', 'uuid', Rule::exists('modulos', 'id')],
-            'cohorte_id' => ['nullable', 'uuid', Rule::exists('cohortes', 'id')],
-            'docente_id' => ['required', 'uuid', Rule::exists('users', 'id')->where('rol', Rol::Docente->value)],
-            'aula_id' => ['nullable', 'uuid', Rule::exists('aulas', 'id')],
-            'nombre' => ['required', 'string', 'max:'.config('limites.grupos.nombre')],
-            'fecha_inicio' => ['required', 'date'],
-            'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio'],
-            'modalidad' => ['required', Rule::enum(Modalidad::class)],
-            'enlace_videoconferencia' => ['nullable', 'url', 'max:'.config('limites.grupos.enlace_videoconferencia')],
-            'cupo_minimo' => ['nullable', 'integer', 'min:0', 'max:'.config('limites.grupos.cupo_minimo')],
-            'estado' => ['required', Rule::enum(EstadoPlanificacion::class)],
-        ]);
+        $cohorteSeleccionada = $cohorteId ? Cohorte::with('programa.modulos')->find($cohorteId) : null;
 
-        if (empty($datos['cupo_minimo']) || (int) $datos['cupo_minimo'] <= 0) {
-            $datos['cupo_minimo'] = null;
-        }
-
-        if (! empty($datos['cohorte_id'])) {
-            $cohorte = Cohorte::with('programa.modulos')->find($datos['cohorte_id']);
-            if ($cohorte) {
-                $moduloPertenece = $cohorte->programa->modulos()->where('modulos.id', $datos['modulo_id'])->exists();
-                if (! $moduloPertenece) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'modulo_id' => 'El módulo seleccionado no pertenece al programa de esta cohorte ('.$cohorte->programa->nombre.').',
-                    ]);
-                }
-
-                $fechaInicioCohorte = Carbon::parse($cohorte->fecha_inicio);
-                $fechaFinCohorte = Carbon::parse($cohorte->fecha_fin);
-
-                if ($datos['fecha_inicio'] < $fechaInicioCohorte->format('Y-m-d')) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'fecha_inicio' => 'La fecha de inicio del grupo no puede ser anterior al inicio de la cohorte ('.$fechaInicioCohorte->format('d/m/Y').').',
-                    ]);
-                }
-
-                if ($datos['fecha_fin'] > $fechaFinCohorte->format('Y-m-d')) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'fecha_fin' => 'La fecha de fin del grupo no puede ser posterior al fin de la cohorte ('.$fechaFinCohorte->format('d/m/Y').').',
-                    ]);
-                }
-            }
-        }
-
-        // Reglas de coherencia logística (CU5: Virtual vs Presencial vs Mixta)
-        if ($datos['modalidad'] === Modalidad::Virtual->value) {
-            $datos['aula_id'] = null;
-        } elseif ($datos['modalidad'] === Modalidad::Presencial->value) {
-            $datos['enlace_videoconferencia'] = null;
-
-            if (empty($datos['aula_id'])) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'aula_id' => 'Debe asignar un aula física para grupos en modalidad presencial.',
-                ]);
-            }
-
-            $aula = Aula::find($datos['aula_id']);
-            if ($aula && $aula->capacidad && ! empty($datos['cupo_minimo']) && (int) $datos['cupo_minimo'] > 0 && $aula->capacidad < (int) $datos['cupo_minimo']) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'aula_id' => "La capacidad del aula ({$aula->capacidad} personas) es inferior al cupo mínimo configurado ({$datos['cupo_minimo']}).",
-                ]);
-            }
-        } elseif ($datos['modalidad'] === Modalidad::Mixta->value) {
-            if (! empty($datos['aula_id'])) {
-                $aula = Aula::find($datos['aula_id']);
-                if ($aula && $aula->capacidad && ! empty($datos['cupo_minimo']) && (int) $datos['cupo_minimo'] > 0 && $aula->capacidad < (int) $datos['cupo_minimo']) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'aula_id' => "La capacidad del aula ({$aula->capacidad} personas) es inferior al cupo mínimo configurado ({$datos['cupo_minimo']}).",
-                    ]);
-                }
-            }
-        }
-
-        return $datos;
-    }
-
-    private function opciones(Grupo $grupo, ?string $cohorteId = null): array
-    {
-        $cohorteSeleccionada = null;
-        if ($cohorteId) {
-            $cohorteSeleccionada = Cohorte::with('programa.modulos')->find($cohorteId);
-        }
-
-        if ($cohorteSeleccionada) {
+        if ($cohorteSeleccionada && $edicionFija) {
             $modulos = $cohorteSeleccionada->programa->modulos;
             $modulosTotal = $modulos->count();
         } else {
@@ -201,7 +123,7 @@ class GrupoController extends Controller
 
         return compact(
             'grupo', 'modulos', 'modulosTotal', 'cohortes', 'cohortesTotal',
-            'docentes', 'docentesTotal', 'aulas', 'aulasTotal', 'cohorteSeleccionada'
+            'docentes', 'docentesTotal', 'aulas', 'aulasTotal', 'cohorteSeleccionada', 'edicionFija'
         );
     }
 }

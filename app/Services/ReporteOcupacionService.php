@@ -36,8 +36,8 @@ class ReporteOcupacionService
                 $grupo->modulo->nombre,
                 $grupo->cohorte?->nombre ?? 'Sin cohorte',
                 trim("{$grupo->docente->nombres} {$grupo->docente->apellidos}"),
-                $grupo->fecha_inicio,
-                $grupo->fecha_fin,
+                $grupo->periodo_inicio,
+                $grupo->periodo_fin,
                 $grupo->estado->label(),
                 (int) $grupo->inscritos,
                 $grupo->cupo_minimo,
@@ -83,15 +83,14 @@ class ReporteOcupacionService
 
         return Grupo::query()
             // Del docente solo se carga el nombre: el reporte no debe tocar su correo ni su documento.
-            ->with(['modulo:id,nombre', 'cohorte:id,nombre', 'docente:id,nombres,apellidos'])
+            ->with(['modulo:id,nombre', 'cohorte:id,nombre,fecha_inicio,fecha_fin', 'docente:id,nombres,apellidos'])
             ->withCount(['inscripciones as inscritos' => fn (Builder $inscripciones) => $inscripciones
                 ->whereHas('matricula', fn (Builder $matricula) => $matricula->whereIn('estado', $estadosInscritos))])
             ->when($filtros['estado'] ?? null, fn (Builder $q, string $estado) => $q->where('estado', $estado))
             ->when($filtros['cohorte_id'] ?? null, fn (Builder $q, string $cohorte) => $q->where('cohorte_id', $cohorte))
-            // El período del grupo se solapa con el rango; ambos extremos incluidos.
-            ->when($filtros['desde'] ?? null, fn (Builder $q, string $desde) => $q->whereDate('fecha_fin', '>=', $desde))
-            ->when($filtros['hasta'] ?? null, fn (Builder $q, string $hasta) => $q->whereDate('fecha_inicio', '<=', $hasta))
-            ->orderByDesc('fecha_inicio')
+            // El período efectivo del grupo se solapa con el rango; ambos extremos incluidos.
+            ->queSolapaCon($filtros['desde'] ?? null, $filtros['hasta'] ?? null)
+            ->ordenadoPorPeriodo('desc')
             ->orderBy('nombre')
             ->orderBy('id')
             ->get();

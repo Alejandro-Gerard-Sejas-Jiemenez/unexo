@@ -32,7 +32,7 @@ class MisGruposController extends Controller
     {
         abort_unless($grupo->docente_id === $request->user()->id, 403, 'Este grupo no está asignado a tu usuario.');
 
-        $grupo->load(['modulo', 'cohorte.programa', 'aula']);
+        $grupo->load(['modulo', 'cohorte.programa', 'aula', 'horarios']);
 
         return view('mis-grupos.show', [
             'grupo' => $grupo,
