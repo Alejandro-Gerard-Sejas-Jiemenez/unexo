@@ -48,8 +48,15 @@ function actualizarMenuActivo(urlDestino) {
 
         if (enlace.classList.contains('sb-sub-fila')) {
             enlace.classList.toggle('activo', esActivo);
-            if (esActivo) enlace.setAttribute('aria-current', 'page');
-            else enlace.removeAttribute('aria-current');
+            if (esActivo) {
+                enlace.setAttribute('aria-current', 'page');
+                const grupo = enlace.closest('details.sb-grupo');
+                if (grupo) {
+                    grupo.open = true;
+                }
+            } else {
+                enlace.removeAttribute('aria-current');
+            }
         } else if (enlace.classList.contains('sb-fila')) {
             const icon = enlace.querySelector('.sb-icono svg');
             if (esActivo) {
@@ -65,6 +72,18 @@ function actualizarMenuActivo(urlDestino) {
                 icon?.classList.remove('text-white');
                 icon?.classList.add('text-slate-400');
             }
+        }
+    });
+
+    // Actualizar estilo visual de los resúmenes de grupos según si tienen un hijo activo
+    document.querySelectorAll('.sidebar details.sb-grupo').forEach((grupo) => {
+        const tieneHijoActivo = grupo.querySelector('.sb-sub-fila.activo') !== null;
+        const summary = grupo.querySelector('summary.sb-fila');
+        if (summary) {
+            summary.classList.toggle('text-indigo-700', tieneHijoActivo);
+            summary.classList.toggle('bg-indigo-50/70', tieneHijoActivo);
+            summary.classList.toggle('font-semibold', tieneHijoActivo);
+            summary.classList.toggle('text-slate-600', !tieneHijoActivo);
         }
     });
 }

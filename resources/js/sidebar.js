@@ -8,6 +8,16 @@ export function iniciarSidebar() {
     if (!sidebar) return;
 
     const escritorio = window.matchMedia('(min-width: 48rem)');
+    
+    // Restaurar estado guardado en escritorio
+    if (escritorio.matches) {
+        const guardado = localStorage.getItem('sidebar-pinned');
+        if (guardado === 'true') {
+            sidebar.classList.add('is-pinned');
+        } else if (guardado === 'false') {
+            sidebar.classList.remove('is-pinned');
+        }
+    }
 
     // Activa las transiciones solo después del primer pintado.
     requestAnimationFrame(() => requestAnimationFrame(() => sidebar.classList.remove('sin-animacion')));
