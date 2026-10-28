@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: nexo-sis
+    runtime: docker
+    plan: free
+    healthCheckPath: /up
+    envVars:
+      - {key: APP_ENV, value: production}
+      - {key: APP_DEBUG, value: "false"}
+      - {key: APP_KEY, sync: false}   # pegar salida de: php artisan key:generate --show
+      - {key: LOG_CHANNEL, value: stderr}
+      - {key: DB_CONNECTION, value: pgsql}
+      - {key: DB_URL, fromDatabase: {name: nexo-db, property: connectionString}}
+      - {key: RUN_SEED, value: "1"}   # quitar tras el primer despliegue
+databases:
+  - name: nexo-db
+    plan: free

@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'rol' => RolRequerido::class,
             'cliente.api' => SoloClienteApi::class,
         ]);
+        $middleware->trustProxies(at: '*');
         $middleware->redirectUsersTo('/panel');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
