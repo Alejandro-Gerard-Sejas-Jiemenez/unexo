@@ -76,6 +76,7 @@ class MenuService
                     ['Programas', route('programas.index'), 'programas.*', 'programa'],
                     ['Ediciones', route('cohortes.index'), 'cohortes.*', 'calendario'],
                     ['Grupos', route('grupos.index'), 'grupos.*', 'usuarios'],
+                    ['Aulas', route('aulas.index'), 'aulas.*', 'inicio'],
                     ['Matrículas', route('matriculas.index'), 'matriculas.*', 'matricula'],
                 ],
             ],

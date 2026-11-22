@@ -7,6 +7,9 @@ use App\Http\Controllers\Api\Panel\AuditoriaApiController;
 use App\Http\Controllers\Api\Panel\AuthController;
 use App\Http\Controllers\Api\Panel\BuscadorApiController;
 use App\Http\Controllers\Api\Panel\CatalogoApiController;
+use App\Http\Controllers\Api\Panel\ConfiguracionApiController;
+use App\Http\Controllers\Api\Panel\InicioApiController;
+use App\Http\Controllers\Api\Panel\MisClasesApiController;
 use App\Http\Controllers\Api\Panel\MatriculaPanelApiController;
 use App\Http\Controllers\Api\Panel\MenuController;
 use App\Http\Controllers\Api\Panel\PagoApiController;
@@ -39,6 +42,18 @@ Route::prefix('panel')->middleware('web')->group(function () {
         Route::post('metodos-pago', [PagoApiController::class, 'guardarMetodo']);
         Route::delete('metodos-pago/{metodo}', [PagoApiController::class, 'eliminarMetodo'])->whereUuid('metodo');
         Route::get('matriculas/{matricula}/transacciones', [PagoApiController::class, 'transacciones'])->whereUuid('matricula');
+
+        // Inicio y catálogo público: los tres roles.
+        Route::get('inicio', [InicioApiController::class, 'inicio']);
+        Route::get('catalogo-publico', [InicioApiController::class, 'catalogo']);
+
+        // Vistas de consulta del docente y del estudiante.
+        Route::get('calendario', [MisClasesApiController::class, 'calendario']);
+        Route::middleware('rol:docente')->group(function () {
+            Route::get('mis-grupos', [MisClasesApiController::class, 'misGrupos']);
+            Route::get('mis-grupos/{grupo}', [MisClasesApiController::class, 'miGrupo'])->whereUuid('grupo');
+        });
+        Route::get('mis-cursos', [MisClasesApiController::class, 'misCursos'])->middleware('rol:estudiante');
 
         // Catálogo: lo consultan todos los roles; solo el administrador lo edita.
         Route::get('catalogo/opciones', [CatalogoApiController::class, 'opciones']);
@@ -83,6 +98,14 @@ Route::prefix('panel')->middleware('web')->group(function () {
             Route::get('reportes/matriculas', [ReporteApiController::class, 'matriculas']);
             Route::get('reportes/ocupacion', [ReporteApiController::class, 'ocupacion']);
             Route::get('reportes/catalogo', [ReporteApiController::class, 'catalogo']);
+
+            // Configuración: aulas y clientes de la API.
+            Route::get('aulas', [ConfiguracionApiController::class, 'aulas']);
+            Route::post('aulas', [ConfiguracionApiController::class, 'guardarAula']);
+            Route::put('aulas/{aula}', [ConfiguracionApiController::class, 'actualizarAula'])->whereUuid('aula');
+            Route::get('clientes-api', [ConfiguracionApiController::class, 'clientesApi']);
+            Route::post('clientes-api', [ConfiguracionApiController::class, 'crearClienteApi']);
+            Route::delete('clientes-api/{cliente}', [ConfiguracionApiController::class, 'revocarClienteApi'])->whereUuid('cliente');
 
             Route::get('bitacora', [AuditoriaApiController::class, 'bitacora']);
             Route::get('estadisticas', [AuditoriaApiController::class, 'estadisticas']);

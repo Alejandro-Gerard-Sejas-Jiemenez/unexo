@@ -19,14 +19,21 @@ use App\Http\Controllers\ReporteOcupacionController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/login');
+/*
+ * La SPA de React es la interfaz del sistema: la raíz entra por ahí.
+ * El enrutado interno lo resuelve React Router, por eso la ruta atrapa
+ * cualquier subruta.
+ */
+Route::redirect('/', '/app');
+Route::view('/app/{cualquiera?}', 'spa')->where('cualquiera', '.*')->name('spa');
 
 /*
- * Shell de la SPA de React. Durante la migración convive con el panel Blade:
- * React vive bajo /app y el panel actual sigue en sus rutas. El enrutado interno
- * lo resuelve React Router, por eso esta ruta atrapa cualquier subruta.
+ * El panel Blade sigue publicado en sus rutas de siempre. No es una segunda
+ * interfaz que haya que mantener a la par: comparte con la SPA las mismas Form
+ * Requests y los mismos Services, así que las reglas del negocio son unas
+ * solas. Se conserva porque sus pruebas cubren el dominio por HTTP y porque es
+ * la red de seguridad si algo de la SPA falla en la demostración.
  */
-Route::view('/app/{cualquiera?}', 'spa')->where('cualquiera', '.*')->name('spa');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');

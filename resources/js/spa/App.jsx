@@ -5,7 +5,6 @@ import { TemaProvider } from './tema/TemaContext';
 import Layout from './componentes/Layout';
 import Login from './paginas/Login';
 import Panel from './paginas/Panel';
-import EnConstruccion from './paginas/EnConstruccion';
 import UsuariosLista from './paginas/usuarios/Lista';
 import UsuarioFormulario from './paginas/usuarios/Formulario';
 import Dashboard from './paginas/Dashboard';
@@ -23,15 +22,12 @@ import MatriculasLista from './paginas/matriculas/MatriculasLista';
 import MatriculaNueva from './paginas/matriculas/MatriculaNueva';
 import MatriculaDetalle from './paginas/matriculas/MatriculaDetalle';
 import Reportes from './paginas/Reportes';
-
-/** Módulos todavía servidos por el panel Blade; se van quitando al migrarlos. */
-const EN_MIGRACION = [
-    'catalogo',
-    'clientes-api',
-    'mis-grupos',
-    'mis-cursos',
-    'calendario',
-];
+import CatalogoPublico from './paginas/CatalogoPublico';
+import Calendario from './paginas/Calendario';
+import MisClases from './paginas/MisClases';
+import MiGrupoDetalle from './paginas/MiGrupoDetalle';
+import ClientesApi from './paginas/ClientesApi';
+import Aulas from './paginas/Aulas';
 
 function Rutas() {
     const { usuario, cargando } = useAuth();
@@ -52,12 +48,23 @@ function Rutas() {
         <Routes>
             <Route path="/app" element={<Layout />}>
                 <Route index element={<Panel />} />
+
+                {/* Consulta: los tres roles */}
+                <Route path="catalogo" element={<CatalogoPublico />} />
+                <Route path="calendario" element={<Calendario />} />
+                <Route path="pagos" element={<Pagos />} />
+
+                {/* Docente */}
+                <Route path="mis-grupos" element={<MisClases modo="docente" />} />
+                <Route path="mis-grupos/:id" element={<MiGrupoDetalle />} />
+
+                {/* Estudiante */}
+                <Route path="mis-cursos" element={<MisClases modo="estudiante" />} />
+
+                {/* Administración */}
                 <Route path="usuarios" element={<UsuariosLista />} />
                 <Route path="usuarios/nuevo" element={<UsuarioFormulario />} />
                 <Route path="usuarios/:id" element={<UsuarioFormulario />} />
-                <Route path="estadisticas" element={<Dashboard />} />
-                <Route path="bitacora" element={<Bitacora />} />
-                <Route path="pagos" element={<Pagos />} />
                 <Route path="programas" element={<ProgramasLista />} />
                 <Route path="programas/nuevo" element={<ProgramaFormulario />} />
                 <Route path="programas/:id" element={<ProgramaFormulario />} />
@@ -70,13 +77,15 @@ function Rutas() {
                 <Route path="grupos" element={<GruposLista />} />
                 <Route path="grupos/nuevo" element={<GrupoFormulario />} />
                 <Route path="grupos/:id" element={<GrupoFormulario />} />
+                <Route path="aulas" element={<Aulas />} />
                 <Route path="matriculas" element={<MatriculasLista />} />
                 <Route path="matriculas/nueva" element={<MatriculaNueva />} />
                 <Route path="matriculas/:id" element={<MatriculaDetalle />} />
                 <Route path="reportes" element={<Reportes />} />
-                {EN_MIGRACION.map((ruta) => (
-                    <Route key={ruta} path={ruta} element={<EnConstruccion />} />
-                ))}
+                <Route path="estadisticas" element={<Dashboard />} />
+                <Route path="bitacora" element={<Bitacora />} />
+                <Route path="clientes-api" element={<ClientesApi />} />
+
                 <Route path="*" element={<Navigate to="/app" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/app" replace />} />
@@ -86,8 +95,8 @@ function Rutas() {
 
 export default function App() {
     return (
-        // El tema envuelve todo, incluido el login: la preferencia vale desde
-        // la primera pantalla, sin esperar a que haya sesión.
+        // El tema envuelve todo, incluido el login: la preferencia vale desde la
+        // primera pantalla, sin esperar a que haya sesión.
         <TemaProvider>
             <BrowserRouter basename={BASE}>
                 <AuthProvider>

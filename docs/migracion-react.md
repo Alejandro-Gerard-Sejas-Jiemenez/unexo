@@ -1,7 +1,7 @@
 # Migración a React (arquitectura de 3 capas)
 
-Estado: **fundación lista + CU1 Usuarios migrado**. El resto de los módulos sigue
-atendido por el panel Blade y se migra uno por uno repitiendo el patrón de abajo.
+Estado: **migración completa**. La SPA cubre los ocho casos de uso y es la
+interfaz del sistema: la raíz del sitio entra por `/app`.
 
 ## Cómo conviven las dos interfaces
 
@@ -85,18 +85,31 @@ tendríamos si la API reimplementara las reglas.
 | Módulo | CU | Estado |
 |---|---|---|
 | Usuarios | CU1 | Migrado |
-| Perfiles y matriz de acceso | CU2 | Menú dinámico listo; falta la pantalla de la matriz |
-| Catálogo (programas y módulos) | CU3 | Migrado, con plan de estudio |
+| Perfiles: menú dinámico y matriz de acceso | CU2 | Migrado |
+| Catálogo (programas, módulos, plan de estudio) | CU3 | Migrado |
 | Cohortes y apertura de grupos | CU4 | Migrado |
-| Logística de clases | CU5 | Migrado la administración; faltan las vistas de consulta del docente y del estudiante |
-| Matriculación | CU6 | Migrado |
-| Estado de matrícula y pagos | CU7 | Migrado; falta la pantalla de tokens de la API |
+| Logística de clases, aulas y agenda | CU5 | Migrado |
+| Matriculación flexible | CU6 | Migrado |
+| Estado de matrícula, pagos y tokens de API | CU7 | Migrado |
 | Reportes y estadísticas | CU8 | Migrado |
 
-Lo que todavía atiende el panel Blade: el catálogo público de solo lectura,
-la gestión de clientes de la API, y las vistas del docente y del estudiante
-(mis grupos, mis cursos y el calendario). Están en la lista `EN_MIGRACION` de
-`App.jsx` y enlazan al panel actual.
+## Por qué el panel Blade sigue publicado
+
+No es una segunda interfaz que haya que mantener a la par. Comparte con la SPA
+las mismas Form Requests y los mismos Services, así que las reglas del negocio
+son unas solas: si cambia una validación, cambia en los dos lados a la vez.
+
+Se conserva por dos razones concretas:
+
+1. **Cobertura.** Diecinueve archivos de prueba ejercitan el dominio a través de
+   esas vistas. Borrarlas obligaría a reescribir ese trabajo contra la API y,
+   mientras tanto, dejaría el dominio sin red.
+2. **Respaldo en la demostración.** Si algo de la SPA falla el día de la
+   defensa, el panel sigue ahí.
+
+Para retirarlo: borrar las rutas de `routes/web.php` salvo la de la SPA, las
+vistas de `resources/views/` salvo `spa.blade.php`, los controladores que solo
+devuelven vistas, y portar esas 19 pruebas a la API.
 
 Requisitos transversales del enunciado, todos implementados: bitácora de
 auditoría, los tres temas con modo día/noche, escalado tipográfico y alto
