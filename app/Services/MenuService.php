@@ -102,6 +102,7 @@ class MenuService
                     ['Usuarios', route('usuarios.index'), 'usuarios.*', 'usuarios'],
                     ['Acceso API', route('clientes-api.index'), 'clientes-api.*', 'candado'],
                     ['Bitácora', url('/app/bitacora'), 'bitacora', 'candado'],
+                    ['Métodos de pago', url('/app/pagos'), 'pagos', 'matricula'],
                 ],
             ],
         ];
@@ -160,6 +161,7 @@ class MenuService
                 'items' => [
                     ['Mis cursos', route('mis-cursos'), 'mis-cursos', 'video'],
                     ['Calendario', route('calendario'), 'calendario', 'calendario'],
+                    ['Mis pagos', url('/app/pagos'), 'pagos', 'matricula'],
                 ],
             ],
         ];
