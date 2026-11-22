@@ -22,11 +22,11 @@ import GrupoFormulario from './paginas/planificacion/GrupoFormulario';
 import MatriculasLista from './paginas/matriculas/MatriculasLista';
 import MatriculaNueva from './paginas/matriculas/MatriculaNueva';
 import MatriculaDetalle from './paginas/matriculas/MatriculaDetalle';
+import Reportes from './paginas/Reportes';
 
 /** Módulos todavía servidos por el panel Blade; se van quitando al migrarlos. */
 const EN_MIGRACION = [
     'catalogo',
-    'reportes',
     'clientes-api',
     'mis-grupos',
     'mis-cursos',
@@ -73,6 +73,7 @@ function Rutas() {
                 <Route path="matriculas" element={<MatriculasLista />} />
                 <Route path="matriculas/nueva" element={<MatriculaNueva />} />
                 <Route path="matriculas/:id" element={<MatriculaDetalle />} />
+                <Route path="reportes" element={<Reportes />} />
                 {EN_MIGRACION.map((ruta) => (
                     <Route key={ruta} path={ruta} element={<EnConstruccion />} />
                 ))}

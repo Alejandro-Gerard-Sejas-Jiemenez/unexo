@@ -87,11 +87,16 @@ tendríamos si la API reimplementara las reglas.
 | Usuarios | CU1 | Migrado |
 | Perfiles y matriz de acceso | CU2 | Menú dinámico listo; falta la pantalla de la matriz |
 | Catálogo (programas y módulos) | CU3 | Migrado, con plan de estudio |
-| Cohortes y grupos | CU4 | Pendiente |
-| Logística de clases | CU5 | Pendiente |
-| Matriculación | CU6 | Pendiente |
-| Estado de matrícula | CU7 | Pendiente (los pagos ya están) |
-| Reportes | CU8 | Las estadísticas están; faltan los tres reportes |
+| Cohortes y apertura de grupos | CU4 | Migrado |
+| Logística de clases | CU5 | Migrado la administración; faltan las vistas de consulta del docente y del estudiante |
+| Matriculación | CU6 | Migrado |
+| Estado de matrícula y pagos | CU7 | Migrado; falta la pantalla de tokens de la API |
+| Reportes y estadísticas | CU8 | Migrado |
+
+Lo que todavía atiende el panel Blade: el catálogo público de solo lectura,
+la gestión de clientes de la API, y las vistas del docente y del estudiante
+(mis grupos, mis cursos y el calendario). Están en la lista `EN_MIGRACION` de
+`App.jsx` y enlazan al panel actual.
 
 Requisitos transversales del enunciado, todos implementados: bitácora de
 auditoría, los tres temas con modo día/noche, escalado tipográfico y alto

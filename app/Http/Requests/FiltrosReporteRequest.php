@@ -64,6 +64,12 @@ abstract class FiltrosReporteRequest extends FormRequest
 
     protected function failedValidation(Validator $validator): void
     {
+        // La API responde los errores en JSON: renderizar una vista Blade ahí le
+        // daría HTML a la SPA en lugar del 422 que sabe interpretar.
+        if ($this->expectsJson()) {
+            parent::failedValidation($validator);
+        }
+
         if ($this->esDescarga()) {
             throw new HttpResponseException(redirect()->route($this->rutaPantalla(), $this->query()));
         }

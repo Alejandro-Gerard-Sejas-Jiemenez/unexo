@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Panel\MatriculaPanelApiController;
 use App\Http\Controllers\Api\Panel\MenuController;
 use App\Http\Controllers\Api\Panel\PagoApiController;
 use App\Http\Controllers\Api\Panel\PlanificacionApiController;
+use App\Http\Controllers\Api\Panel\ReporteApiController;
 use App\Http\Controllers\Api\Panel\UsuarioApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -76,6 +77,12 @@ Route::prefix('panel')->middleware('web')->group(function () {
             Route::patch('catalogo/programas/{programa}/modulos/{modulo}/mover', [CatalogoApiController::class, 'moverModulo'])->whereUuid('programa')->whereUuid('modulo');
             Route::post('catalogo/modulos', [CatalogoApiController::class, 'guardarModulo']);
             Route::put('catalogo/modulos/{modulo}', [CatalogoApiController::class, 'actualizarModulo'])->whereUuid('modulo');
+
+            // CU8: los tres reportes. Las descargas en PDF y Excel siguen por
+            // las rutas web, que ya devuelven el archivo.
+            Route::get('reportes/matriculas', [ReporteApiController::class, 'matriculas']);
+            Route::get('reportes/ocupacion', [ReporteApiController::class, 'ocupacion']);
+            Route::get('reportes/catalogo', [ReporteApiController::class, 'catalogo']);
 
             Route::get('bitacora', [AuditoriaApiController::class, 'bitacora']);
             Route::get('estadisticas', [AuditoriaApiController::class, 'estadisticas']);
