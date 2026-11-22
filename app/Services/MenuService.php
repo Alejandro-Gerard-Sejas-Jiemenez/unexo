@@ -19,6 +19,43 @@ class MenuService
         };
     }
 
+    /**
+     * El mismo menú, normalizado para la SPA: una sola definición sirve al panel
+     * Blade (que usa 'url') y a React (que usa 'ruta').
+     */
+    public function paraSpa(User $usuario): array
+    {
+        return array_map(function (array $entrada): array {
+            if (($entrada['tipo'] ?? null) === 'submenu') {
+                return [
+                    'tipo' => 'submenu',
+                    'etiqueta' => $entrada['etiqueta'],
+                    'icono' => $entrada['icono'] ?? null,
+                    'items' => array_map(fn (array $item) => [
+                        'etiqueta' => $item[0],
+                        'ruta' => $this->rutaSpa($item[2]),
+                        'icono' => $item[3] ?? null,
+                    ], $entrada['items']),
+                ];
+            }
+
+            return [
+                'tipo' => 'enlace',
+                'etiqueta' => $entrada['etiqueta'],
+                'ruta' => $this->rutaSpa($entrada['patron']),
+                'icono' => $entrada['icono'] ?? null,
+            ];
+        }, $this->paraUsuario($usuario));
+    }
+
+    /** Convierte el patrón de ruta del servidor en la ruta del router de React. */
+    private function rutaSpa(string $patron): string
+    {
+        $base = explode('.', $patron)[0];
+
+        return $base === 'panel' ? '/app' : '/app/'.$base;
+    }
+
     private function menuAdministrador(): array
     {
         return [

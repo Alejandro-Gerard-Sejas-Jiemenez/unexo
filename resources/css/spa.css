@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+
+/*
+ * Identidad visual de la SPA en variables: los temas por segmento y el modo
+ * día/noche se resuelven redefiniendo estas variables, sin tocar componentes.
+ */
+:root {
+    --color-fondo: #f7f8f5;
+    --color-superficie: #ffffff;
+    --color-borde: #d8ded6;
+    --color-texto: #0e2a3f;
+    --color-texto-suave: #4a5a68;
+    --color-acento: #0e7c7b;
+    --color-acento-texto: #ffffff;
+    --color-error: #a3271e;
+    --escala-texto: 1;
+    --radio: 12px;
+}
+
+html {
+    font-size: calc(16px * var(--escala-texto));
+}
+
+body {
+    margin: 0;
+    background: var(--color-fondo);
+    color: var(--color-texto);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+a {
+    color: inherit;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* El foco visible nunca se quita: es el único rastro para quien navega con teclado. */
+:focus-visible {
+    outline: 3px solid var(--color-acento);
+    outline-offset: 2px;
+}

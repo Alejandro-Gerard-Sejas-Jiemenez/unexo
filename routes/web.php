@@ -21,6 +21,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
 
+/*
+ * Shell de la SPA de React. Durante la migración convive con el panel Blade:
+ * React vive bajo /app y el panel actual sigue en sus rutas. El enrutado interno
+ * lo resuelve React Router, por eso esta ruta atrapa cualquier subruta.
+ */
+Route::view('/app/{cualquiera?}', 'spa')->where('cualquiera', '.*')->name('spa');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store']);
