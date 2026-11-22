@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BASE } from './base';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import Layout from './componentes/Layout';
 import Login from './paginas/Login';
@@ -56,7 +57,7 @@ function Rutas() {
 
 export default function App() {
     return (
-        <BrowserRouter>
+        <BrowserRouter basename={BASE}>
             <AuthProvider>
                 <Rutas />
             </AuthProvider>

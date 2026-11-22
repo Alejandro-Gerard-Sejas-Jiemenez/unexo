@@ -3,8 +3,11 @@
 use App\Http\Controllers\Api\CrmCatalogoApiController;
 use App\Http\Controllers\Api\EstudianteConvertidoController;
 use App\Http\Controllers\Api\MatriculaApiController;
+use App\Http\Controllers\Api\Panel\AuditoriaApiController;
 use App\Http\Controllers\Api\Panel\AuthController;
+use App\Http\Controllers\Api\Panel\BuscadorApiController;
 use App\Http\Controllers\Api\Panel\MenuController;
+use App\Http\Controllers\Api\Panel\PagoApiController;
 use App\Http\Controllers\Api\Panel\UsuarioApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,7 +25,25 @@ Route::prefix('panel')->middleware('web')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::get('menu', MenuController::class);
 
+        // Visibles para cualquier rol: el contador va en el pie de todas las vistas
+        // y el buscador en el encabezado, ya filtrado por permisos en el servidor.
+        Route::get('visitas', [AuditoriaApiController::class, 'visitas']);
+        Route::get('buscar', BuscadorApiController::class);
+
+        // Pagos: cada usuario administra sus propios métodos.
+        Route::get('metodos-pago', [PagoApiController::class, 'metodos']);
+        Route::post('metodos-pago', [PagoApiController::class, 'guardarMetodo']);
+        Route::delete('metodos-pago/{metodo}', [PagoApiController::class, 'eliminarMetodo'])->whereUuid('metodo');
+        Route::get('matriculas/{matricula}/transacciones', [PagoApiController::class, 'transacciones'])->whereUuid('matricula');
+
         Route::middleware('rol:administrador')->group(function () {
+            Route::get('bitacora', [AuditoriaApiController::class, 'bitacora']);
+            Route::get('estadisticas', [AuditoriaApiController::class, 'estadisticas']);
+
+            Route::post('matriculas/{matricula}/cobrar', [PagoApiController::class, 'cobrar'])->whereUuid('matricula');
+            Route::patch('transacciones/{transaccion}/aprobar', [PagoApiController::class, 'aprobar'])->whereUuid('transaccion');
+            Route::patch('transacciones/{transaccion}/rechazar', [PagoApiController::class, 'rechazar'])->whereUuid('transaccion');
+
             Route::get('usuarios/opciones', [UsuarioApiController::class, 'opciones']);
             Route::get('usuarios', [UsuarioApiController::class, 'index']);
             Route::post('usuarios', [UsuarioApiController::class, 'store']);

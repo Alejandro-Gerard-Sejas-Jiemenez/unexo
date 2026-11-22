@@ -267,11 +267,25 @@ class ReportesDescargaTest extends TestCase
         $contar = fn () => array_map(fn ($tabla) => DB::table($tabla)->count(), $tablas);
         $antes = $contar();
 
+        // RF-18 protege los datos del negocio: un reporte no los altera. La
+        // bitácora de auditoría y el contador de visitas sí escriben en cada
+        // acceso, porque los exigen los requisitos 4 y 7 del enunciado; son
+        // tablas ajenas al dominio y por eso quedan fuera de esta comprobación.
+        $auditoria = ['visitas_pagina', 'bitacora'];
+
         $escrituras = [];
-        DB::listen(function ($consulta) use (&$escrituras) {
-            if (preg_match('/^\s*(insert|update|delete|create|drop|alter)\b/i', $consulta->sql)) {
-                $escrituras[] = $consulta->sql;
+        DB::listen(function ($consulta) use (&$escrituras, $auditoria) {
+            if (! preg_match('/^\s*(insert|update|delete|create|drop|alter)\b/i', $consulta->sql)) {
+                return;
             }
+
+            foreach ($auditoria as $tabla) {
+                if (str_contains($consulta->sql, $tabla)) {
+                    return;
+                }
+            }
+
+            $escrituras[] = $consulta->sql;
         });
 
         $this->actingAs($admin);

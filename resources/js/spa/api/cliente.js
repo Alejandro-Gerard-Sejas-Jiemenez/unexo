@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { conBase } from '../base';
 
 /**
  * Punto único de salida hacia la API. Todo lo que la SPA pida al servidor pasa
@@ -6,7 +7,7 @@ import axios from 'axios';
  * de validación se resuelven en un solo lugar.
  */
 const cliente = axios.create({
-    baseURL: '/api/panel',
+    baseURL: conBase('/api/panel'),
     withCredentials: true,
     withXSRFToken: true,
     headers: { Accept: 'application/json' },
@@ -14,7 +15,7 @@ const cliente = axios.create({
 
 /** Laravel exige la cookie XSRF antes de cualquier petición que escriba. */
 export async function prepararCsrf() {
-    await axios.get('/sanctum/csrf-cookie', { withCredentials: true });
+    await axios.get(conBase('/sanctum/csrf-cookie'), { withCredentials: true });
 }
 
 /**

@@ -60,6 +60,12 @@ class User extends Authenticatable
         return $this->hasMany(Grupo::class, 'docente_id');
     }
 
+    /** Métodos de pago del usuario, el predeterminado primero. */
+    public function metodosPago(): HasMany
+    {
+        return $this->hasMany(MetodoPago::class)->orderByDesc('predeterminado');
+    }
+
     public function estaActivo(): bool
     {
         return $this->estado === 'activo';

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\BitacoraService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
+    public function __construct(private readonly BitacoraService $bitacora) {}
+
     public function create(): View
     {
         return view('auth.login');
@@ -29,6 +32,7 @@ class LoginController extends Controller
 
         if (RateLimiter::tooManyAttempts($clave, 5)) {
             $segundos = RateLimiter::availableIn($clave);
+            $this->bitacora->loginFallido($request, $datos['usuario'], 'bloqueado_por_intentos');
 
             return back()->withErrors(['usuario' => "Demasiados intentos. Vuelve a intentarlo en {$segundos} segundos."])->onlyInput('usuario');
         }
@@ -39,23 +43,28 @@ class LoginController extends Controller
 
         if (! $usuario || ! Hash::check($datos['password'], $usuario->password)) {
             RateLimiter::hit($clave, 60);
+            $this->bitacora->loginFallido($request, $datos['usuario'], 'credenciales_incorrectas');
 
             return back()->withErrors(['usuario' => 'El correo o la contraseña no son correctos. Revisa los datos e inténtalo de nuevo.'])->onlyInput('usuario');
         }
 
         if (! $usuario->estaActivo()) {
+            $this->bitacora->loginFallido($request, $datos['usuario'], 'cuenta_inactiva');
+
             return back()->withErrors(['usuario' => 'Tu cuenta está inactiva. Contacta al administrador.'])->onlyInput('usuario');
         }
 
         RateLimiter::clear($clave);
         Auth::login($usuario, $request->boolean('recordar'));
         $request->session()->regenerate();
+        $this->bitacora->loginExitoso($request, $usuario->id);
 
         return redirect()->intended(route('panel'));
     }
 
     public function destroy(Request $request): RedirectResponse
     {
+        $this->bitacora->logout($request, $request->user()?->id);
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

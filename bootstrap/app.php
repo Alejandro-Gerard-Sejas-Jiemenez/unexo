@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\RegistraAcceso;
 use App\Http\Middleware\RolRequerido;
 use App\Http\Middleware\SoloClienteApi;
 use Illuminate\Foundation\Application;
@@ -15,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Bitácora y contador de visitas: en el grupo web para que ninguna
+        // página ni recurso del panel quede fuera del registro.
+        $middleware->appendToGroup('web', RegistraAcceso::class);
         $middleware->alias([
             'rol' => RolRequerido::class,
             'cliente.api' => SoloClienteApi::class,

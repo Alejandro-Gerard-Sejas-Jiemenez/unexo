@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Panel;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UsuarioResource;
 use App\Models\User;
+use App\Services\BitacoraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +24,8 @@ class AuthController extends Controller
 
     private const BLOQUEO_SEGUNDOS = 60;
 
+    public function __construct(private readonly BitacoraService $bitacora) {}
+
     public function login(Request $request): JsonResponse
     {
         $datos = $request->validate([
@@ -34,6 +37,7 @@ class AuthController extends Controller
 
         if (RateLimiter::tooManyAttempts($clave, self::INTENTOS_MAXIMOS)) {
             $segundos = RateLimiter::availableIn($clave);
+            $this->bitacora->loginFallido($request, $datos['usuario'], 'bloqueado_por_intentos');
 
             throw ValidationException::withMessages([
                 'usuario' => "Demasiados intentos. Vuelve a intentarlo en {$segundos} segundos.",
@@ -46,6 +50,7 @@ class AuthController extends Controller
 
         if (! $usuario || ! Hash::check($datos['password'], $usuario->password)) {
             RateLimiter::hit($clave, self::BLOQUEO_SEGUNDOS);
+            $this->bitacora->loginFallido($request, $datos['usuario'], 'credenciales_incorrectas');
 
             throw ValidationException::withMessages([
                 'usuario' => 'El correo o la contraseña no son correctos. Revisa los datos e inténtalo de nuevo.',
@@ -53,6 +58,8 @@ class AuthController extends Controller
         }
 
         if (! $usuario->estaActivo()) {
+            $this->bitacora->loginFallido($request, $datos['usuario'], 'cuenta_inactiva');
+
             throw ValidationException::withMessages([
                 'usuario' => 'Tu cuenta está inactiva. Contacta al administrador.',
             ]);
@@ -61,12 +68,14 @@ class AuthController extends Controller
         RateLimiter::clear($clave);
         Auth::login($usuario, $request->boolean('recordar'));
         $request->session()->regenerate();
+        $this->bitacora->loginExitoso($request, $usuario->id);
 
         return response()->json(['usuario' => new UsuarioResource($usuario)]);
     }
 
     public function logout(Request $request): JsonResponse
     {
+        $this->bitacora->logout($request, $request->user()?->id);
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
