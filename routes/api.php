@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Panel\AuditoriaApiController;
 use App\Http\Controllers\Api\Panel\AuthController;
 use App\Http\Controllers\Api\Panel\BuscadorApiController;
 use App\Http\Controllers\Api\Panel\CatalogoApiController;
+use App\Http\Controllers\Api\Panel\MatriculaPanelApiController;
 use App\Http\Controllers\Api\Panel\MenuController;
 use App\Http\Controllers\Api\Panel\PagoApiController;
 use App\Http\Controllers\Api\Panel\PlanificacionApiController;
@@ -55,6 +56,13 @@ Route::prefix('panel')->middleware('web')->group(function () {
             Route::put('cohortes/{cohorte}', [PlanificacionApiController::class, 'actualizarCohorte'])->whereUuid('cohorte');
             Route::post('cohortes/{cohorte}/aperturar-grupos', [PlanificacionApiController::class, 'aperturarGrupos'])->whereUuid('cohorte');
             Route::patch('cohortes/{cohorte}/estado', [PlanificacionApiController::class, 'cambiarEstadoCohorte'])->whereUuid('cohorte');
+
+            // CU6 y CU7: matriculación y estado de la matrícula.
+            Route::get('matriculas/opciones', [MatriculaPanelApiController::class, 'opciones']);
+            Route::get('matriculas', [MatriculaPanelApiController::class, 'index']);
+            Route::post('matriculas', [MatriculaPanelApiController::class, 'store']);
+            Route::get('matriculas/{matricula}', [MatriculaPanelApiController::class, 'show'])->whereUuid('matricula');
+            Route::patch('matriculas/{matricula}/estado', [MatriculaPanelApiController::class, 'cambiarEstado'])->whereUuid('matricula');
 
             Route::get('grupos', [PlanificacionApiController::class, 'gruposIndex']);
             Route::post('grupos', [PlanificacionApiController::class, 'guardarGrupo']);

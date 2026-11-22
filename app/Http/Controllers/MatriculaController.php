@@ -8,6 +8,7 @@ use App\Models\Cohorte;
 use App\Models\Grupo;
 use App\Models\Matricula;
 use App\Models\User;
+use App\Services\MatriculaConsultaService;
 use App\Services\MatriculaService;
 use App\Support\Opciones;
 use Illuminate\Http\RedirectResponse;
@@ -18,21 +19,17 @@ use Illuminate\View\View;
 
 class MatriculaController extends Controller
 {
+    public function __construct(private readonly MatriculaConsultaService $consulta) {}
+
     public function index(Request $request): View
     {
-        $estado = $request->query('estado');
-        $busqueda = trim((string) $request->query('q', ''));
+        $filtros = $request->only(['estado', 'origen', 'q']);
 
-        $matriculas = Matricula::with(['estudiante', 'cohorte.programa'])
-            ->withCount('inscripciones')
-            ->when(EstadoMatricula::tryFrom((string) $estado), fn ($q, $e) => $q->where('estado', $e->value))
-            ->when($busqueda !== '', fn ($q) => $q->whereHas('estudiante', fn ($u) => $u
-                ->where('nombres', 'like', "%{$busqueda}%")
-                ->orWhere('apellidos', 'like', "%{$busqueda}%")))
-            ->orderByDesc('fecha_matricula')
-            ->paginate(config('limites.por_pagina'))->withQueryString();
-
-        return view('matriculas.index', ['matriculas' => $matriculas, 'estadoFiltro' => $estado, 'busqueda' => $busqueda]);
+        return view('matriculas.index', [
+            'matriculas' => $this->consulta->listar($filtros)->withQueryString(),
+            'estadoFiltro' => $filtros['estado'] ?? null,
+            'busqueda' => trim((string) ($filtros['q'] ?? '')),
+        ]);
     }
 
     public function create(): View
