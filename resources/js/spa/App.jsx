@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { BASE } from './base';
 import { AuthProvider, useAuth } from './auth/AuthContext';
+import { TemaProvider } from './tema/TemaContext';
 import Layout from './componentes/Layout';
 import Login from './paginas/Login';
 import Panel from './paginas/Panel';
@@ -57,10 +58,14 @@ function Rutas() {
 
 export default function App() {
     return (
-        <BrowserRouter basename={BASE}>
-            <AuthProvider>
-                <Rutas />
-            </AuthProvider>
-        </BrowserRouter>
+        // El tema envuelve todo, incluido el login: la preferencia vale desde
+        // la primera pantalla, sin esperar a que haya sesión.
+        <TemaProvider>
+            <BrowserRouter basename={BASE}>
+                <AuthProvider>
+                    <Rutas />
+                </AuthProvider>
+            </BrowserRouter>
+        </TemaProvider>
     );
 }

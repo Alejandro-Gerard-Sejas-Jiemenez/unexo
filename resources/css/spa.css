@@ -1,24 +1,161 @@
 @import 'tailwindcss';
 
 /*
- * Identidad visual de la SPA en variables: los temas por segmento y el modo
- * día/noche se resuelven redefiniendo estas variables, sin tocar componentes.
+ * Toda la identidad visual vive en estas variables. Cambiar de tema o de modo
+ * solo las redefine: ningún componente conoce un color literal, así que añadir
+ * un tema nuevo no obliga a tocar la interfaz.
+ *
+ * Los temas son tres segmentos (adultos, jóvenes, niños) que se combinan de
+ * forma independiente con el modo día/noche: seis combinaciones en total.
  */
-:root {
-    --color-fondo: #f7f8f5;
+
+/* ---------------------------------------------- Adultos · día (por defecto) */
+:root,
+[data-tema='adultos'][data-modo='dia'] {
+    --color-fondo: #f5f6f3;
     --color-superficie: #ffffff;
-    --color-borde: #d8ded6;
-    --color-texto: #0e2a3f;
-    --color-texto-suave: #4a5a68;
-    --color-acento: #0e7c7b;
+    --color-superficie-2: #eceeea;
+    --color-borde: #d2d8d0;
+    --color-texto: #16262e;
+    --color-texto-suave: #4d5c66;
+    --color-acento: #0e6f6c;
+    --color-acento-suave: #e3efee;
     --color-acento-texto: #ffffff;
-    --color-error: #a3271e;
-    --escala-texto: 1;
-    --radio: 12px;
+    --color-error: #9b2c22;
+    --color-exito: #1d6b3f;
+    --radio: 10px;
+    --peso-titulo: 600;
 }
 
+[data-tema='adultos'][data-modo='noche'] {
+    --color-fondo: #11191e;
+    --color-superficie: #182229;
+    --color-superficie-2: #1f2c34;
+    --color-borde: #2d3d47;
+    --color-texto: #eef3f5;
+    --color-texto-suave: #a8bcc6;
+    --color-acento: #4cbfb8;
+    --color-acento-suave: #1b3331;
+    --color-acento-texto: #08201f;
+    --color-error: #ff9d92;
+    --color-exito: #7bd4a0;
+}
+
+/* ------------------------------------------------------------------ Jóvenes */
+[data-tema='jovenes'][data-modo='dia'] {
+    --color-fondo: #f4f3fb;
+    --color-superficie: #ffffff;
+    --color-superficie-2: #eae8f8;
+    --color-borde: #cfcbe9;
+    --color-texto: #1d1b3a;
+    --color-texto-suave: #514d78;
+    --color-acento: #5b35c7;
+    --color-acento-suave: #ece7fb;
+    --color-acento-texto: #ffffff;
+    --color-error: #a81f4e;
+    --color-exito: #176b4d;
+    --radio: 16px;
+    --peso-titulo: 700;
+}
+
+[data-tema='jovenes'][data-modo='noche'] {
+    --color-fondo: #14112a;
+    --color-superficie: #1d1940;
+    --color-superficie-2: #272150;
+    --color-borde: #3a3270;
+    --color-texto: #f0edff;
+    --color-texto-suave: #b6aee6;
+    --color-acento: #a98cff;
+    --color-acento-suave: #291f54;
+    --color-acento-texto: #16102e;
+    --color-error: #ff93b4;
+    --color-exito: #6fdcae;
+    --radio: 16px;
+    --peso-titulo: 700;
+}
+
+/* -------------------------------------------------------------------- Niños */
+[data-tema='ninos'][data-modo='dia'] {
+    --color-fondo: #fff8ec;
+    --color-superficie: #ffffff;
+    --color-superficie-2: #ffeed2;
+    --color-borde: #f0cf9c;
+    --color-texto: #3a2410;
+    --color-texto-suave: #6d4b28;
+    --color-acento: #0a6ba8;
+    --color-acento-suave: #def0fb;
+    --color-acento-texto: #ffffff;
+    --color-error: #a33114;
+    --color-exito: #1f6b36;
+    --radio: 22px;
+    --peso-titulo: 700;
+    --escala-base: 1.1;
+}
+
+[data-tema='ninos'][data-modo='noche'] {
+    --color-fondo: #1b1407;
+    --color-superficie: #2a2011;
+    --color-superficie-2: #362a17;
+    --color-borde: #52411f;
+    --color-texto: #fff3df;
+    --color-texto-suave: #d9bd93;
+    --color-acento: #63c3f5;
+    --color-acento-suave: #10314a;
+    --color-acento-texto: #06202f;
+    --color-error: #ffa58c;
+    --color-exito: #86d79c;
+    --radio: 22px;
+    --peso-titulo: 700;
+    --escala-base: 1.1;
+}
+
+/*
+ * Alto contraste: lleva todo el texto bastante por encima del 4.5:1 que pide
+ * el nivel AA, y refuerza los bordes para quien no distingue bien los tonos.
+ */
+[data-contraste='alto'] {
+    --color-fondo: #ffffff;
+    --color-superficie: #ffffff;
+    --color-superficie-2: #f0f0f0;
+    --color-borde: #000000;
+    --color-texto: #000000;
+    --color-texto-suave: #1a1a1a;
+    --color-acento: #00497a;
+    --color-acento-suave: #dbe9f4;
+    --color-acento-texto: #ffffff;
+    --color-error: #8a0000;
+    --color-exito: #00491f;
+}
+
+[data-contraste='alto'][data-modo='noche'] {
+    --color-fondo: #000000;
+    --color-superficie: #000000;
+    --color-superficie-2: #141414;
+    --color-borde: #ffffff;
+    --color-texto: #ffffff;
+    --color-texto-suave: #ededed;
+    --color-acento: #7fd4ff;
+    --color-acento-suave: #002031;
+    --color-acento-texto: #000000;
+    --color-error: #ffb3a7;
+    --color-exito: #93e8b2;
+}
+
+[data-contraste='alto'] .superficie,
+[data-contraste='alto'] table,
+[data-contraste='alto'] input,
+[data-contraste='alto'] select,
+[data-contraste='alto'] button {
+    border-width: 2px !important;
+}
+
+/*
+ * Escalado tipográfico. --escala la mueve la persona (hasta el 200 % que exige
+ * la WCAG) y --escala-base la aporta el tema; se multiplican, así que el tema
+ * de niños ya arranca más grande y el deslizador sigue funcionando sobre él.
+ */
 html {
-    font-size: calc(16px * var(--escala-texto));
+    font-size: calc(16px * var(--escala-base, 1) * var(--escala, 1));
 }
 
 body {
@@ -26,10 +163,23 @@ body {
     background: var(--color-fondo);
     color: var(--color-texto);
     font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+h1,
+h2,
+h3 {
+    font-weight: var(--peso-titulo, 600);
 }
 
 a {
     color: inherit;
+}
+
+.superficie {
+    background: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
 }
 
 .sr-only {
@@ -44,8 +194,18 @@ a {
     border: 0;
 }
 
-/* El foco visible nunca se quita: es el único rastro para quien navega con teclado. */
+/* El foco visible nunca se quita: es el único rastro de quien navega con teclado. */
 :focus-visible {
     outline: 3px solid var(--color-acento);
     outline-offset: 2px;
+}
+
+/* Quien pidió menos movimiento en su sistema no recibe transiciones. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
 }

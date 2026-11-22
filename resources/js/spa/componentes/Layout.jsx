@@ -1,5 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import BuscadorGlobal from './BuscadorGlobal';
+import PanelAccesibilidad from './PanelAccesibilidad';
+import PieDePagina from './PieDePagina';
 
 function Enlace({ entrada }) {
     return (
@@ -56,23 +59,32 @@ export default function Layout() {
             </nav>
 
             <div className="flex min-w-0 flex-1 flex-col">
-                <header className="flex items-center justify-between border-b border-[var(--color-borde)] bg-[var(--color-superficie)] px-6 py-3">
-                    <p className="text-sm text-[var(--color-texto-suave)]">
-                        {usuario?.nombre_completo}{' '}
-                        <span className="rounded-full bg-black/5 px-2 py-0.5">{usuario?.rol_label}</span>
-                    </p>
-                    <button
-                        type="button"
-                        onClick={salir}
-                        className="rounded-lg border border-[var(--color-borde)] bg-transparent px-3 py-1.5 text-sm"
-                    >
-                        Cerrar sesión
-                    </button>
+                <header className="flex items-center gap-4 border-b border-[var(--color-borde)] bg-[var(--color-superficie)] px-6 py-3">
+                    <BuscadorGlobal />
+
+                    <div className="ml-auto flex items-center gap-3">
+                        <p className="text-sm text-[var(--color-texto-suave)]">
+                            {usuario?.nombre_completo}{' '}
+                            <span className="rounded-full bg-[var(--color-acento-suave)] px-2 py-0.5 text-[var(--color-texto)]">
+                                {usuario?.rol_label}
+                            </span>
+                        </p>
+                        <PanelAccesibilidad />
+                        <button
+                            type="button"
+                            onClick={salir}
+                            className="superficie px-3 py-1.5 text-sm"
+                        >
+                            Cerrar sesión
+                        </button>
+                    </div>
                 </header>
 
                 <main id="contenido" className="min-w-0 flex-1 p-6">
                     <Outlet />
                 </main>
+
+                <PieDePagina />
             </div>
         </div>
     );
