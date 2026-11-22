@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\MatriculaApiController;
 use App\Http\Controllers\Api\Panel\AuditoriaApiController;
 use App\Http\Controllers\Api\Panel\AuthController;
 use App\Http\Controllers\Api\Panel\BuscadorApiController;
+use App\Http\Controllers\Api\Panel\CatalogoApiController;
 use App\Http\Controllers\Api\Panel\MenuController;
 use App\Http\Controllers\Api\Panel\PagoApiController;
 use App\Http\Controllers\Api\Panel\UsuarioApiController;
@@ -36,7 +37,22 @@ Route::prefix('panel')->middleware('web')->group(function () {
         Route::delete('metodos-pago/{metodo}', [PagoApiController::class, 'eliminarMetodo'])->whereUuid('metodo');
         Route::get('matriculas/{matricula}/transacciones', [PagoApiController::class, 'transacciones'])->whereUuid('matricula');
 
+        // Catálogo: lo consultan todos los roles; solo el administrador lo edita.
+        Route::get('catalogo/opciones', [CatalogoApiController::class, 'opciones']);
+        Route::get('catalogo/programas', [CatalogoApiController::class, 'programas']);
+        Route::get('catalogo/programas/{programa}', [CatalogoApiController::class, 'programa'])->whereUuid('programa');
+        Route::get('catalogo/modulos', [CatalogoApiController::class, 'modulos']);
+        Route::get('catalogo/modulos/{modulo}', [CatalogoApiController::class, 'modulo'])->whereUuid('modulo');
+
         Route::middleware('rol:administrador')->group(function () {
+            Route::post('catalogo/programas', [CatalogoApiController::class, 'guardarPrograma']);
+            Route::put('catalogo/programas/{programa}', [CatalogoApiController::class, 'actualizarPrograma'])->whereUuid('programa');
+            Route::post('catalogo/programas/{programa}/modulos', [CatalogoApiController::class, 'agregarModulo'])->whereUuid('programa');
+            Route::delete('catalogo/programas/{programa}/modulos/{modulo}', [CatalogoApiController::class, 'quitarModulo'])->whereUuid('programa')->whereUuid('modulo');
+            Route::patch('catalogo/programas/{programa}/modulos/{modulo}/mover', [CatalogoApiController::class, 'moverModulo'])->whereUuid('programa')->whereUuid('modulo');
+            Route::post('catalogo/modulos', [CatalogoApiController::class, 'guardarModulo']);
+            Route::put('catalogo/modulos/{modulo}', [CatalogoApiController::class, 'actualizarModulo'])->whereUuid('modulo');
+
             Route::get('bitacora', [AuditoriaApiController::class, 'bitacora']);
             Route::get('estadisticas', [AuditoriaApiController::class, 'estadisticas']);
 

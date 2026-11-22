@@ -7,6 +7,7 @@ use App\Http\Requests\StoreProgramaRequest;
 use App\Http\Requests\UpdateProgramaRequest;
 use App\Models\Modulo;
 use App\Models\Programa;
+use App\Services\CatalogoConsultaService;
 use App\Services\OrdenModulosService;
 use App\Support\Opciones;
 use Illuminate\Foundation\Http\FormRequest;
@@ -17,26 +18,17 @@ use Illuminate\View\View;
 
 class ProgramaController extends Controller
 {
+    public function __construct(private readonly CatalogoConsultaService $catalogo) {}
+
     public function index(Request $request): View
     {
-        $estado = $request->query('estado');
-        $sinModulosAbiertos = $request->query('atencion') === 'sin-modulos-abiertos';
-        $busqueda = trim((string) $request->query('q', ''));
-
-        $programas = Programa::withCount('modulos')
-            ->when(EstadoComercial::tryFrom((string) $estado), fn ($q, $e) => $q->where('estado_comercial', $e->value))
-            ->when($sinModulosAbiertos, fn ($q) => $q->abiertoSinModulosAbiertos())
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('nombre', 'like', "%{$busqueda}%")))
-            ->orderBy('nombre')
-            ->paginate(config('limites.por_pagina'))->withQueryString();
+        $filtros = $request->only(['estado', 'atencion', 'q']);
 
         return view('programas.index', [
-            'programas' => $programas,
-            'estadoFiltro' => $estado,
-            'sinModulosAbiertos' => $sinModulosAbiertos,
-            'busqueda' => $busqueda,
+            'programas' => $this->catalogo->programas($filtros)->withQueryString(),
+            'estadoFiltro' => $filtros['estado'] ?? null,
+            'sinModulosAbiertos' => ($filtros['atencion'] ?? null) === 'sin-modulos-abiertos',
+            'busqueda' => trim((string) ($filtros['q'] ?? '')),
         ]);
     }
 

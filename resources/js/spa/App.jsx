@@ -11,12 +11,14 @@ import UsuarioFormulario from './paginas/usuarios/Formulario';
 import Dashboard from './paginas/Dashboard';
 import Bitacora from './paginas/Bitacora';
 import Pagos from './paginas/Pagos';
+import ProgramasLista from './paginas/catalogo/ProgramasLista';
+import ProgramaFormulario from './paginas/catalogo/ProgramaFormulario';
+import ModulosLista from './paginas/catalogo/ModulosLista';
+import ModuloFormulario from './paginas/catalogo/ModuloFormulario';
 
 /** Módulos todavía servidos por el panel Blade; se van quitando al migrarlos. */
 const EN_MIGRACION = [
     'catalogo',
-    'modulos',
-    'programas',
     'cohortes',
     'grupos',
     'matriculas',
@@ -52,6 +54,12 @@ function Rutas() {
                 <Route path="estadisticas" element={<Dashboard />} />
                 <Route path="bitacora" element={<Bitacora />} />
                 <Route path="pagos" element={<Pagos />} />
+                <Route path="programas" element={<ProgramasLista />} />
+                <Route path="programas/nuevo" element={<ProgramaFormulario />} />
+                <Route path="programas/:id" element={<ProgramaFormulario />} />
+                <Route path="modulos" element={<ModulosLista />} />
+                <Route path="modulos/nuevo" element={<ModuloFormulario />} />
+                <Route path="modulos/:id" element={<ModuloFormulario />} />
                 {EN_MIGRACION.map((ruta) => (
                     <Route key={ruta} path={ruta} element={<EnConstruccion />} />
                 ))}

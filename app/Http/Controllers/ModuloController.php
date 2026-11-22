@@ -6,26 +6,24 @@ use App\Enums\EstadoComercial;
 use App\Http\Requests\StoreModuloRequest;
 use App\Http\Requests\UpdateModuloRequest;
 use App\Models\Modulo;
+use App\Services\CatalogoConsultaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ModuloController extends Controller
 {
+    public function __construct(private readonly CatalogoConsultaService $catalogo) {}
+
     public function index(Request $request): View
     {
-        $estado = $request->query('estado');
-        $busqueda = trim((string) $request->query('q', ''));
+        $filtros = $request->only(['estado', 'q']);
 
-        $modulos = Modulo::withCount('programas')
-            ->when(EstadoComercial::tryFrom((string) $estado), fn ($q, $e) => $q->where('estado_comercial', $e->value))
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('nombre', 'like', "%{$busqueda}%")))
-            ->orderBy('nombre')
-            ->paginate(config('limites.por_pagina'))->withQueryString();
-
-        return view('modulos.index', ['modulos' => $modulos, 'estadoFiltro' => $estado, 'busqueda' => $busqueda]);
+        return view('modulos.index', [
+            'modulos' => $this->catalogo->modulos($filtros)->withQueryString(),
+            'estadoFiltro' => $filtros['estado'] ?? null,
+            'busqueda' => trim((string) ($filtros['q'] ?? '')),
+        ]);
     }
 
     public function create(): View
