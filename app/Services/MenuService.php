@@ -87,12 +87,21 @@ class MenuService
                 'icono' => 'reportes',
             ],
             [
+                // Vive solo en la SPA, por eso la URL es la del cliente y no una ruta Blade.
+                'tipo' => 'enlace',
+                'etiqueta' => 'Estadísticas',
+                'url' => url('/app/estadisticas'),
+                'patron' => 'estadisticas',
+                'icono' => 'reportes',
+            ],
+            [
                 'tipo' => 'submenu',
                 'etiqueta' => 'Configuración y Seguridad',
                 'icono' => 'candado',
                 'items' => [
                     ['Usuarios', route('usuarios.index'), 'usuarios.*', 'usuarios'],
                     ['Acceso API', route('clientes-api.index'), 'clientes-api.*', 'candado'],
+                    ['Bitácora', url('/app/bitacora'), 'bitacora', 'candado'],
                 ],
             ],
         ];

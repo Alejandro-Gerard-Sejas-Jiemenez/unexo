@@ -8,6 +8,8 @@ import Panel from './paginas/Panel';
 import EnConstruccion from './paginas/EnConstruccion';
 import UsuariosLista from './paginas/usuarios/Lista';
 import UsuarioFormulario from './paginas/usuarios/Formulario';
+import Dashboard from './paginas/Dashboard';
+import Bitacora from './paginas/Bitacora';
 
 /** Módulos todavía servidos por el panel Blade; se van quitando al migrarlos. */
 const EN_MIGRACION = [
@@ -46,6 +48,8 @@ function Rutas() {
                 <Route path="usuarios" element={<UsuariosLista />} />
                 <Route path="usuarios/nuevo" element={<UsuarioFormulario />} />
                 <Route path="usuarios/:id" element={<UsuarioFormulario />} />
+                <Route path="estadisticas" element={<Dashboard />} />
+                <Route path="bitacora" element={<Bitacora />} />
                 {EN_MIGRACION.map((ruta) => (
                     <Route key={ruta} path={ruta} element={<EnConstruccion />} />
                 ))}
