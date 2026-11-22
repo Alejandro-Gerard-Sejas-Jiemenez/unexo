@@ -15,12 +15,14 @@ import ProgramasLista from './paginas/catalogo/ProgramasLista';
 import ProgramaFormulario from './paginas/catalogo/ProgramaFormulario';
 import ModulosLista from './paginas/catalogo/ModulosLista';
 import ModuloFormulario from './paginas/catalogo/ModuloFormulario';
+import EdicionesLista from './paginas/planificacion/EdicionesLista';
+import EdicionDetalle from './paginas/planificacion/EdicionDetalle';
+import GruposLista from './paginas/planificacion/GruposLista';
+import GrupoFormulario from './paginas/planificacion/GrupoFormulario';
 
 /** Módulos todavía servidos por el panel Blade; se van quitando al migrarlos. */
 const EN_MIGRACION = [
     'catalogo',
-    'cohortes',
-    'grupos',
     'matriculas',
     'reportes',
     'clientes-api',
@@ -60,6 +62,12 @@ function Rutas() {
                 <Route path="modulos" element={<ModulosLista />} />
                 <Route path="modulos/nuevo" element={<ModuloFormulario />} />
                 <Route path="modulos/:id" element={<ModuloFormulario />} />
+                <Route path="cohortes" element={<EdicionesLista />} />
+                <Route path="cohortes/nueva" element={<EdicionDetalle />} />
+                <Route path="cohortes/:id" element={<EdicionDetalle />} />
+                <Route path="grupos" element={<GruposLista />} />
+                <Route path="grupos/nuevo" element={<GrupoFormulario />} />
+                <Route path="grupos/:id" element={<GrupoFormulario />} />
                 {EN_MIGRACION.map((ruta) => (
                     <Route key={ruta} path={ruta} element={<EnConstruccion />} />
                 ))}

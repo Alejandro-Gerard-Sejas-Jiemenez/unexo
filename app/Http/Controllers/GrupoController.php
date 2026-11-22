@@ -13,6 +13,7 @@ use App\Models\Grupo;
 use App\Models\Modulo;
 use App\Models\User;
 use App\Services\GrupoService;
+use App\Services\PlanificacionConsultaService;
 use App\Support\Opciones;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,28 +21,17 @@ use Illuminate\View\View;
 
 class GrupoController extends Controller
 {
+    public function __construct(private readonly PlanificacionConsultaService $consulta) {}
+
     public function index(Request $request): View
     {
-        $estado = $request->query('estado');
-        $tipo = $request->query('tipo');
-        $busqueda = trim((string) $request->query('q', ''));
-
-        $grupos = Grupo::with(['modulo', 'docente', 'cohorte.programa'])
-            ->withCount('inscripciones')
-            ->when($tipo === 'suelto', fn ($q) => $q->whereNull('cohorte_id'))
-            ->when($tipo === 'cohorte', fn ($q) => $q->whereNotNull('cohorte_id'))
-            ->when(EstadoPlanificacion::tryFrom((string) $estado), fn ($q, $e) => $q->where('estado', $e->value))
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('nombre', 'like', "%{$busqueda}%")
-                ->orWhereHas('modulo', fn ($m) => $m->where('nombre', 'like', "%{$busqueda}%"))))
-            ->ordenadoPorPeriodo('desc')
-            ->paginate(config('limites.por_pagina'))->withQueryString();
+        $filtros = $request->only(['estado', 'tipo', 'q']);
 
         return view('grupos.index', [
-            'grupos' => $grupos,
-            'estadoFiltro' => $estado,
-            'tipoFiltro' => $tipo,
-            'busqueda' => $busqueda,
+            'grupos' => $this->consulta->grupos($filtros)->withQueryString(),
+            'estadoFiltro' => $filtros['estado'] ?? null,
+            'tipoFiltro' => $filtros['tipo'] ?? null,
+            'busqueda' => trim((string) ($filtros['q'] ?? '')),
         ]);
     }
 

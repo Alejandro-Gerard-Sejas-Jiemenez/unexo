@@ -9,6 +9,7 @@ use App\Models\Cohorte;
 use App\Models\Programa;
 use App\Models\User;
 use App\Services\PlanificacionCohorteService;
+use App\Services\PlanificacionConsultaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,21 +17,17 @@ use Illuminate\View\View;
 
 class CohorteController extends Controller
 {
+    public function __construct(private readonly PlanificacionConsultaService $consulta) {}
+
     public function index(Request $request): View
     {
-        $estado = $request->query('estado');
-        $busqueda = trim((string) $request->query('q', ''));
+        $filtros = $request->only(['estado', 'q']);
 
-        $cohortes = Cohorte::with('programa')
-            ->withCount(['grupos', 'matriculas'])
-            ->when(EstadoPlanificacion::tryFrom((string) $estado), fn ($q, $e) => $q->where('estado', $e->value))
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('nombre', 'like', "%{$busqueda}%")
-                ->orWhereHas('programa', fn ($p) => $p->where('nombre', 'like', "%{$busqueda}%"))))
-            ->orderByDesc('fecha_inicio')
-            ->paginate(config('limites.por_pagina'))->withQueryString();
-
-        return view('cohortes.index', ['cohortes' => $cohortes, 'estadoFiltro' => $estado, 'busqueda' => $busqueda]);
+        return view('cohortes.index', [
+            'cohortes' => $this->consulta->cohortes($filtros)->withQueryString(),
+            'estadoFiltro' => $filtros['estado'] ?? null,
+            'busqueda' => trim((string) ($filtros['q'] ?? '')),
+        ]);
     }
 
     public function create(): View

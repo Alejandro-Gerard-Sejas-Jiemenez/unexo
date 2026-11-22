@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Panel\BuscadorApiController;
 use App\Http\Controllers\Api\Panel\CatalogoApiController;
 use App\Http\Controllers\Api\Panel\MenuController;
 use App\Http\Controllers\Api\Panel\PagoApiController;
+use App\Http\Controllers\Api\Panel\PlanificacionApiController;
 use App\Http\Controllers\Api\Panel\UsuarioApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,7 +45,22 @@ Route::prefix('panel')->middleware('web')->group(function () {
         Route::get('catalogo/modulos', [CatalogoApiController::class, 'modulos']);
         Route::get('catalogo/modulos/{modulo}', [CatalogoApiController::class, 'modulo'])->whereUuid('modulo');
 
+        // Planificación: solo el administrador la toca (CU4 y CU5).
         Route::middleware('rol:administrador')->group(function () {
+            Route::get('planificacion/opciones', [PlanificacionApiController::class, 'opciones']);
+
+            Route::get('cohortes', [PlanificacionApiController::class, 'cohortes']);
+            Route::post('cohortes', [PlanificacionApiController::class, 'guardarCohorte']);
+            Route::get('cohortes/{cohorte}', [PlanificacionApiController::class, 'cohorte'])->whereUuid('cohorte');
+            Route::put('cohortes/{cohorte}', [PlanificacionApiController::class, 'actualizarCohorte'])->whereUuid('cohorte');
+            Route::post('cohortes/{cohorte}/aperturar-grupos', [PlanificacionApiController::class, 'aperturarGrupos'])->whereUuid('cohorte');
+            Route::patch('cohortes/{cohorte}/estado', [PlanificacionApiController::class, 'cambiarEstadoCohorte'])->whereUuid('cohorte');
+
+            Route::get('grupos', [PlanificacionApiController::class, 'gruposIndex']);
+            Route::post('grupos', [PlanificacionApiController::class, 'guardarGrupo']);
+            Route::get('grupos/{grupo}', [PlanificacionApiController::class, 'grupo'])->whereUuid('grupo');
+            Route::put('grupos/{grupo}', [PlanificacionApiController::class, 'actualizarGrupo'])->whereUuid('grupo');
+
             Route::post('catalogo/programas', [CatalogoApiController::class, 'guardarPrograma']);
             Route::put('catalogo/programas/{programa}', [CatalogoApiController::class, 'actualizarPrograma'])->whereUuid('programa');
             Route::post('catalogo/programas/{programa}/modulos', [CatalogoApiController::class, 'agregarModulo'])->whereUuid('programa');
