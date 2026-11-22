@@ -86,16 +86,17 @@ tendríamos si la API reimplementara las reglas.
 |---|---|---|
 | Usuarios | CU1 | Migrado |
 | Perfiles y matriz de acceso | CU2 | Menú dinámico listo; falta la pantalla de la matriz |
-| Catálogo (programas y módulos) | CU3 | Pendiente |
+| Catálogo (programas y módulos) | CU3 | Migrado, con plan de estudio |
 | Cohortes y grupos | CU4 | Pendiente |
 | Logística de clases | CU5 | Pendiente |
 | Matriculación | CU6 | Pendiente |
-| Estado de matrícula y pagos | CU7 | Pendiente |
-| Reportes y estadísticas | CU8 | Pendiente |
+| Estado de matrícula | CU7 | Pendiente (los pagos ya están) |
+| Reportes | CU8 | Las estadísticas están; faltan los tres reportes |
 
-Requisitos transversales del enunciado todavía sin implementar: bitácora de
+Requisitos transversales del enunciado, todos implementados: bitácora de
 auditoría, los tres temas con modo día/noche, escalado tipográfico y alto
-contraste, contador de visitas, búsqueda global y módulo de pagos electrónicos.
+contraste, contador de visitas, búsqueda global, panel de estadísticas y módulo
+de pagos electrónicos.
 
 Cuando no quede ningún módulo en `EN_MIGRACION`, se mueve la SPA de `/app` a `/`
 y se borran las vistas Blade del panel.
