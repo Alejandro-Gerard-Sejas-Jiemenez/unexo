@@ -1,111 +1,132 @@
 @import 'tailwindcss';
 
 /*
- * Toda la identidad visual vive en estas variables. Cambiar de tema o de modo
- * solo las redefine: ningún componente conoce un color literal, así que añadir
- * un tema nuevo no obliga a tocar la interfaz.
+ * Identidad visual de NEXO SIS. Los colores son los del diseño original:
+ * navy #082f4e, teal #07b0b0 y el rojo #e01e26 del logo.
  *
- * Los temas son tres segmentos (adultos, jóvenes, niños) que se combinan de
- * forma independiente con el modo día/noche: seis combinaciones en total.
+ * Todo vive en variables: cambiar de tema o de modo solo las redefine, así que
+ * ningún componente conoce un color literal y añadir un tema no obliga a tocar
+ * la interfaz. Los tres temas (adultos, jóvenes, niños) se combinan de forma
+ * independiente con el modo día/noche: seis combinaciones en total.
  */
 
 /* ---------------------------------------------- Adultos · día (por defecto) */
 :root,
 [data-tema='adultos'][data-modo='dia'] {
-    --color-fondo: #f5f6f3;
+    --color-fondo: #eef3f8;
     --color-superficie: #ffffff;
-    --color-superficie-2: #eceeea;
-    --color-borde: #d2d8d0;
-    --color-texto: #16262e;
-    --color-texto-suave: #4d5c66;
-    --color-acento: #0e6f6c;
-    --color-acento-suave: #e3efee;
+    --color-superficie-2: #f2f6fa;
+    --color-borde: #dde6ef;
+    --color-texto: #082f4e;
+    --color-texto-suave: #5a7187;
+    --color-acento: #082f4e;
+    --color-acento-suave: #e4eef5;
     --color-acento-texto: #ffffff;
-    --color-error: #9b2c22;
-    --color-exito: #1d6b3f;
-    --radio: 10px;
-    --peso-titulo: 600;
+    --color-realce: #07b0b0;
+    --color-error: #c01a21;
+    --color-exito: #0f7a52;
+    --color-aviso: #a86a00;
+    --color-aviso-fondo: #fff8e4;
+    --radio: 14px;
+    --peso-titulo: 700;
+    --sombra: 0 1px 2px rgb(8 47 78 / 0.06), 0 8px 24px -16px rgb(8 47 78 / 0.3);
 }
 
 [data-tema='adultos'][data-modo='noche'] {
-    --color-fondo: #11191e;
-    --color-superficie: #182229;
-    --color-superficie-2: #1f2c34;
-    --color-borde: #2d3d47;
-    --color-texto: #eef3f5;
-    --color-texto-suave: #a8bcc6;
-    --color-acento: #4cbfb8;
-    --color-acento-suave: #1b3331;
-    --color-acento-texto: #08201f;
+    --color-fondo: #061b2c;
+    --color-superficie: #0c2a42;
+    --color-superficie-2: #113552;
+    --color-borde: #1d4463;
+    --color-texto: #eaf2f8;
+    --color-texto-suave: #9db6c9;
+    --color-acento: #2ecfcf;
+    --color-acento-suave: #0d3a4a;
+    --color-acento-texto: #04202c;
+    --color-realce: #2ecfcf;
     --color-error: #ff9d92;
-    --color-exito: #7bd4a0;
+    --color-exito: #6fd4a4;
+    --color-aviso: #f0c070;
+    --color-aviso-fondo: #2e2409;
+    --sombra: 0 1px 2px rgb(0 0 0 / 0.4);
 }
 
 /* ------------------------------------------------------------------ Jóvenes */
 [data-tema='jovenes'][data-modo='dia'] {
-    --color-fondo: #f4f3fb;
+    --color-fondo: #f3f2fc;
     --color-superficie: #ffffff;
-    --color-superficie-2: #eae8f8;
-    --color-borde: #cfcbe9;
-    --color-texto: #1d1b3a;
-    --color-texto-suave: #514d78;
-    --color-acento: #5b35c7;
-    --color-acento-suave: #ece7fb;
+    --color-superficie-2: #eae8f9;
+    --color-borde: #d5d0ee;
+    --color-texto: #1d1b3f;
+    --color-texto-suave: #514d7c;
+    --color-acento: #4b2fbd;
+    --color-acento-suave: #eae5fb;
     --color-acento-texto: #ffffff;
+    --color-realce: #07b0b0;
     --color-error: #a81f4e;
     --color-exito: #176b4d;
-    --radio: 16px;
-    --peso-titulo: 700;
+    --color-aviso: #9a5b00;
+    --color-aviso-fondo: #fff5e0;
+    --radio: 20px;
+    --peso-titulo: 800;
 }
 
 [data-tema='jovenes'][data-modo='noche'] {
-    --color-fondo: #14112a;
-    --color-superficie: #1d1940;
-    --color-superficie-2: #272150;
-    --color-borde: #3a3270;
+    --color-fondo: #14112c;
+    --color-superficie: #1e1943;
+    --color-superficie-2: #292252;
+    --color-borde: #3c3473;
     --color-texto: #f0edff;
-    --color-texto-suave: #b6aee6;
-    --color-acento: #a98cff;
-    --color-acento-suave: #291f54;
+    --color-texto-suave: #b4abe8;
+    --color-acento: #ad92ff;
+    --color-acento-suave: #2a2057;
     --color-acento-texto: #16102e;
+    --color-realce: #2ecfcf;
     --color-error: #ff93b4;
     --color-exito: #6fdcae;
-    --radio: 16px;
-    --peso-titulo: 700;
+    --color-aviso: #f3c577;
+    --color-aviso-fondo: #2d2208;
+    --radio: 20px;
+    --peso-titulo: 800;
 }
 
 /* -------------------------------------------------------------------- Niños */
 [data-tema='ninos'][data-modo='dia'] {
-    --color-fondo: #fff8ec;
+    --color-fondo: #fff7ea;
     --color-superficie: #ffffff;
-    --color-superficie-2: #ffeed2;
-    --color-borde: #f0cf9c;
+    --color-superficie-2: #ffeed0;
+    --color-borde: #f2d09a;
     --color-texto: #3a2410;
     --color-texto-suave: #6d4b28;
     --color-acento: #0a6ba8;
-    --color-acento-suave: #def0fb;
+    --color-acento-suave: #ddeffb;
     --color-acento-texto: #ffffff;
+    --color-realce: #e01e26;
     --color-error: #a33114;
     --color-exito: #1f6b36;
-    --radio: 22px;
-    --peso-titulo: 700;
+    --color-aviso: #9c5e00;
+    --color-aviso-fondo: #fff3d6;
+    --radio: 26px;
+    --peso-titulo: 800;
     --escala-base: 1.1;
 }
 
 [data-tema='ninos'][data-modo='noche'] {
     --color-fondo: #1b1407;
     --color-superficie: #2a2011;
-    --color-superficie-2: #362a17;
-    --color-borde: #52411f;
+    --color-superficie-2: #372b18;
+    --color-borde: #53421f;
     --color-texto: #fff3df;
     --color-texto-suave: #d9bd93;
     --color-acento: #63c3f5;
     --color-acento-suave: #10314a;
     --color-acento-texto: #06202f;
+    --color-realce: #ff7a80;
     --color-error: #ffa58c;
     --color-exito: #86d79c;
-    --radio: 22px;
-    --peso-titulo: 700;
+    --color-aviso: #f5c87a;
+    --color-aviso-fondo: #2f2409;
+    --radio: 26px;
+    --peso-titulo: 800;
     --escala-base: 1.1;
 }
 
@@ -120,11 +141,15 @@
     --color-borde: #000000;
     --color-texto: #000000;
     --color-texto-suave: #1a1a1a;
-    --color-acento: #00497a;
+    --color-acento: #00375e;
     --color-acento-suave: #dbe9f4;
     --color-acento-texto: #ffffff;
+    --color-realce: #00497a;
     --color-error: #8a0000;
     --color-exito: #00491f;
+    --color-aviso: #5a3600;
+    --color-aviso-fondo: #fff4d6;
+    --sombra: none;
 }
 
 [data-contraste='alto'][data-modo='noche'] {
@@ -137,14 +162,18 @@
     --color-acento: #7fd4ff;
     --color-acento-suave: #002031;
     --color-acento-texto: #000000;
+    --color-realce: #7fd4ff;
     --color-error: #ffb3a7;
     --color-exito: #93e8b2;
+    --color-aviso: #ffd98a;
+    --color-aviso-fondo: #201700;
 }
 
 [data-contraste='alto'] .superficie,
 [data-contraste='alto'] table,
 [data-contraste='alto'] input,
 [data-contraste='alto'] select,
+[data-contraste='alto'] textarea,
 [data-contraste='alto'] button {
     border-width: 2px !important;
 }
@@ -158,28 +187,39 @@ html {
     font-size: calc(16px * var(--escala-base, 1) * var(--escala, 1));
 }
 
-body {
-    margin: 0;
-    background: var(--color-fondo);
-    color: var(--color-texto);
-    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-    transition: background-color 150ms ease, color 150ms ease;
+/*
+ * Estas reglas van en @layer base a propósito. Sin capa, el CSS las considera
+ * más fuertes que cualquier utilidad de Tailwind (lo no estratificado le gana a
+ * lo estratificado), y entonces `a { color: inherit }` pisaba el color de todos
+ * los enlaces con clase, dejando el menú activo en navy sobre navy.
+ */
+@layer base {
+    body {
+        margin: 0;
+        background: var(--color-fondo);
+        color: var(--color-texto);
+        font-family: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    h1,
+    h2,
+    h3 {
+        font-weight: var(--peso-titulo, 700);
+        letter-spacing: -0.015em;
+    }
+
+    a {
+        color: inherit;
+    }
 }
 
-h1,
-h2,
-h3 {
-    font-weight: var(--peso-titulo, 600);
-}
-
-a {
-    color: inherit;
-}
-
+/* Tarjeta: la superficie sobre la que se apoya casi todo el panel. */
 .superficie {
     background: var(--color-superficie);
     border: 1px solid var(--color-borde);
     border-radius: var(--radio);
+    box-shadow: var(--sombra, none);
 }
 
 .sr-only {
@@ -196,7 +236,7 @@ a {
 
 /* El foco visible nunca se quita: es el único rastro de quien navega con teclado. */
 :focus-visible {
-    outline: 3px solid var(--color-acento);
+    outline: 3px solid var(--color-realce);
     outline-offset: 2px;
 }
 

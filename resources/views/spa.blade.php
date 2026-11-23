@@ -8,6 +8,10 @@
          ese prefijo; aquí se lo pasamos ya resuelto desde APP_URL. --}}
     <meta name="base-path" content="{{ rtrim(parse_url(url('/'), PHP_URL_PATH) ?: '', '/') }}">
     <title>{{ config('app.name') }}</title>
+    <link rel="icon" href="{{ url('/images/logo.png') }}" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/spa.css', 'resources/js/spa/main.jsx'])
 </head>
 <body>

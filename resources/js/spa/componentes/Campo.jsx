@@ -38,4 +38,6 @@ export default function Campo({ id, etiqueta, error, requerido = false, children
 
 /** Clases compartidas por todos los controles, para que el formulario se vea parejo. */
 export const claseControl =
-    'w-full rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie)] px-3 py-2 text-sm';
+    'w-full rounded-xl border border-[var(--color-borde)] bg-[var(--color-superficie)] px-3 py-2 text-sm ' +
+    'shadow-[inset_0_1px_2px_rgb(8_47_78_/_0.05)] transition-colors ' +
+    'focus:border-[var(--color-realce)]';

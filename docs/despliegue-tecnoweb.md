@@ -17,6 +17,30 @@ Por eso `config/database.php` lee el schema de `DB_SEARCH_PATH` en vez de tenerl
 fijo en `public`: si apuntara a `public`, Laravel leería la tabla `migrations`
 de otro grupo y chocaría con sus tablas `grupo`, `modulo` y `persona`.
 
+## No desarrolles apuntando a la base del servidor
+
+Medido el 2026-11-22 desde una máquina de casa: **cada consulta a
+`db.tecnoweb.org.bo` tarda ~1,1 s** (conectar, 1,5 s). Una pantalla que hace
+treinta consultas tarda más de medio minuto, y el login llegó a 57 s.
+
+No es el código: es la latencia de red hasta el servidor de la cátedra. En
+producción no pasa, porque ahí la aplicación y la base están en la misma red.
+
+Para desarrollar usá una base local y dejá la del servidor para el despliegue.
+Hay dos opciones; la de SQLite no necesita instalar nada:
+
+```
+DB_CONNECTION=sqlite
+```
+
+y crear el archivo `database/database.sqlite`. O, con Docker Desktop abierto:
+
+```bash
+docker compose up -d     # PostgreSQL 16 en el puerto 5433
+```
+
+con la configuración que trae `.env.example`.
+
 ## Correr en local
 
 Requisitos: PHP 8.2+ con `pdo_pgsql`, Composer, Node 20+ y pnpm.
