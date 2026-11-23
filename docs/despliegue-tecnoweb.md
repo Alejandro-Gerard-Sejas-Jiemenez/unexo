@@ -1,30 +1,116 @@
-# Despliegue en www.tecnoweb.org.bo
+# Correr en local y desplegar en tecnoweb
 
 Destino: `https://www.tecnoweb.org.bo/inf513/grupo06sa/proyecto2`
-Base de datos: `db.tecnoweb.org.bo`, esquema del grupo.
+Base: `db_grupo06sa` en `db.tecnoweb.org.bo`, schema **`unexo_web`**.
 
-## Lo que hace falta y no está en el repositorio
+## La base de datos del grupo es compartida
 
-1. Usuario y contraseña de **SSH o FTP** del grupo en el servidor.
-2. Usuario, contraseña y nombre del **esquema PostgreSQL** asignado.
-3. Saber si el servidor permite ejecutar `composer` y `php artisan` por SSH.
-   Si solo hay FTP, hay que subir `vendor/` y `public/build/` ya construidos
-   desde la máquina local.
+Verificado el 2026-11-22 conectándose con el usuario `grupo06sa`:
 
-## El problema del subdirectorio
+| Schema | Qué contiene | Lo tocamos |
+|---|---|---|
+| `unexo` | **Proyecto 1**, el sistema por correo en Java: `usuario`, `matricula`, `bitacora_comando`, `sincronizacion_sis`… con datos reales | No |
+| `public` | Tablas de otros proyectos de la materia (almacén, productos, pedidos) y una tabla `migrations` ajena | No |
+| `unexo_web` | **Este proyecto.** 25 tablas de Laravel | Sí |
 
-Laravel espera que `public/` sea la raíz del sitio, pero aquí la aplicación
-cuelga de `/inf513/grupo06sa/proyecto2`. Dos formas de resolverlo:
+Por eso `config/database.php` lee el schema de `DB_SEARCH_PATH` en vez de tenerlo
+fijo en `public`: si apuntara a `public`, Laravel leería la tabla `migrations`
+de otro grupo y chocaría con sus tablas `grupo`, `modulo` y `persona`.
 
-**A. El directorio del grupo apunta a `public/`** (lo ideal, si se puede
-configurar un alias o un symlink). No hay que tocar nada más.
+## Correr en local
 
-**B. Subir la aplicación a una carpeta hermana** y dejar en el directorio
-público solo el contenido de `public/`, con `index.php` apuntando una carpeta
-más arriba:
+Requisitos: PHP 8.2+ con `pdo_pgsql`, Composer, Node 20+ y pnpm.
+
+```bash
+composer install
+pnpm install
+cp .env.example .env
+php artisan key:generate
+```
+
+Después, en el `.env`, apuntar a la base del servidor:
 
 ```
-inf513/grupo06sa/
+DB_CONNECTION=pgsql
+DB_HOST=db.tecnoweb.org.bo
+DB_PORT=5432
+DB_DATABASE=db_grupo06sa
+DB_USERNAME=grupo06sa
+DB_PASSWORD=<la del grupo>
+DB_SEARCH_PATH=unexo_web
+DB_SSLMODE=prefer
+```
+
+El schema y las tablas ya existen, así que **no hace falta migrar de nuevo**.
+Si alguna vez hubiera que rehacerlo desde cero:
+
+```bash
+php artisan migrate --force      # crea las 25 tablas en unexo_web
+php artisan db:seed --force      # datos de demostración
+```
+
+No usar `migrate:fresh` contra el servidor: borra las tablas del schema.
+
+Para levantarlo hacen falta **dos procesos a la vez**, en dos terminales:
+
+```powershell
+php artisan serve
+```
+
+```powershell
+pnpm run dev
+```
+
+Y entrar a `http://127.0.0.1:8000`, que redirige solo a `/app`.
+
+Si se quiere probar el build de producción en lugar del servidor de desarrollo,
+alcanza con `pnpm run build` y entonces basta `php artisan serve`.
+
+### Usuarios de prueba
+
+Contraseña `Demo12345` para todos.
+
+| Rol | Correo |
+|---|---|
+| Administrador | `admin@nexo.test` |
+| Docente | `carlos.mendoza@nexo.test` |
+| Estudiante | `andres.flores@nexo.test` |
+
+## Subir al servidor
+
+### 1. Preparar el paquete en local
+
+```bash
+pnpm run build
+composer install --no-dev --optimize-autoloader
+```
+
+### 2. Qué se sube y qué no
+
+Sube: `app/ bootstrap/ config/ database/ lang/ public/ resources/ routes/
+storage/ vendor/ artisan composer.json`.
+
+**No** subas: `node_modules/`, `tests/`, `.git/`, `.env`, `.env.respaldo-*`.
+El `.env` se crea en el servidor; nunca viaja con la contraseña dentro.
+
+Por SFTP, con el mismo usuario y contraseña de la base:
+
+```
+Host: tecnoweb.org.bo    Usuario: grupo06sa
+```
+
+### 3. El problema del subdirectorio
+
+Laravel espera `public/` como raíz del sitio, pero la app cuelga de
+`/inf513/grupo06sa/proyecto2`. Dos variantes:
+
+**A. El directorio del grupo apunta a `public/`** (lo ideal). Nada más que hacer.
+
+**B. Dejar la app en una carpeta hermana** y en el directorio público solo el
+contenido de `public/`:
+
+```
+/home/grupo06sa/public_html/inf513/grupo06sa/
 ├── app-nexo/          ← todo el proyecto menos public/
 └── proyecto2/         ← el contenido de public/
     ├── index.php      ← se editan las dos rutas de require
@@ -40,58 +126,43 @@ $app = require_once __DIR__.'/../app-nexo/bootstrap/app.php';
 ```
 
 El código ya está preparado para la subruta: `spa.blade.php` publica el prefijo
-en una etiqueta `<meta name="base-path">` que React Router y el cliente HTTP
-leen (`resources/js/spa/base.js`). Sale de `APP_URL`, así que basta con que esa
+en `<meta name="base-path">`, que React Router y el cliente HTTP leen
+(`resources/js/spa/base.js`). Sale de `APP_URL`, así que basta con que esa
 variable incluya la ruta completa.
 
-## Pasos
+### 4. En el servidor
 
 ```bash
-# 1. En local: construir los assets
-pnpm install
-pnpm run build
-
-# 2. En local: dependencias de producción, sin las de desarrollo
-composer install --no-dev --optimize-autoloader
-
-# 3. Subir todo menos: node_modules/, tests/, .git/, .env
-#    Sí hay que subir: vendor/ y public/build/
-
-# 4. En el servidor: crear el .env
 cp .env.produccion.example .env
+nano .env                      # completar DB_PASSWORD
 php artisan key:generate
-# completar DB_PASSWORD y DB_DATABASE
-
-# 5. Permisos de escritura
 chmod -R 775 storage bootstrap/cache
-
-# 6. Crear el esquema
-php artisan migrate --force
-php artisan db:seed --force      # solo si se quieren los datos de demostración
-
-# 7. Cachear configuración y rutas
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
 
+Las migraciones **no** se corren de nuevo: el schema `unexo_web` ya está creado
+con sus datos desde local.
+
 ## Comprobaciones después de subir
 
 | Qué | Cómo |
 |---|---|
-| La SPA carga | Abrir `/inf513/grupo06sa/proyecto2/app` |
-| Los assets resuelven | Que no haya 404 de `/build/...` en la consola del navegador |
-| El login funciona | La cookie XSRF debe llegar antes del POST; si da 419, revisar `SESSION_PATH` |
+| La SPA carga | Abrir `/inf513/grupo06sa/proyecto2/` (redirige a `/app`) |
+| Los assets resuelven | Sin 404 de `/build/...` en la consola del navegador |
+| El prefijo llegó bien | Ver el `<meta name="base-path">` en el HTML: debe decir `/inf513/grupo06sa/proyecto2` |
+| El login funciona | Si da 419, revisar `SESSION_PATH` y `SESSION_DOMAIN` |
 | La API del panel responde | `/api/panel/me` con sesión iniciada |
 | La API del CRM sigue viva | `/api/v1/crm/catalogo` con el token Bearer |
 | El contador suma | Recargar una vista y mirar el pie |
 
 ## Cuidados
 
-- **El `.env` no se versiona.** La contraseña de la base va solo en el servidor.
-- **`APP_DEBUG=false`** en producción: con `true` se filtran rutas y credenciales
-  en las páginas de error.
-- Si se vuelve a desplegar, repetir `php artisan config:cache` después de cada
-  cambio del `.env`, o la configuración vieja sigue en caché.
-- La base local apunta hoy a Neon (AWS). Al pasar a `db.tecnoweb.org.bo` hay que
-  correr las migraciones de nuevo: son esquemas distintos.
+- **`APP_DEBUG=false`** en producción: con `true` se filtran rutas y
+  credenciales en las páginas de error.
+- Después de cada cambio del `.env`, repetir `php artisan config:cache` o la
+  configuración vieja sigue en caché.
+- El `.env` nunca se versiona. `.gitignore` ignora todo `.env*` salvo las dos
+  plantillas.
+- No apuntar `DB_SEARCH_PATH` a `unexo` ni a `public`: son de otros sistemas.

@@ -4,10 +4,12 @@ Thumbs.db
 Desktop.ini
 
 # Environment
+# Se ignora todo .env* y solo pasan las plantillas: así un respaldo o una
+# variante local nunca se sube por olvido con las credenciales dentro.
 .env
-.env.backup
-.env.*.local
-.env.production
+.env.*
+!.env.example
+!.env.produccion.example
 
 # Dependencies
 /node_modules
