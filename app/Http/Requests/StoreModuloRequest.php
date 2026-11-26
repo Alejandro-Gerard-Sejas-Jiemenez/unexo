@@ -19,6 +19,7 @@ class StoreModuloRequest extends FormRequest
             'codigo' => ['required', 'string', 'max:'.config('limites.modulos.codigo'), Rule::unique('modulos', 'codigo')],
             'nombre' => ['required', 'string', 'max:'.config('limites.modulos.nombre')],
             'duracion_horas' => ['nullable', 'integer', 'min:1', 'max:'.config('limites.modulos.duracion_horas')],
+            'precio' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'estado_comercial' => ['required', Rule::enum(EstadoComercial::class)],
             'descripcion' => ['nullable', 'string'],
             'prerrequisito' => ['nullable', 'string', 'max:'.config('limites.modulos.prerrequisito')],

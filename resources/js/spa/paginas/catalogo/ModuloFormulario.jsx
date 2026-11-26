@@ -13,6 +13,7 @@ const VACIO = {
     descripcion: '',
     prerrequisito: '',
     duracion_horas: '',
+    precio: '',
     estado_comercial: 'borrador',
     pdf_temario_url: '',
 };
@@ -137,6 +138,20 @@ export default function ModuloFormulario() {
                                     className={claseControl}
                                     value={datos.duracion_horas}
                                     onChange={cambiar('duracion_horas')}
+                                />
+                            )}
+                        </Campo>
+
+                        <Campo id="precio" etiqueta="Precio como módulo suelto (Bs)" error={errores.precio}>
+                            {(p) => (
+                                <input
+                                    {...p}
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    className={claseControl}
+                                    value={datos.precio}
+                                    onChange={cambiar('precio')}
                                 />
                             )}
                         </Campo>

@@ -88,7 +88,7 @@ class PagoService
                 return $existente;
             }
 
-            $importe = (float) ($actual->cohorte?->programa?->precio ?? 0);
+            $importe = $actual->importe() ?? 0.0;
             if ($importe <= 0) {
                 $this->fallar('monto', 'Esta matrícula todavía no tiene un importe por pagar. Consulta con administración.');
             }

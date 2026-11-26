@@ -311,7 +311,7 @@ export default function Pagos() {
                                     const puedePagoCompleto =
                                         matricula.estado === 'pendiente' &&
                                         transacciones.length === 0 &&
-                                        Number(matricula.cohorte?.precio ?? 0) > 0;
+                                        Number(matricula.importe ?? 0) > 0;
 
                                     return (
                                         <div key={matricula.id} className="superficie space-y-4 p-5">
@@ -376,9 +376,9 @@ export default function Pagos() {
                                             {puedePagoCompleto && (
                                                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-(--color-borde) p-3">
                                                     <p className="text-sm">
-                                                        Monto del programa:{' '}
+                                                        {matricula.cohorte ? 'Monto del programa' : 'Monto del módulo'}:{' '}
                                                         <b className="tabular-nums">
-                                                            {Number(matricula.cohorte.precio).toFixed(2)} {moneda}
+                                                            {Number(matricula.importe).toFixed(2)} {moneda}
                                                         </b>
                                                     </p>
                                                     <button

@@ -36,6 +36,7 @@ class MatriculaPanelResource extends JsonResource
                     ? (float) $this->cohorte->programa->precio
                     : null,
             ] : null),
+            'importe' => $this->importe(),
             'estado' => $this->estado->value,
             'estado_label' => $this->estado->label(),
             'origen' => $this->origen->value,

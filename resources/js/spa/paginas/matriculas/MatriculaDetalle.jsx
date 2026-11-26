@@ -40,7 +40,7 @@ export default function MatriculaDetalle() {
             setMetodosEstudiante(resP.data.metodos_estudiante ?? []);
             setCobro((prev) => ({
                 ...prev,
-                monto: prev.monto || (m.cohorte?.precio ? String(m.cohorte.precio) : ''),
+                monto: prev.monto || (m.importe ? String(m.importe) : ''),
             }));
         } catch (error) {
             setAviso(error.message);

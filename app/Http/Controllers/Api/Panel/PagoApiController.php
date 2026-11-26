@@ -52,7 +52,7 @@ class PagoApiController extends Controller
     public function misMatriculas(Request $request): JsonResponse
     {
         $matriculas = Matricula::where('estudiante_id', $request->user()->id)
-            ->with(['cohorte.programa', 'transacciones.metodoPago'])
+            ->with(['cohorte.programa', 'inscripciones.grupo.modulo', 'transacciones.metodoPago'])
             ->orderByDesc('fecha_matricula')
             ->get();
 

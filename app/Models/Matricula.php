@@ -50,6 +50,19 @@ class Matricula extends Model
         return $this->hasMany(InscripcionGrupo::class);
     }
 
+    /**
+     * Importe a cobrar: el del programa si va por una edición; si es un módulo
+     * suelto, el precio de ese módulo. Null cuando todavía no tiene precio.
+     */
+    public function importe(): ?float
+    {
+        $precio = $this->cohorte_id
+            ? $this->cohorte?->programa?->precio
+            : $this->inscripciones->first()?->grupo?->modulo?->precio;
+
+        return $precio !== null ? (float) $precio : null;
+    }
+
     public function comprobantes(): HasMany
     {
         return $this->hasMany(Comprobante::class)->latest();

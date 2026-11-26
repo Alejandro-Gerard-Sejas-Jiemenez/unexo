@@ -19,6 +19,7 @@ class Modulo extends Model
         'codigo',
         'nombre',
         'duracion_horas',
+        'precio',
         'estado_comercial',
         'descripcion',
         'prerrequisito',
@@ -29,6 +30,7 @@ class Modulo extends Model
     {
         return [
             'estado_comercial' => EstadoComercial::class,
+            'precio' => 'decimal:2',
         ];
     }
 
