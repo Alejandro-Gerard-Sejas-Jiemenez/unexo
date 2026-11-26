@@ -50,3 +50,6 @@ Homestead.yaml
 # Fuentes del cliente para SDD (requerimientos, minuta del audio, brochure): solo locales
 /context
 /specs
+
+# Enunciado del proyecto: solo local
+docs/requisitos-proyecto-final.md
