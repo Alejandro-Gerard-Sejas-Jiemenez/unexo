@@ -23,6 +23,7 @@ use App\Models\Modulo;
 use App\Models\Programa;
 use App\Models\User;
 use App\Services\GrupoService;
+use App\Services\HorarioFrecuenteService;
 use App\Services\PlanificacionCohorteService;
 use App\Services\PlanificacionConsultaService;
 use Illuminate\Http\JsonResponse;
@@ -235,6 +236,7 @@ class PlanificacionApiController extends Controller
                 fn (DiaSemana $d) => ['valor' => $d->value, 'etiqueta' => $d->label()],
                 DiaSemana::cases(),
             ),
+            'horarios_frecuentes' => app(HorarioFrecuenteService::class)->masUsados(),
             'limites' => config('limites.grupos'),
         ]);
     }
