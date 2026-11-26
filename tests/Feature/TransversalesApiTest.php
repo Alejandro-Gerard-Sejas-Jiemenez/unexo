@@ -103,7 +103,7 @@ class TransversalesApiTest extends TestCase
         VisitaPagina::query()->delete();
         \Illuminate\Support\Facades\Schema::drop('visitas_pagina');
 
-        $this->actingAs($admin)->get('/panel')->assertOk();
+        $this->actingAs($admin)->get('/')->assertOk();
     }
 
     // ------------------------------------------- Requisito 7: contador visitas
@@ -112,10 +112,10 @@ class TransversalesApiTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin)->get('/panel')->assertOk();
-        $this->actingAs($admin)->get('/panel')->assertOk();
+        $this->actingAs($admin)->postJson('/api/panel/visitas', ['ruta' => '/'])->assertOk();
+        $this->actingAs($admin)->postJson('/api/panel/visitas', ['ruta' => '/'])->assertOk();
 
-        $this->assertSame(2, VisitaPagina::where('ruta', '/panel')->value('contador'));
+        $this->assertSame(2, VisitaPagina::where('ruta', '/')->value('contador'));
     }
 
     public function test_las_descargas_no_cuentan_como_visita(): void
@@ -130,9 +130,9 @@ class TransversalesApiTest extends TestCase
     public function test_la_api_expone_el_contador_para_el_pie_de_pagina(): void
     {
         $admin = $this->admin();
-        $this->actingAs($admin)->get('/panel')->assertOk();
+        $this->actingAs($admin)->postJson('/api/panel/visitas', ['ruta' => '/catalogo'])->assertOk();
 
-        $this->actingAs($admin)->getJson('/api/panel/visitas?ruta=/panel')
+        $this->actingAs($admin)->getJson('/api/panel/visitas?ruta=/catalogo')
             ->assertOk()
             ->assertJsonPath('pagina', 1)
             ->assertJsonStructure(['total', 'pagina']);

@@ -89,7 +89,7 @@ export default function ZonaArchivo({
                     <img
                         src={imagenMostrar}
                         alt="Vista previa"
-                        className="max-h-44 max-w-full rounded-lg border border-[var(--color-borde)] object-cover"
+                        className="max-h-44 max-w-full rounded-lg border border-(--color-borde) object-cover"
                     />
                 )}
 
@@ -125,11 +125,11 @@ export default function ZonaArchivo({
                 </div>
 
                 {archivo ? (
-                    <p className="text-xs font-medium text-[var(--color-texto)]">
+                    <p className="text-xs font-medium text-(--color-texto)">
                         Archivo seleccionado: {archivo.name} ({Math.round(archivo.size / 1024)} KB)
                     </p>
                 ) : (
-                    ayuda && <p className="text-xs text-[var(--color-texto-suave)]">{ayuda}</p>
+                    ayuda && <p className="text-xs text-(--color-texto-suave)">{ayuda}</p>
                 )}
             </div>
 

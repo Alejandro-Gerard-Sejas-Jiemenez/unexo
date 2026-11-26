@@ -120,7 +120,7 @@ export default function BuscadorGlobal() {
             <div className="relative">
                 <Icono
                     nombre="buscar"
-                    className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-texto-suave)]"
+                    className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-(--color-texto-suave)"
                 />
                 <input
                     id="buscador-global"
@@ -135,12 +135,12 @@ export default function BuscadorGlobal() {
                     onChange={(e) => setTermino(e.target.value)}
                     onFocus={() => datos && setAbierto(true)}
                     onKeyDown={manejarTeclas}
-                    className="campo-control !min-h-9 !pl-9 !pr-8 !text-sm"
+                    className="campo-control min-h-9! pl-9! pr-8! text-sm!"
                 />
                 {buscando && (
                     <span
                         aria-hidden="true"
-                        className="absolute top-1/2 right-3 h-3.5 w-3.5 -translate-y-1/2 animate-spin rounded-full border-2 border-[var(--color-borde)] border-t-[var(--color-acento)]"
+                        className="absolute top-1/2 right-3 h-3.5 w-3.5 -translate-y-1/2 animate-spin rounded-full border-2 border-(--color-borde) border-t-(--color-acento)"
                     />
                 )}
             </div>
@@ -152,14 +152,14 @@ export default function BuscadorGlobal() {
                     className="superficie animate-fade-in absolute z-40 mt-2 max-h-96 w-full overflow-auto p-2"
                 >
                     {!hayResultados && (
-                        <p className="p-3 text-sm text-[var(--color-texto-suave)]">
+                        <p className="p-3 text-sm text-(--color-texto-suave)">
                             No encontramos resultados para «{termino}».
                         </p>
                     )}
 
                     {datos.secciones?.length > 0 && (
                         <>
-                            <p className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-[var(--color-texto-suave)] uppercase">
+                            <p className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-(--color-texto-suave) uppercase">
                                 Ir a
                             </p>
                             {datos.secciones.map((s) => {
@@ -176,11 +176,11 @@ export default function BuscadorGlobal() {
                                         className={
                                             'flex w-full items-center gap-2 rounded-lg border-0 px-3 py-2 text-left text-sm ' +
                                             (activo
-                                                ? 'bg-[var(--color-acento-suave)] font-medium'
-                                                : 'bg-transparent hover:bg-[var(--color-superficie-2)]')
+                                                ? 'bg-(--color-acento-suave) font-medium'
+                                                : 'bg-transparent hover:bg-(--color-superficie-2)')
                                         }
                                     >
-                                        <Icono nombre="siguiente" className="h-3.5 w-3.5 text-[var(--color-acento)]" />
+                                        <Icono nombre="siguiente" className="h-3.5 w-3.5 text-(--color-acento)" />
                                         <span>{s.etiqueta}</span>
                                     </button>
                                 );
@@ -190,7 +190,7 @@ export default function BuscadorGlobal() {
 
                     {datos.resultados?.map((bloque) => (
                         <div key={bloque.titulo}>
-                            <p className="px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-[var(--color-texto-suave)] uppercase">
+                            <p className="px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-(--color-texto-suave) uppercase">
                                 {bloque.titulo}
                             </p>
                             {bloque.items.map((item, i) => {
@@ -208,12 +208,12 @@ export default function BuscadorGlobal() {
                                         className={
                                             'block w-full rounded-lg border-0 px-3 py-2 text-left ' +
                                             (activo
-                                                ? 'bg-[var(--color-acento-suave)]'
-                                                : 'bg-transparent hover:bg-[var(--color-superficie-2)]')
+                                                ? 'bg-(--color-acento-suave)'
+                                                : 'bg-transparent hover:bg-(--color-superficie-2)')
                                         }
                                     >
                                         <span className="block text-sm font-medium">{item.titulo}</span>
-                                        <span className="block text-xs text-[var(--color-texto-suave)]">
+                                        <span className="block text-xs text-(--color-texto-suave)">
                                             {item.detalle}
                                         </span>
                                     </button>

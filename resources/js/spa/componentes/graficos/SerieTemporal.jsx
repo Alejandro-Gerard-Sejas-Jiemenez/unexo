@@ -12,7 +12,7 @@ export default function SerieTemporal({ titulo, descripcion, datos = [] }) {
         return (
             <section className="superficie p-5">
                 <h3 className="text-sm font-semibold">{titulo}</h3>
-                <p className="mt-4 text-sm text-[var(--color-texto-suave)]">
+                <p className="mt-4 text-sm text-(--color-texto-suave)">
                     Todavía no hay accesos registrados en el período.
                 </p>
             </section>
@@ -40,7 +40,7 @@ export default function SerieTemporal({ titulo, descripcion, datos = [] }) {
         <section className="superficie p-5">
             <h3 className="text-sm font-semibold">{titulo}</h3>
             {descripcion && (
-                <p className="mt-0.5 text-xs text-[var(--color-texto-suave)]">{descripcion}</p>
+                <p className="mt-0.5 text-xs text-(--color-texto-suave)">{descripcion}</p>
             )}
 
             <div className="relative mt-3">

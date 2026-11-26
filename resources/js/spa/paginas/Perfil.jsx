@@ -88,13 +88,13 @@ export default function Perfil() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
 
             <form onSubmit={enviar} noValidate className="superficie overflow-hidden rounded-xl shadow-sm">
-                <div className="flex flex-wrap items-center gap-4 border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5 sm:px-8">
+                <div className="flex flex-wrap items-center gap-4 border-b border-(--color-borde) bg-(--color-superficie-cabecera) px-6 py-5 sm:px-8">
                     {usuario?.foto_perfil_url ? (
                         <img
                             src={conBase(usuario.foto_perfil_url)}
@@ -102,13 +102,13 @@ export default function Perfil() {
                             className="h-14 w-14 rounded-full border-2 border-white object-cover shadow-sm"
                         />
                     ) : (
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-white bg-[var(--color-acento-suave)] text-xl font-bold text-[var(--color-acento)] shadow-sm">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-white bg-(--color-acento-suave) text-xl font-bold text-(--color-acento) shadow-sm">
                             {iniciales(usuario)}
                         </div>
                     )}
                     <div className="min-w-0">
                         <h2 className="text-lg font-bold">{usuario?.nombre_completo}</h2>
-                        <p className="text-sm text-[var(--color-texto-suave)]">
+                        <p className="text-sm text-(--color-texto-suave)">
                             {usuario?.rol_label} · {usuario?.correo_institucional || usuario?.email}
                         </p>
                     </div>

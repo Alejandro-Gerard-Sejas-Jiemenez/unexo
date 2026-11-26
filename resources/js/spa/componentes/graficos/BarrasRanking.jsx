@@ -11,11 +11,11 @@ export default function BarrasRanking({ titulo, descripcion, datos = [], meta: u
                 {titulo}
             </h3>
             {descripcion && (
-                <p className="mt-0.5 text-xs text-[var(--color-texto-suave)]">{descripcion}</p>
+                <p className="mt-0.5 text-xs text-(--color-texto-suave)">{descripcion}</p>
             )}
 
             {filas.length === 0 ? (
-                <p className="mt-4 text-sm text-[var(--color-texto-suave)]">
+                <p className="mt-4 text-sm text-(--color-texto-suave)">
                     Todavía no hay datos para mostrar.
                 </p>
             ) : (
@@ -33,7 +33,7 @@ export default function BarrasRanking({ titulo, descripcion, datos = [], meta: u
                                     <span className="shrink-0 text-sm tabular-nums">
                                         {fila.valor.toLocaleString('es-BO')}
                                         {usaMeta && fila.meta != null && (
-                                            <span className="text-[var(--color-texto-suave)]">
+                                            <span className="text-(--color-texto-suave)">
                                                 {' '}
                                                 / {fila.meta} {alcanzo ? '· alcanzado' : '· falta'}
                                             </span>

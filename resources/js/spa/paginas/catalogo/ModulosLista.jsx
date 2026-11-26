@@ -70,7 +70,7 @@ export default function ModulosLista() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -86,16 +86,16 @@ export default function ModulosLista() {
                 vacioDescripcion="Intenta cambiar los filtros de búsqueda."
             >
                 {filas.map((m) => (
-                    <tr key={m.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
-                        <td className="px-6 py-4 text-sm font-medium text-[var(--color-texto-suave)] whitespace-nowrap">
+                    <tr key={m.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
+                        <td className="px-6 py-4 text-sm font-medium text-(--color-texto-suave) whitespace-nowrap">
                             {m.codigo}
                         </td>
                         <td className="px-6 py-4 text-sm font-medium">{m.nombre}</td>
-                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                        <td className="px-6 py-4 text-sm text-(--color-texto-suave) whitespace-nowrap tabular-nums">
                             {m.duracion_horas ?? '—'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center justify-center rounded-full bg-[var(--color-superficie-2)] px-2.5 py-1 text-xs font-bold">
+                            <span className="inline-flex items-center justify-center rounded-full bg-(--color-superficie-2) px-2.5 py-1 text-xs font-bold">
                                 {m.programas_count ?? 0}
                             </span>
                         </td>
@@ -104,8 +104,8 @@ export default function ModulosLista() {
                                 className={
                                     'inline-flex rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ' +
                                     (m.estado_comercial === 'abierto'
-                                        ? 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
-                                        : 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)] ring-[var(--color-borde)]')
+                                        ? 'bg-(--color-exito-fondo) text-(--color-exito) ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
+                                        : 'bg-(--color-superficie-2) text-(--color-texto-suave) ring-(--color-borde)')
                                 }
                             >
                                 {m.estado_label}

@@ -197,7 +197,7 @@ export default function GrupoFormulario() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -205,13 +205,13 @@ export default function GrupoFormulario() {
             <div className="superficie max-w-4xl overflow-hidden rounded-xl shadow-sm">
                 <form onSubmit={enviar} noValidate className="p-6 sm:p-8">
                     {cohorteSeleccionada && (
-                        <div className="mb-6 flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-[var(--color-acento-suave)]/70 p-4 text-sm">
-                            <Icono nombre="info" className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-acento)]" />
+                        <div className="mb-6 flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-(--color-acento-suave)/70 p-4 text-sm">
+                            <Icono nombre="info" className="mt-0.5 h-5 w-5 shrink-0 text-(--color-acento)" />
                             <div>
-                                <p className="font-semibold text-[var(--color-acento)]">
+                                <p className="font-semibold text-(--color-acento)">
                                     Edición vinculada: {cohorteSeleccionada.nombre}
                                 </p>
-                                <p className="mt-0.5 text-xs text-[var(--color-texto-suave)]">
+                                <p className="mt-0.5 text-xs text-(--color-texto-suave)">
                                     {cohorteSeleccionada.programa ? `${cohorteSeleccionada.programa} · ` : ''}
                                     Las fechas de inicio y fin se heredan automáticamente de la edición.
                                 </p>
@@ -265,7 +265,7 @@ export default function GrupoFormulario() {
                         </Campo>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-[var(--color-borde)] pt-4 sm:grid-cols-2">
+                    <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-(--color-borde) pt-4 sm:grid-cols-2">
                         <Campo id="docente_id" etiqueta="Docente" error={errores.docente_id} requerido esSelect>
                             {(p) => (
                                 <select {...p} className={claseControl} value={datos.docente_id} onChange={cambiar('docente_id')}>
@@ -293,7 +293,7 @@ export default function GrupoFormulario() {
                     </div>
 
                     {!usaEdicion && (
-                        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-[var(--color-borde)] pt-4 sm:grid-cols-2">
+                        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-(--color-borde) pt-4 sm:grid-cols-2">
                             <Campo id="fecha_inicio" etiqueta="Fecha de inicio" error={errores.fecha_inicio} requerido>
                                 {(p) => (
                                     <input
@@ -320,7 +320,7 @@ export default function GrupoFormulario() {
                     )}
 
                     {(necesitaAula || necesitaEnlace) && (
-                        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-[var(--color-borde)] pt-4 sm:grid-cols-2">
+                        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-(--color-borde) pt-4 sm:grid-cols-2">
                             {necesitaAula && (
                                 <Campo
                                     id="aula_id"
@@ -364,7 +364,7 @@ export default function GrupoFormulario() {
                         </div>
                     )}
 
-                    <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-[var(--color-borde)] pt-4 sm:grid-cols-2">
+                    <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-(--color-borde) pt-4 sm:grid-cols-2">
                         <Campo id="cupo_minimo" etiqueta="Cupo mínimo" error={errores.cupo_minimo} ayuda="Opcional">
                             {(p) => (
                                 <input
@@ -391,18 +391,18 @@ export default function GrupoFormulario() {
                         </Campo>
                     </div>
 
-                    <fieldset className="mt-4 border-t border-[var(--color-borde)] pt-5">
+                    <fieldset className="mt-4 border-t border-(--color-borde) pt-5">
                         <legend className="text-base font-semibold">Horarios semanales</legend>
-                        <p className="mb-4 text-xs text-[var(--color-texto-suave)]">
+                        <p className="mb-4 text-xs text-(--color-texto-suave)">
                             Hora oficial de Bolivia (BOT, UTC-4).
                         </p>
 
                         {errores.horarios && (
-                            <p className="mb-3 text-xs text-[var(--color-error)]">{errores.horarios}</p>
+                            <p className="mb-3 text-xs text-(--color-error)">{errores.horarios}</p>
                         )}
 
                         {datos.horarios.length === 0 && (
-                            <p className="mb-3 text-xs text-[var(--color-texto-suave)]">
+                            <p className="mb-3 text-xs text-(--color-texto-suave)">
                                 {permiteSinHorarios
                                     ? 'Sin horarios definidos (permitido en grupos finalizados o cancelados).'
                                     : 'Agrega al menos un horario semanal.'}
@@ -421,7 +421,7 @@ export default function GrupoFormulario() {
                                     <div key={i}>
                                         <div className="horario-fila">
                                             <label>
-                                                <span className="mb-1 block text-xs text-[var(--color-texto-suave)]">Día</span>
+                                                <span className="mb-1 block text-xs text-(--color-texto-suave)">Día</span>
                                                 <select
                                                     aria-label={`Día de la semana ${i + 1}`}
                                                     aria-invalid={errDia ? 'true' : undefined}
@@ -439,7 +439,7 @@ export default function GrupoFormulario() {
                                             </label>
 
                                             <label>
-                                                <span className="mb-1 block text-xs text-[var(--color-texto-suave)]">Inicio</span>
+                                                <span className="mb-1 block text-xs text-(--color-texto-suave)">Inicio</span>
                                                 <input
                                                     type="time"
                                                     aria-label={`Hora de inicio ${i + 1}`}
@@ -452,7 +452,7 @@ export default function GrupoFormulario() {
                                             </label>
 
                                             <label>
-                                                <span className="mb-1 block text-xs text-[var(--color-texto-suave)]">Fin</span>
+                                                <span className="mb-1 block text-xs text-(--color-texto-suave)">Fin</span>
                                                 <input
                                                     type="time"
                                                     aria-label={`Hora de fin ${i + 1}`}
@@ -469,14 +469,14 @@ export default function GrupoFormulario() {
                                                 disabled={!permiteSinHorarios && datos.horarios.length === 1}
                                                 onClick={() => quitarHorario(i)}
                                                 aria-label={`Quitar horario ${i + 1}`}
-                                                className="btn btn-secundario !min-h-9 !px-3 text-xs sm:mt-5 disabled:opacity-40"
+                                                className="btn btn-secundario min-h-9! px-3! text-xs sm:mt-5 disabled:opacity-40"
                                             >
                                                 Quitar
                                             </button>
                                         </div>
 
                                         {errFila.length > 0 && (
-                                            <p id={idErr} className="-mt-1 mb-2 text-xs text-[var(--color-error)]">
+                                            <p id={idErr} className="-mt-1 mb-2 text-xs text-(--color-error)">
                                                 {errFila.join(' · ')}
                                             </p>
                                         )}
@@ -489,7 +489,7 @@ export default function GrupoFormulario() {
                             type="button"
                             disabled={datos.horarios.length >= maxHorarios}
                             onClick={agregarHorario}
-                            className="btn btn-secundario mt-2 !min-h-9 !px-3 text-xs disabled:opacity-40"
+                            className="btn btn-secundario mt-2 min-h-9! px-3! text-xs disabled:opacity-40"
                         >
                             <Icono nombre="mas" className="h-4 w-4" />
                             Agregar horario

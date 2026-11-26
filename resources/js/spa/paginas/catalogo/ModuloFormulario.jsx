@@ -106,7 +106,7 @@ export default function ModuloFormulario() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -187,7 +187,7 @@ export default function ModuloFormulario() {
                         )}
                     </Campo>
 
-                    <div className="mt-4 mb-2 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-[var(--color-borde)] pt-4 sm:grid-cols-2">
+                    <div className="mt-4 mb-2 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-(--color-borde) pt-4 sm:grid-cols-2">
                         <Campo
                             id="pdf_temario_url"
                             etiqueta="URL del PDF del Temario"

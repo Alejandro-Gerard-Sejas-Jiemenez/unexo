@@ -243,7 +243,7 @@ export default function Pagos() {
                         role="tab"
                         aria-selected={pestana === 'cuotas'}
                         onClick={() => setPestana('cuotas')}
-                        className={`btn !min-h-9 !px-4 text-sm ${pestana === 'cuotas' ? 'btn-primario' : 'btn-secundario'}`}
+                        className={`btn min-h-9! px-4! text-sm ${pestana === 'cuotas' ? 'btn-primario' : 'btn-secundario'}`}
                     >
                         Mis pagos y cuotas
                     </button>
@@ -252,7 +252,7 @@ export default function Pagos() {
                         role="tab"
                         aria-selected={pestana === 'metodos'}
                         onClick={() => setPestana('metodos')}
-                        className={`btn !min-h-9 !px-4 text-sm ${pestana === 'metodos' ? 'btn-primario' : 'btn-secundario'}`}
+                        className={`btn min-h-9! px-4! text-sm ${pestana === 'metodos' ? 'btn-primario' : 'btn-secundario'}`}
                     >
                         Métodos de pago ({metodos.length})
                     </button>
@@ -260,7 +260,7 @@ export default function Pagos() {
             )}
 
             {aviso && (
-                <p role="alert" className="superficie border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -272,7 +272,7 @@ export default function Pagos() {
                     {esEstudiante && pestana === 'cuotas' && (
                         <div className="space-y-5">
                             {matriculas.length === 0 ? (
-                                <p className="superficie p-6 text-center text-sm text-[var(--color-texto-suave)]">
+                                <p className="superficie p-6 text-center text-sm text-(--color-texto-suave)">
                                     Todavía no tienes matrículas registradas para gestionar pagos.
                                 </p>
                             ) : (
@@ -290,7 +290,7 @@ export default function Pagos() {
                                                     <h2 className="text-lg font-semibold">
                                                         {matricula.cohorte?.programa ?? 'Módulo suelto'}
                                                     </h2>
-                                                    <p className="text-sm text-[var(--color-texto-suave)]">
+                                                    <p className="text-sm text-(--color-texto-suave)">
                                                         {matricula.cohorte?.nombre ?? 'Inscripción individual'} ·
                                                         matriculado el {formatoFecha(matricula.fecha_matricula)}
                                                     </p>
@@ -301,27 +301,27 @@ export default function Pagos() {
                                             </div>
 
                                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                                <div className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-2)] p-3">
-                                                    <p className="text-xs text-[var(--color-texto-suave)] uppercase">
+                                                <div className="rounded-lg border border-(--color-borde) bg-(--color-superficie-2) p-3">
+                                                    <p className="text-xs text-(--color-texto-suave) uppercase">
                                                         Pagado
                                                     </p>
                                                     <p className="mt-1 text-lg font-semibold tabular-nums">
                                                         {Number(resumen.pagado ?? 0).toFixed(2)} {moneda}
                                                     </p>
                                                 </div>
-                                                <div className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-2)] p-3">
-                                                    <p className="text-xs text-[var(--color-texto-suave)] uppercase">
+                                                <div className="rounded-lg border border-(--color-borde) bg-(--color-superficie-2) p-3">
+                                                    <p className="text-xs text-(--color-texto-suave) uppercase">
                                                         Saldo pendiente
                                                     </p>
                                                     <p className="mt-1 text-lg font-semibold tabular-nums">
                                                         {Number(resumen.pendiente ?? 0).toFixed(2)} {moneda}
                                                     </p>
                                                 </div>
-                                                <div className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-2)] p-3">
-                                                    <label className="block text-xs text-[var(--color-texto-suave)]">
+                                                <div className="rounded-lg border border-(--color-borde) bg-(--color-superficie-2) p-3">
+                                                    <label className="block text-xs text-(--color-texto-suave)">
                                                         Método para pagar
                                                         <select
-                                                            className={`${claseControl} mt-1 !min-h-8 text-xs`}
+                                                            className={`${claseControl} mt-1 min-h-8! text-xs`}
                                                             value={metodoElegido[matricula.id] ?? ''}
                                                             onChange={(e) =>
                                                                 setMetodoElegido((p) => ({
@@ -342,7 +342,7 @@ export default function Pagos() {
                                             </div>
 
                                             {puedePagoCompleto && (
-                                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-borde)] p-3">
+                                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-(--color-borde) p-3">
                                                     <p className="text-sm">
                                                         Monto del programa:{' '}
                                                         <b className="tabular-nums">
@@ -353,7 +353,7 @@ export default function Pagos() {
                                                         type="button"
                                                         disabled={pagandoClave === `m-${matricula.id}`}
                                                         onClick={() => pagarMatricula({ matricula })}
-                                                        className="btn btn-primario !min-h-9 !px-4 text-xs"
+                                                        className="btn btn-primario min-h-9! px-4! text-xs"
                                                     >
                                                         <Icono nombre="tarjeta" className="h-4 w-4" />
                                                         {pagandoClave === `m-${matricula.id}`
@@ -367,7 +367,7 @@ export default function Pagos() {
                                                 <TablaResponsiva>
                                                     <table className="w-full border-collapse text-sm">
                                                         <thead>
-                                                            <tr className="border-b border-[var(--color-borde)] text-left">
+                                                            <tr className="border-b border-(--color-borde) text-left">
                                                                 <th scope="col" className="p-2.5">Concepto</th>
                                                                 <th scope="col" className="p-2.5">Vence</th>
                                                                 <th scope="col" className="p-2.5">Monto</th>
@@ -379,7 +379,7 @@ export default function Pagos() {
                                                             {transacciones.map((t) => (
                                                                 <tr
                                                                     key={t.id}
-                                                                    className="border-b border-[var(--color-borde)] last:border-b-0"
+                                                                    className="border-b border-(--color-borde) last:border-b-0"
                                                                 >
                                                                     <td className="p-2.5">
                                                                         {t.numero_cuota
@@ -406,7 +406,7 @@ export default function Pagos() {
                                                                                     onClick={() =>
                                                                                         pagarCuota(matricula.id, t.id)
                                                                                     }
-                                                                                    className="btn btn-primario !min-h-8 !px-3 text-xs"
+                                                                                    className="btn btn-primario min-h-8! px-3! text-xs"
                                                                                 >
                                                                                     {pagandoClave === `t-${t.id}`
                                                                                         ? 'Procesando…'
@@ -443,7 +443,7 @@ export default function Pagos() {
                                 vacioDescripcion="Todavía no registraste ningún método de pago en tu cuenta."
                             >
                                 {metodos.map((m) => (
-                                    <tr key={m.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                                    <tr key={m.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                                         <td className="px-6 py-4 text-sm">
                                             <span className="font-medium">{m.descripcion}</span>
                                             {m.predeterminado && (
@@ -458,7 +458,7 @@ export default function Pagos() {
                                             <button
                                                 type="button"
                                                 onClick={() => setConfirmando(m)}
-                                                className="border-0 bg-transparent p-0 text-xs font-semibold text-[var(--color-error)] underline"
+                                                className="border-0 bg-transparent p-0 text-xs font-semibold text-(--color-error) underline"
                                             >
                                                 Eliminar
                                             </button>
@@ -469,7 +469,7 @@ export default function Pagos() {
 
                             <form onSubmit={enviarMetodo} noValidate className="superficie p-5">
                                 <h2 className="mb-1 text-lg font-semibold">Registrar método de pago</h2>
-                                <p className="mb-4 text-xs text-[var(--color-texto-suave)]">
+                                <p className="mb-4 text-xs text-(--color-texto-suave)">
                                     Por seguridad, el servidor solo conserva los últimos cuatro dígitos de tu tarjeta.
                                 </p>
 

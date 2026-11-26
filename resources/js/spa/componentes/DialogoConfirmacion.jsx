@@ -38,8 +38,8 @@ export default function DialogoConfirmacion({
                         className={
                             'grid h-10 w-10 shrink-0 place-items-center rounded-full ' +
                             (peligro
-                                ? 'bg-[var(--color-error-fondo)] text-[var(--color-error)]'
-                                : 'bg-[var(--color-acento-suave)] text-[var(--color-acento)]')
+                                ? 'bg-(--color-error-fondo) text-(--color-error)'
+                                : 'bg-(--color-acento-suave) text-(--color-acento)')
                         }
                     >
                         <Icono nombre="alerta" className="h-5 w-5" />
@@ -48,7 +48,7 @@ export default function DialogoConfirmacion({
                         <h2 id="dialogo-confirmacion-titulo" className="text-lg font-semibold">
                             {titulo}
                         </h2>
-                        <p className="mt-1 text-sm text-[var(--color-texto-suave)]">{mensaje}</p>
+                        <p className="mt-1 text-sm text-(--color-texto-suave)">{mensaje}</p>
                     </div>
                 </div>
 

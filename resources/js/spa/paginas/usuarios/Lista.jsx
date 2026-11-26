@@ -33,7 +33,7 @@ function AvatarUsuario({ usuario }) {
     }
 
     return (
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-superficie-2)] text-xs font-bold text-[var(--color-texto-suave)]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-(--color-superficie-2) text-xs font-bold text-(--color-texto-suave)">
             {usuario.nombres?.[0]?.toUpperCase()}
             {usuario.apellidos?.[0]?.toUpperCase()}
         </span>
@@ -146,7 +146,7 @@ export default function UsuariosLista() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -162,7 +162,7 @@ export default function UsuariosLista() {
                 vacioDescripcion="Intenta cambiar los filtros o la búsqueda."
             >
                 {filas.map((u) => (
-                    <tr key={u.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                    <tr key={u.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                         <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2.5">
                                 <AvatarUsuario usuario={u} />
@@ -172,14 +172,14 @@ export default function UsuariosLista() {
                             </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex rounded-md bg-[var(--color-superficie-2)] px-2.5 py-1 text-xs font-medium text-[var(--color-texto-suave)]">
+                            <span className="inline-flex rounded-md bg-(--color-superficie-2) px-2.5 py-1 text-xs font-medium text-(--color-texto-suave)">
                                 {u.rol_label}
                             </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap">
+                        <td className="px-6 py-4 text-sm text-(--color-texto-suave) whitespace-nowrap">
                             {u.correo_institucional || '—'}
                         </td>
-                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap">
+                        <td className="px-6 py-4 text-sm text-(--color-texto-suave) whitespace-nowrap">
                             {u.email}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -187,8 +187,8 @@ export default function UsuariosLista() {
                                 className={
                                     'inline-flex rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ' +
                                     (u.activo
-                                        ? 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
-                                        : 'bg-[var(--color-error-fondo)] text-[var(--color-error)] ring-[color-mix(in_srgb,var(--color-error)_30%,transparent)]')
+                                        ? 'bg-(--color-exito-fondo) text-(--color-exito) ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
+                                        : 'bg-(--color-error-fondo) text-(--color-error) ring-[color-mix(in_srgb,var(--color-error)_30%,transparent)]')
                                 }
                             >
                                 {u.activo ? 'Activo' : 'Inactivo'}

@@ -45,7 +45,7 @@ export default function PanelAccesibilidad() {
                 onClick={() => setAbierto((v) => !v)}
                 aria-expanded={abierto}
                 aria-haspopup="dialog"
-                className="btn btn-secundario !min-h-9 !px-2.5 sm:!px-3"
+                className="btn btn-secundario min-h-9! px-2.5! sm:!px-3"
             >
                 <Icono nombre="sol" className="h-4 w-4 sm:hidden" />
                 <span className="hidden text-sm sm:inline">Apariencia</span>
@@ -70,8 +70,8 @@ export default function PanelAccesibilidad() {
                                     className={
                                         'flex flex-1 flex-col items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium ' +
                                         (tema === t.valor
-                                            ? 'border-[var(--color-acento)] bg-[var(--color-acento)] text-[var(--color-acento-texto)]'
-                                            : 'border-[var(--color-borde)] bg-transparent')
+                                            ? 'border-(--color-acento) bg-(--color-acento) text-(--color-acento-texto)'
+                                            : 'border-(--color-borde) bg-transparent')
                                     }
                                 >
                                     <span className="flex gap-1" aria-hidden="true">
@@ -94,7 +94,7 @@ export default function PanelAccesibilidad() {
                         <legend className="mb-2 text-sm font-semibold">
                             Modo
                             {modo === 'auto' && (
-                                <span className="ml-1 font-normal text-[var(--color-texto-suave)]">
+                                <span className="ml-1 font-normal text-(--color-texto-suave)">
                                     (ahora: {modoEfectivo === 'noche' ? 'noche' : 'día'})
                                 </span>
                             )}
@@ -109,8 +109,8 @@ export default function PanelAccesibilidad() {
                                     className={
                                         'flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium ' +
                                         (modo === m.valor
-                                            ? 'border-[var(--color-acento)] bg-[var(--color-acento)] text-[var(--color-acento-texto)]'
-                                            : 'border-[var(--color-borde)] bg-transparent')
+                                            ? 'border-(--color-acento) bg-(--color-acento) text-(--color-acento-texto)'
+                                            : 'border-(--color-borde) bg-transparent')
                                     }
                                 >
                                     {m.etiqueta}
@@ -130,7 +130,7 @@ export default function PanelAccesibilidad() {
                                     onClick={() => ajustarEscala(-0.1)}
                                     disabled={escala <= ESCALA_MIN}
                                     aria-label="Reducir texto"
-                                    className="btn btn-secundario !min-h-7 !px-2 text-xs"
+                                    className="btn btn-secundario min-h-7! px-2! text-xs"
                                 >
                                     A-
                                 </button>
@@ -138,7 +138,7 @@ export default function PanelAccesibilidad() {
                                     type="button"
                                     onClick={() => actualizar({ escala: 1 })}
                                     aria-label="Restablecer tamaño normal"
-                                    className="btn btn-secundario !min-h-7 !px-2 text-xs"
+                                    className="btn btn-secundario min-h-7! px-2! text-xs"
                                 >
                                     100%
                                 </button>
@@ -147,7 +147,7 @@ export default function PanelAccesibilidad() {
                                     onClick={() => ajustarEscala(0.1)}
                                     disabled={escala >= ESCALA_MAX}
                                     aria-label="Aumentar texto"
-                                    className="btn btn-secundario !min-h-7 !px-2 text-xs"
+                                    className="btn btn-secundario min-h-7! px-2! text-xs"
                                 >
                                     A+
                                 </button>
@@ -166,7 +166,7 @@ export default function PanelAccesibilidad() {
                         />
                     </div>
 
-                    <label className="campo-check mb-4 !py-2.5 text-sm">
+                    <label className="campo-check mb-4 py-2.5! text-sm">
                         <input
                             type="checkbox"
                             checked={contraste === 'alto'}
@@ -180,7 +180,7 @@ export default function PanelAccesibilidad() {
                     <button
                         type="button"
                         onClick={restablecer}
-                        className="btn btn-secundario w-full !min-h-9 text-xs"
+                        className="btn btn-secundario w-full min-h-9! text-xs"
                     >
                         Restablecer preferencias
                     </button>

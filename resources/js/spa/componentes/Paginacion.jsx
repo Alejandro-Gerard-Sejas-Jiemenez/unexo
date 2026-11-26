@@ -22,9 +22,9 @@ export default function Paginacion({ meta, irAPagina, sustantivo = 'registros' }
             aria-label="Paginación"
             className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm"
         >
-            <p className="text-[var(--color-texto-suave)]">
-                Mostrando <b className="text-[var(--color-texto)]">{desde}–{hasta}</b> de{' '}
-                <b className="text-[var(--color-texto)]">{meta.total}</b> {sustantivo}
+            <p className="text-(--color-texto-suave)">
+                Mostrando <b className="text-(--color-texto)">{desde}–{hasta}</b> de{' '}
+                <b className="text-(--color-texto)">{meta.total}</b> {sustantivo}
             </p>
 
             <div className="flex flex-wrap items-center gap-1.5">
@@ -32,7 +32,7 @@ export default function Paginacion({ meta, irAPagina, sustantivo = 'registros' }
                     type="button"
                     disabled={actual <= 1}
                     onClick={() => irAPagina(actual - 1)}
-                    className="btn btn-secundario !min-h-9 !px-2.5 text-xs"
+                    className="btn btn-secundario min-h-9! px-2.5! text-xs"
                 >
                     <Icono nombre="volver" className="h-3.5 w-3.5" />
                     Anterior
@@ -40,7 +40,7 @@ export default function Paginacion({ meta, irAPagina, sustantivo = 'registros' }
 
                 {paginas.map((p, idx) =>
                     p === '…' ? (
-                        <span key={`el-${idx}`} className="px-1.5 text-[var(--color-texto-suave)]">
+                        <span key={`el-${idx}`} className="px-1.5 text-(--color-texto-suave)">
                             …
                         </span>
                     ) : (
@@ -50,7 +50,7 @@ export default function Paginacion({ meta, irAPagina, sustantivo = 'registros' }
                             aria-current={p === actual ? 'page' : undefined}
                             onClick={() => irAPagina(p)}
                             className={
-                                'btn !min-h-9 !px-3 text-xs ' +
+                                'btn min-h-9! px-3! text-xs ' +
                                 (p === actual ? 'btn-primario' : 'btn-secundario')
                             }
                         >
@@ -63,7 +63,7 @@ export default function Paginacion({ meta, irAPagina, sustantivo = 'registros' }
                     type="button"
                     disabled={actual >= ultima}
                     onClick={() => irAPagina(actual + 1)}
-                    className="btn btn-secundario !min-h-9 !px-2.5 text-xs"
+                    className="btn btn-secundario min-h-9! px-2.5! text-xs"
                 >
                     Siguiente
                     <Icono nombre="siguiente" className="h-3.5 w-3.5" />

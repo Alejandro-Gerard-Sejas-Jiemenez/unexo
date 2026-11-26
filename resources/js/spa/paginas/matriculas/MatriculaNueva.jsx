@@ -67,14 +67,14 @@ export default function MatriculaNueva() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
 
             <div className="superficie max-w-3xl overflow-hidden rounded-xl shadow-sm">
                 <form onSubmit={enviar} noValidate className="p-6 sm:p-8">
-                    <div className="mb-6 border-b border-[var(--color-borde)] pb-6">
+                    <div className="mb-6 border-b border-(--color-borde) pb-6">
                         <Campo id="estudiante_id" etiqueta="Estudiante" error={errores.estudiante_id} requerido esSelect>
                             {(p) => (
                                 <select
@@ -106,7 +106,7 @@ export default function MatriculaNueva() {
 
                         {esCohorte ? (
                             opciones.cohortes.length === 0 ? (
-                                <div className="rounded-lg border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-[var(--color-aviso-fondo)] p-3 text-sm text-[var(--color-aviso)]">
+                                <div className="rounded-lg border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-(--color-aviso-fondo) p-3 text-sm text-(--color-aviso)">
                                     No hay ediciones disponibles.{' '}
                                     <Link to="/cohortes/nueva" className="font-semibold underline">
                                         Crear edición
@@ -133,7 +133,7 @@ export default function MatriculaNueva() {
                                 </Campo>
                             )
                         ) : opciones.grupos_sueltos.length === 0 ? (
-                            <div className="rounded-lg border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-[var(--color-aviso-fondo)] p-3 text-sm text-[var(--color-aviso)]">
+                            <div className="rounded-lg border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-(--color-aviso-fondo) p-3 text-sm text-(--color-aviso)">
                                 No hay grupos sueltos disponibles.{' '}
                                 <Link to="/grupos/nuevo" className="font-semibold underline">
                                     Crear grupo suelto
@@ -161,8 +161,8 @@ export default function MatriculaNueva() {
                         )}
                     </div>
 
-                    <div className="mt-4 flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-[var(--color-acento-suave)]/70 p-4 text-xs text-[var(--color-texto-suave)] sm:text-sm">
-                        <Icono nombre="info" className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-acento)]" />
+                    <div className="mt-4 flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-(--color-acento-suave)/70 p-4 text-xs text-(--color-texto-suave) sm:text-sm">
+                        <Icono nombre="info" className="mt-0.5 h-5 w-5 shrink-0 text-(--color-acento)" />
                         <p>
                             La matrícula se registrará como <b>Pendiente de pago</b>. Desde su ficha podrás aprobar
                             el comprobante subido, registrar un cobro único o generar un plan de cuotas.

@@ -1,9 +1,9 @@
 const ESTILOS = {
-    exito: 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] border-[color-mix(in_srgb,var(--color-exito)_35%,transparent)]',
-    aviso: 'bg-[var(--color-aviso-fondo)] text-[var(--color-aviso)] border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)]',
-    error: 'bg-[var(--color-error-fondo)] text-[var(--color-error)] border-[color-mix(in_srgb,var(--color-error)_35%,transparent)]',
-    acento: 'bg-[var(--color-acento-suave)] text-[var(--color-acento)] border-[color-mix(in_srgb,var(--color-acento)_30%,transparent)]',
-    neutro: 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)] border-[var(--color-borde)]',
+    exito: 'bg-(--color-exito-fondo) text-(--color-exito) border-[color-mix(in_srgb,var(--color-exito)_35%,transparent)]',
+    aviso: 'bg-(--color-aviso-fondo) text-(--color-aviso) border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)]',
+    error: 'bg-(--color-error-fondo) text-(--color-error) border-[color-mix(in_srgb,var(--color-error)_35%,transparent)]',
+    acento: 'bg-(--color-acento-suave) text-(--color-acento) border-[color-mix(in_srgb,var(--color-acento)_30%,transparent)]',
+    neutro: 'bg-(--color-superficie-2) text-(--color-texto-suave) border-(--color-borde)',
 };
 
 export default function Insignia({ children, tono = 'neutro', className = '' }) {

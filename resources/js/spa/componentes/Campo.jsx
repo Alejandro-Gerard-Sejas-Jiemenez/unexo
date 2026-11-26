@@ -56,13 +56,13 @@ export default function Campo({
             </div>
 
             {conteo !== null && maximo && (
-                <p className="mt-1 text-right text-xs tabular-nums text-[var(--color-texto-suave)]">
+                <p className="mt-1 text-right text-xs tabular-nums text-(--color-texto-suave)">
                     {conteo} / {maximo}
                 </p>
             )}
 
             {ayuda && (
-                <p id={idAyuda} className="mt-1 text-xs text-[var(--color-texto-suave)]">
+                <p id={idAyuda} className="mt-1 text-xs text-(--color-texto-suave)">
                     {ayuda}
                 </p>
             )}

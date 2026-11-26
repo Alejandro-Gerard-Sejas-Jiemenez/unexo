@@ -15,11 +15,11 @@ export default function TablaDatos({
     if (vacio) {
         return (
             <div className="superficie rounded-xl p-12 text-center shadow-sm">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)]">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-(--color-superficie-2) text-(--color-texto-suave)">
                     <Icono nombre={vacioIcono} className="h-6 w-6" />
                 </div>
                 <h3 className="text-sm font-semibold">{vacioTitulo}</h3>
-                <p className="mt-1 text-sm text-[var(--color-texto-suave)]">{vacioDescripcion}</p>
+                <p className="mt-1 text-sm text-(--color-texto-suave)">{vacioDescripcion}</p>
                 {vacioAccion && <div className="mt-4">{vacioAccion}</div>}
             </div>
         );
@@ -28,16 +28,16 @@ export default function TablaDatos({
     return (
         <div className="superficie min-w-0 overflow-hidden rounded-xl shadow-sm">
             <div className="overflow-x-auto">
-                <table className="w-full divide-y divide-[var(--color-borde)]">
+                <table className="w-full divide-y divide-(--color-borde)">
                     {caption && <caption className="sr-only">{caption}</caption>}
-                    <thead className="bg-[var(--color-superficie-cabecera)]">
+                    <thead className="bg-(--color-superficie-cabecera)">
                         <tr>
                             {columnas.map((col, idx) => (
                                 <th
                                     key={col.etiqueta || idx}
                                     scope="col"
                                     className={
-                                        `${paddingCelda} text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase ` +
+                                        `${paddingCelda} text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase ` +
                                         (col.alinear === 'derecha' ? 'text-right' : 'text-left')
                                     }
                                 >
@@ -46,7 +46,7 @@ export default function TablaDatos({
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--color-borde)] bg-[var(--color-superficie)]">
+                    <tbody className="divide-y divide-(--color-borde) bg-(--color-superficie)">
                         {children}
                     </tbody>
                 </table>

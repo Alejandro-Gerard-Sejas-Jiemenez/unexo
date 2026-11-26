@@ -52,7 +52,7 @@ class RegistraAcceso
 
     private function debeContarVisita(Request $peticion, Response $respuesta): bool
     {
-        if (! $peticion->isMethod('GET') || $peticion->is('api/*', 'app', 'app/*') || $peticion->ajax()) {
+        if (! $peticion->isMethod('GET') || $peticion->is('api/*') || $peticion->routeIs('spa') || $peticion->ajax()) {
             return false;
         }
 

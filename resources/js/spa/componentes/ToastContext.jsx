@@ -34,8 +34,8 @@ export function ToastProvider({ children }) {
                         className={
                             'superficie animate-fade-in pointer-events-auto flex items-start gap-2.5 px-4 py-3 text-sm font-medium ' +
                             (t.tipo === 'error'
-                                ? 'border-[var(--color-error)] bg-[var(--color-error-fondo)] text-[var(--color-error)]'
-                                : 'border-[var(--color-exito)] bg-[var(--color-exito-fondo)] text-[var(--color-exito)]')
+                                ? 'border-(--color-error) bg-(--color-error-fondo) text-(--color-error)'
+                                : 'border-(--color-exito) bg-(--color-exito-fondo) text-(--color-exito)')
                         }
                     >
                         <Icono nombre={t.tipo === 'error' ? 'alerta' : 'check'} className="mt-0.5 h-4 w-4 shrink-0" />

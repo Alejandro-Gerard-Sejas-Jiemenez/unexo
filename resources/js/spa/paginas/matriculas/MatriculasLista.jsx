@@ -65,7 +65,7 @@ export default function MatriculasLista() {
                     <label>
                         <span className="sr-only">Filtrar por origen</span>
                         <select
-                            className={`${claseControl} !min-h-8 !py-1 text-xs`}
+                            className={`${claseControl} min-h-8! py-1! text-xs`}
                             value={valorDe('origen')}
                             onChange={(e) => filtrar('origen', e.target.value)}
                         >
@@ -89,7 +89,7 @@ export default function MatriculasLista() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -105,18 +105,18 @@ export default function MatriculasLista() {
                 vacioDescripcion="Intenta cambiar los filtros o registra una nueva matrícula."
             >
                 {filas.map((m) => (
-                    <tr key={m.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                    <tr key={m.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                         <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2.5">
                                 <span
                                     aria-hidden="true"
-                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-superficie-2)] text-xs font-bold text-[var(--color-texto-suave)]"
+                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-(--color-superficie-2) text-xs font-bold text-(--color-texto-suave)"
                                 >
                                     {iniciales(m.estudiante?.nombre)}
                                 </span>
                                 <div>
                                     <p className="text-sm font-semibold">{m.estudiante?.nombre ?? '—'}</p>
-                                    <p className="text-xs text-[var(--color-texto-suave)]">
+                                    <p className="text-xs text-(--color-texto-suave)">
                                         {m.estudiante?.correo_institucional ?? m.estudiante?.email}
                                     </p>
                                 </div>
@@ -127,22 +127,22 @@ export default function MatriculasLista() {
                                 <>
                                     <p className="text-sm font-medium">{m.cohorte.programa ?? m.cohorte.nombre}</p>
                                     {m.cohorte.programa && (
-                                        <p className="text-xs text-[var(--color-texto-suave)]">{m.cohorte.nombre}</p>
+                                        <p className="text-xs text-(--color-texto-suave)">{m.cohorte.nombre}</p>
                                     )}
                                 </>
                             ) : (
-                                <span className="text-sm text-[var(--color-texto-suave)]">Módulo suelto</span>
+                                <span className="text-sm text-(--color-texto-suave)">Módulo suelto</span>
                             )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center justify-center rounded-full bg-[var(--color-superficie-2)] px-2.5 py-0.5 text-xs font-bold tabular-nums">
+                            <span className="inline-flex items-center justify-center rounded-full bg-(--color-superficie-2) px-2.5 py-0.5 text-xs font-bold tabular-nums">
                                 {m.inscripciones_count ?? 0}
                             </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap">
+                        <td className="px-6 py-4 text-sm text-(--color-texto-suave) whitespace-nowrap">
                             {m.origen_label}
                         </td>
-                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                        <td className="px-6 py-4 text-sm text-(--color-texto-suave) whitespace-nowrap tabular-nums">
                             {formatoFecha(m.fecha_matricula)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

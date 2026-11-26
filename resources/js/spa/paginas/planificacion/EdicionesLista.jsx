@@ -21,13 +21,13 @@ const ESTADOS = [
 function claseEstado(estado) {
     switch (estado) {
         case 'en_curso':
-            return 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]';
+            return 'bg-(--color-exito-fondo) text-(--color-exito) ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]';
         case 'programado':
-            return 'bg-[var(--color-aviso-fondo)] text-[var(--color-aviso)] ring-[color-mix(in_srgb,var(--color-aviso)_30%,transparent)]';
+            return 'bg-(--color-aviso-fondo) text-(--color-aviso) ring-[color-mix(in_srgb,var(--color-aviso)_30%,transparent)]';
         case 'finalizado':
-            return 'bg-[var(--color-acento-suave)] text-[var(--color-acento)] ring-[color-mix(in_srgb,var(--color-acento)_25%,transparent)]';
+            return 'bg-(--color-acento-suave) text-(--color-acento) ring-[color-mix(in_srgb,var(--color-acento)_25%,transparent)]';
         default:
-            return 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)] ring-[var(--color-borde)]';
+            return 'bg-(--color-superficie-2) text-(--color-texto-suave) ring-(--color-borde)';
     }
 }
 
@@ -83,7 +83,7 @@ export default function EdicionesLista() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -100,11 +100,11 @@ export default function EdicionesLista() {
                 vacioDescripcion="Crea una nueva edición para aperturar módulos de un programa."
             >
                 {filas.map((c) => (
-                    <tr key={c.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                    <tr key={c.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                         <td className="px-4 py-3.5">
                             <div className="text-sm font-semibold">{c.programa?.nombre ?? '—'}</div>
                             {(c.programa?.version || c.programa?.codigo) && (
-                                <div className="font-mono text-xs text-[var(--color-texto-suave)]">
+                                <div className="font-mono text-xs text-(--color-texto-suave)">
                                     v{c.programa?.version}
                                     {c.programa?.codigo ? ` · ${c.programa.codigo}` : ''}
                                 </div>
@@ -113,24 +113,24 @@ export default function EdicionesLista() {
                         <td className="px-4 py-3.5 whitespace-nowrap">
                             <Link
                                 to={`/cohortes/${c.id}`}
-                                className="text-sm font-bold text-[var(--color-acento)] no-underline hover:underline"
+                                className="text-sm font-bold text-(--color-acento) no-underline hover:underline"
                             >
                                 {c.nombre}
                             </Link>
                         </td>
-                        <td className="px-4 py-3.5 text-sm text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                        <td className="px-4 py-3.5 text-sm text-(--color-texto-suave) whitespace-nowrap tabular-nums">
                             {formatoFecha(c.fecha_inicio)}
                         </td>
-                        <td className="px-4 py-3.5 text-sm text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                        <td className="px-4 py-3.5 text-sm text-(--color-texto-suave) whitespace-nowrap tabular-nums">
                             {formatoFecha(c.fecha_fin)}
                         </td>
                         <td className="px-4 py-3.5 whitespace-nowrap">
-                            <span className="inline-flex items-center rounded-md border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-[var(--color-acento-suave)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-acento)] tabular-nums">
+                            <span className="inline-flex items-center rounded-md border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-(--color-acento-suave) px-2.5 py-0.5 text-xs font-semibold text-(--color-acento) tabular-nums">
                                 {c.grupos_count ?? 0}
                             </span>
                         </td>
                         <td className="px-4 py-3.5 whitespace-nowrap">
-                            <span className="inline-flex items-center rounded-md border border-[color-mix(in_srgb,var(--color-exito)_25%,transparent)] bg-[var(--color-exito-fondo)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-exito)] tabular-nums">
+                            <span className="inline-flex items-center rounded-md border border-[color-mix(in_srgb,var(--color-exito)_25%,transparent)] bg-(--color-exito-fondo) px-2.5 py-0.5 text-xs font-semibold text-(--color-exito) tabular-nums">
                                 {c.matriculas_count ?? 0}
                             </span>
                         </td>

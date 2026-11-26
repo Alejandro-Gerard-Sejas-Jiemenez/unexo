@@ -130,7 +130,7 @@ export default function Panel() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-6 border-[var(--color-error)] p-4 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-6 border-(--color-error) p-4 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -154,7 +154,7 @@ export default function Panel() {
                     </div>
 
                     <section aria-labelledby="titulo-atencion" className="superficie overflow-hidden rounded-xl shadow-sm">
-                        <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                        <div className="border-b border-(--color-borde) bg-(--color-superficie-cabecera) px-6 py-5">
                             <h2 id="titulo-atencion" className="text-lg font-bold">
                                 Requiere atención
                             </h2>
@@ -162,7 +162,7 @@ export default function Panel() {
 
                         <div className="p-6">
                             {(datos.avisos ?? []).length === 0 ? (
-                                <div className="flex items-center gap-4 rounded-xl border border-[color-mix(in_srgb,var(--color-exito)_35%,transparent)] bg-[var(--color-exito-fondo)] p-6 text-[var(--color-exito)]">
+                                <div className="flex items-center gap-4 rounded-xl border border-[color-mix(in_srgb,var(--color-exito)_35%,transparent)] bg-(--color-exito-fondo) p-6 text-(--color-exito)">
                                     <Icono nombre="check" className="h-8 w-8 shrink-0" />
                                     <div>
                                         <h3 className="text-base font-semibold">Todo al día</h3>
@@ -177,7 +177,7 @@ export default function Panel() {
                                         <li key={i}>
                                             <Link
                                                 to={rutaAviso(a.ruta)}
-                                                className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-[var(--color-aviso-fondo)] p-4 text-[var(--color-aviso)] no-underline transition-all hover:brightness-95"
+                                                className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-(--color-aviso-fondo) p-4 text-(--color-aviso) no-underline transition-all hover:brightness-95"
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <span
@@ -209,7 +209,7 @@ export default function Panel() {
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                     <div className="space-y-8 lg:col-span-2">
                         <section aria-labelledby="titulo-proximos" className="superficie overflow-hidden rounded-xl shadow-sm">
-                            <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                            <div className="border-b border-(--color-borde) bg-(--color-superficie-cabecera) px-6 py-5">
                                 <h2 id="titulo-proximos" className="text-lg font-bold">
                                     {esDocente ? 'Tus próximos grupos' : 'Tus próximos cursos'}
                                 </h2>
@@ -217,13 +217,13 @@ export default function Panel() {
 
                             {(datos.proximos ?? []).length === 0 ? (
                                 <div className="p-8 text-center">
-                                    <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)]">
+                                    <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-(--color-superficie-2) text-(--color-texto-suave)">
                                         <Icono nombre={esDocente ? 'usuarios' : 'catalogo'} className="h-6 w-6" />
                                     </div>
                                     <h3 className="mb-1 text-base font-medium">
                                         {esDocente ? 'No tienes grupos asignados por ahora' : 'No tienes cursos activos por ahora'}
                                     </h3>
-                                    <p className="mb-4 text-sm text-[var(--color-texto-suave)]">
+                                    <p className="mb-4 text-sm text-(--color-texto-suave)">
                                         {esDocente
                                             ? 'Cuando coordinación académica te asigne un grupo, aparecerá en este listado.'
                                             : 'Cuando la administración te inscriba, los verás aquí. Mientras tanto puedes revisar la oferta disponible.'}
@@ -238,18 +238,18 @@ export default function Panel() {
                                     )}
                                 </div>
                             ) : (
-                                <ul className="list-none divide-y divide-[var(--color-borde)] p-0">
+                                <ul className="list-none divide-y divide-(--color-borde) p-0">
                                     {datos.proximos.map((g) => {
                                         const destino = esDocente ? `/mis-grupos/${g.id}` : `/mis-cursos/${g.id}`;
 
                                         return (
-                                            <li key={g.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                                            <li key={g.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                                                 <Link to={destino} className="group flex items-center justify-between gap-4 p-4 no-underline sm:p-6">
                                                     <div className="min-w-0 flex-1">
-                                                        <h3 className="truncate text-base font-bold transition-colors group-hover:text-[var(--color-acento)]">
+                                                        <h3 className="truncate text-base font-bold transition-colors group-hover:text-(--color-acento)">
                                                             {g.modulo?.nombre ?? g.nombre}
                                                         </h3>
-                                                        <div className="mt-1 flex flex-col gap-1 text-sm text-[var(--color-texto-suave)] sm:flex-row sm:items-center sm:gap-3">
+                                                        <div className="mt-1 flex flex-col gap-1 text-sm text-(--color-texto-suave) sm:flex-row sm:items-center sm:gap-3">
                                                             <span className="flex items-center gap-1.5">
                                                                 <Icono nombre="calendario" className="h-4 w-4 shrink-0 opacity-75" />
                                                                 <span>{g.periodo_texto || g.nombre}</span>
@@ -280,7 +280,7 @@ export default function Panel() {
 
                     <div className="space-y-8 lg:col-span-1">
                         <section aria-labelledby="titulo-perfil" className="superficie overflow-hidden rounded-xl shadow-sm">
-                            <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                            <div className="border-b border-(--color-borde) bg-(--color-superficie-cabecera) px-6 py-5">
                                 <h2 id="titulo-perfil" className="text-lg font-bold">
                                     Mi perfil
                                 </h2>
@@ -295,31 +295,31 @@ export default function Panel() {
                                             className="h-16 w-16 rounded-full border-2 border-white object-cover shadow-sm"
                                         />
                                     ) : (
-                                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-white bg-[var(--color-acento-suave)] text-2xl font-bold text-[var(--color-acento)] uppercase shadow-sm">
+                                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-white bg-(--color-acento-suave) text-2xl font-bold text-(--color-acento) uppercase shadow-sm">
                                             {iniciales(usuario)}
                                         </div>
                                     )}
                                     <div className="min-w-0">
                                         <h3 className="truncate font-bold">{usuario?.nombre_completo}</h3>
-                                        <p className="text-sm text-[var(--color-texto-suave)]">{usuario?.rol_label}</p>
+                                        <p className="text-sm text-(--color-texto-suave)">{usuario?.rol_label}</p>
                                     </div>
                                 </div>
 
                                 <dl className="space-y-4">
                                     <div>
-                                        <dt className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                                        <dt className="mb-1 text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                                             Correo institucional
                                         </dt>
-                                        <dd className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-2.5 text-sm font-medium break-all">
+                                        <dd className="rounded-lg border border-(--color-borde) bg-(--color-superficie-cabecera) p-2.5 text-sm font-medium break-all">
                                             {usuario?.correo_institucional ?? 'Sin asignar'}
                                         </dd>
                                     </div>
 
                                     <div>
-                                        <dt className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                                        <dt className="mb-1 text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                                             Teléfono
                                         </dt>
-                                        <dd className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-2.5 text-sm font-medium">
+                                        <dd className="rounded-lg border border-(--color-borde) bg-(--color-superficie-cabecera) p-2.5 text-sm font-medium">
                                             {usuario?.telefono || '—'}
                                         </dd>
                                     </div>

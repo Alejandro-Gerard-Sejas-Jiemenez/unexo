@@ -69,14 +69,14 @@ class PlanificacionCohorteTest extends TestCase
             'estado' => EstadoPlanificacion::Programado,
         ]);
 
-        $this->actingAs($this->admin())
-            ->post(route('cohortes.aperturar-grupos', $cohorte), [
+        $res = $this->actingAs($this->admin())
+            ->postJson("/api/panel/cohortes/{$cohorte->id}/aperturar-grupos", [
                 'docente_id' => $docente->id,
                 'modalidad' => Modalidad::Virtual->value,
                 'cupo_minimo' => 20,
             ])
-            ->assertRedirect(route('cohortes.show', $cohorte))
-            ->assertSessionHas('ok');
+            ->assertOk();
+        $this->assertNotEmpty($res->json('mensaje'));
 
         $this->assertCount(3, $cohorte->grupos);
         $this->assertTrue($cohorte->tieneTodosLosModulosAperturados());
@@ -100,9 +100,8 @@ class PlanificacionCohorteTest extends TestCase
 
         // Si se llama de nuevo, no duplica módulos
         $this->actingAs($this->admin())
-            ->post(route('cohortes.aperturar-grupos', $cohorte))
-            ->assertRedirect(route('cohortes.show', $cohorte))
-            ->assertSessionHas('info');
+            ->postJson("/api/panel/cohortes/{$cohorte->id}/aperturar-grupos")
+            ->assertOk();
 
         $this->assertEquals(3, $cohorte->grupos()->count());
     }
@@ -126,10 +125,9 @@ class PlanificacionCohorteTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->from(route('cohortes.show', $cohorte))
-            ->post(route('cohortes.aperturar-grupos', $cohorte))
-            ->assertRedirect(route('cohortes.show', $cohorte))
-            ->assertSessionHasErrors('cohorte');
+            ->postJson("/api/panel/cohortes/{$cohorte->id}/aperturar-grupos")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('cohorte');
 
         $this->assertEquals(0, $cohorte->grupos()->count());
     }
@@ -146,11 +144,10 @@ class PlanificacionCohorteTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->patch(route('cohortes.estado', $cohorte), [
+            ->patchJson("/api/panel/cohortes/{$cohorte->id}/estado", [
                 'estado' => EstadoPlanificacion::EnCurso->value,
             ])
-            ->assertRedirect(route('cohortes.show', $cohorte))
-            ->assertSessionHas('ok');
+            ->assertOk();
 
         $cohorte->refresh();
         $this->assertEquals(EstadoPlanificacion::EnCurso, $cohorte->estado);
@@ -173,7 +170,7 @@ class PlanificacionCohorteTest extends TestCase
         $moduloAjeno = $otrosModulos[0];
 
         $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
+            ->postJson('/api/panel/grupos', [
                 'modulo_id' => $moduloAjeno->id,
                 'cohorte_id' => $cohorte->id,
                 'docente_id' => $docente->id,
@@ -182,7 +179,8 @@ class PlanificacionCohorteTest extends TestCase
                 'estado' => EstadoPlanificacion::Programado->value,
                 'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
-            ->assertSessionHasErrors('modulo_id');
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('modulo_id');
     }
 
     public function test_creacion_de_grupo_modulo_suelto_sin_cohorte(): void
@@ -191,7 +189,7 @@ class PlanificacionCohorteTest extends TestCase
         $modulo = Modulo::create(['codigo' => 'MOD-FREE-'.uniqid(), 'nombre' => 'Taller Libre']);
 
         $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
+            ->postJson('/api/panel/grupos', [
                 'modulo_id' => $modulo->id,
                 'cohorte_id' => null,
                 'docente_id' => $docente->id,
@@ -202,8 +200,7 @@ class PlanificacionCohorteTest extends TestCase
                 'estado' => EstadoPlanificacion::Programado->value,
                 'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
-            ->assertRedirect(route('grupos.index'))
-            ->assertSessionHas('ok');
+            ->assertCreated();
 
         $grupo = Grupo::where('modulo_id', $modulo->id)->first();
         $this->assertNotNull($grupo);
@@ -324,17 +321,19 @@ class PlanificacionCohorteTest extends TestCase
 
         // Filtrar por cohorte
         $responseCohorte = $this->actingAs($this->admin())
-            ->get(route('grupos.index', ['tipo' => 'cohorte']))
+            ->getJson('/api/panel/grupos?tipo=cohorte')
             ->assertOk();
-        $responseCohorte->assertSee('Grupo Cohorte');
-        $responseCohorte->assertDontSee('Grupo Suelto');
+        $nombresCohorte = collect($responseCohorte->json('data'))->pluck('nombre')->all();
+        $this->assertContains('Grupo Cohorte', $nombresCohorte);
+        $this->assertNotContains('Grupo Suelto', $nombresCohorte);
 
         // Filtrar por suelto
         $responseSuelto = $this->actingAs($this->admin())
-            ->get(route('grupos.index', ['tipo' => 'suelto']))
+            ->getJson('/api/panel/grupos?tipo=suelto')
             ->assertOk();
-        $responseSuelto->assertSee('Grupo Suelto');
-        $responseSuelto->assertDontSee('Grupo Cohorte');
+        $nombresSuelto = collect($responseSuelto->json('data'))->pluck('nombre')->all();
+        $this->assertContains('Grupo Suelto', $nombresSuelto);
+        $this->assertNotContains('Grupo Cohorte', $nombresSuelto);
     }
 
     public function test_coherencia_logistica_presencial_exige_aula_y_valida_aforo(): void
@@ -344,7 +343,7 @@ class PlanificacionCohorteTest extends TestCase
 
         // Intento 1: Crear presencial sin aula debe fallar
         $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
+            ->postJson('/api/panel/grupos', [
                 'modulo_id' => $modulos[0]->id,
                 'docente_id' => $docente->id,
                 'fecha_inicio' => '2026-04-01',
@@ -354,13 +353,14 @@ class PlanificacionCohorteTest extends TestCase
                 'estado' => EstadoPlanificacion::Programado->value,
                 'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
-            ->assertSessionHasErrors('aula_id');
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('aula_id');
 
         // Intento 2: Aula pequeña con capacidad insuficiente para el quórum de 20
         $aulaPequena = Aula::create(['nombre' => 'Aula 101 Chica', 'capacidad' => 12]);
 
         $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
+            ->postJson('/api/panel/grupos', [
                 'modulo_id' => $modulos[0]->id,
                 'docente_id' => $docente->id,
                 'aula_id' => $aulaPequena->id,
@@ -371,13 +371,14 @@ class PlanificacionCohorteTest extends TestCase
                 'estado' => EstadoPlanificacion::Programado->value,
                 'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
-            ->assertSessionHasErrors('aula_id');
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('aula_id');
 
         // Intento 3: Aula adecuada con capacidad >= 20
         $aulaAdecuada = Aula::create(['nombre' => 'Aula Magna', 'capacidad' => 40]);
 
         $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
+            ->postJson('/api/panel/grupos', [
                 'modulo_id' => $modulos[0]->id,
                 'docente_id' => $docente->id,
                 'aula_id' => $aulaAdecuada->id,
@@ -389,8 +390,7 @@ class PlanificacionCohorteTest extends TestCase
                 'estado' => EstadoPlanificacion::Programado->value,
                 'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
-            ->assertRedirect(route('grupos.index'))
-            ->assertSessionHas('ok');
+            ->assertCreated();
 
         $grupoPresencial = Grupo::where('modulo_id', $modulos[0]->id)->latest('created_at')->first();
         $this->assertNotNull($grupoPresencial);
@@ -405,7 +405,7 @@ class PlanificacionCohorteTest extends TestCase
         $aula = Aula::create(['nombre' => 'Aula Extra', 'capacidad' => 50]);
 
         $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
+            ->postJson('/api/panel/grupos', [
                 'modulo_id' => $modulos[0]->id,
                 'docente_id' => $docente->id,
                 'aula_id' => $aula->id,
@@ -417,8 +417,7 @@ class PlanificacionCohorteTest extends TestCase
                 'estado' => EstadoPlanificacion::Programado->value,
                 'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
-            ->assertRedirect(route('grupos.index'))
-            ->assertSessionHas('ok');
+            ->assertCreated();
 
         $grupoVirtual = Grupo::where('modulo_id', $modulos[0]->id)->latest('created_at')->first();
         $this->assertNotNull($grupoVirtual);
@@ -433,7 +432,7 @@ class PlanificacionCohorteTest extends TestCase
         $aula = Aula::create(['nombre' => 'Aula Magna Mixta', 'capacidad' => 40]);
 
         $this->actingAs($this->admin())
-            ->post(route('grupos.store'), [
+            ->postJson('/api/panel/grupos', [
                 'modulo_id' => $modulos[0]->id,
                 'docente_id' => $docente->id,
                 'aula_id' => $aula->id,
@@ -445,8 +444,7 @@ class PlanificacionCohorteTest extends TestCase
                 'estado' => EstadoPlanificacion::Programado->value,
                 'horarios' => [['dia_semana' => 1, 'hora_inicio' => '19:00', 'hora_fin' => '21:00']],
             ])
-            ->assertRedirect(route('grupos.index'))
-            ->assertSessionHas('ok');
+            ->assertCreated();
 
         $grupoMixto = Grupo::where('modulo_id', $modulos[0]->id)->latest('created_at')->first();
         $this->assertNotNull($grupoMixto);
@@ -462,13 +460,13 @@ class PlanificacionCohorteTest extends TestCase
 
         // Primera edición para Programa A sin especificar nombre
         $this->actingAs($this->admin())
-            ->post(route('cohortes.store'), [
+            ->postJson('/api/panel/cohortes', [
                 'programa_id' => $programaA->id,
                 'fecha_inicio' => '2026-03-01',
                 'fecha_fin' => '2026-07-31',
                 'estado' => EstadoPlanificacion::Programado->value,
             ])
-            ->assertRedirect();
+            ->assertCreated();
 
         $this->assertDatabaseHas('cohortes', [
             'programa_id' => $programaA->id,
@@ -477,13 +475,13 @@ class PlanificacionCohorteTest extends TestCase
 
         // Segunda edición para el mismo Programa A sin especificar nombre
         $this->actingAs($this->admin())
-            ->post(route('cohortes.store'), [
+            ->postJson('/api/panel/cohortes', [
                 'programa_id' => $programaA->id,
                 'fecha_inicio' => '2026-08-01',
                 'fecha_fin' => '2026-12-31',
                 'estado' => EstadoPlanificacion::Programado->value,
             ])
-            ->assertRedirect();
+            ->assertCreated();
 
         $this->assertDatabaseHas('cohortes', [
             'programa_id' => $programaA->id,
@@ -492,13 +490,13 @@ class PlanificacionCohorteTest extends TestCase
 
         // Primera edición para el Programa B (debe empezar en Edición 1)
         $this->actingAs($this->admin())
-            ->post(route('cohortes.store'), [
+            ->postJson('/api/panel/cohortes', [
                 'programa_id' => $programaB->id,
                 'fecha_inicio' => '2026-03-01',
                 'fecha_fin' => '2026-07-31',
                 'estado' => EstadoPlanificacion::Programado->value,
             ])
-            ->assertRedirect();
+            ->assertCreated();
 
         $this->assertDatabaseHas('cohortes', [
             'programa_id' => $programaB->id,

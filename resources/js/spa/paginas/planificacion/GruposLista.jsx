@@ -75,8 +75,8 @@ export default function GruposLista() {
                 alSeleccionarPildora={(val) => filtrar('estado', val)}
                 extraIzquierda={
                     <div className="flex items-center gap-2">
-                        <span className="hidden h-4 w-px bg-[var(--color-borde)] sm:block" aria-hidden="true" />
-                        <div className="inline-flex rounded-lg bg-[var(--color-superficie-2)] p-1">
+                        <span className="hidden h-4 w-px bg-(--color-borde) sm:block" aria-hidden="true" />
+                        <div className="inline-flex rounded-lg bg-(--color-superficie-2) p-1">
                             {TIPOS.map(([valor, etiqueta]) => (
                                 <button
                                     key={etiqueta}
@@ -85,8 +85,8 @@ export default function GruposLista() {
                                     className={
                                         'cursor-pointer rounded-md px-3 py-1 text-xs font-semibold transition-all ' +
                                         (tipoActual === valor
-                                            ? 'bg-[var(--color-superficie)] text-[var(--color-acento)] shadow-xs'
-                                            : 'text-[var(--color-texto-suave)] hover:text-[var(--color-texto)]')
+                                            ? 'bg-(--color-superficie) text-(--color-acento) shadow-xs'
+                                            : 'text-(--color-texto-suave) hover:text-(--color-texto)')
                                     }
                                 >
                                     {etiqueta}
@@ -109,7 +109,7 @@ export default function GruposLista() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -129,57 +129,57 @@ export default function GruposLista() {
                     const cubierto = g.cupo_minimo > 0 && (g.inscripciones_count ?? 0) >= g.cupo_minimo;
 
                     return (
-                        <tr key={g.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <tr key={g.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                             <td className="px-4 py-3.5">
                                 <div className="text-sm font-semibold">{g.modulo?.nombre}</div>
                                 {g.modulo?.codigo && (
-                                    <div className="font-mono text-xs text-[var(--color-texto-suave)]">
+                                    <div className="font-mono text-xs text-(--color-texto-suave)">
                                         {g.modulo.codigo}
                                     </div>
                                 )}
                             </td>
                             <td className="px-4 py-3.5">
-                                <span className="text-sm font-bold text-[var(--color-acento)]">{g.nombre}</span>
+                                <span className="text-sm font-bold text-(--color-acento)">{g.nombre}</span>
                             </td>
                             <td className="px-4 py-3.5">
                                 {g.cohorte ? (
                                     <>
                                         <Link
                                             to={`/cohortes/${g.cohorte.id}`}
-                                            className="text-sm font-semibold text-[var(--color-acento)] no-underline hover:underline"
+                                            className="text-sm font-semibold text-(--color-acento) no-underline hover:underline"
                                         >
                                             {g.cohorte.nombre}
                                         </Link>
                                         {g.cohorte.programa && (
-                                            <div className="max-w-[180px] truncate text-xs text-[var(--color-texto-suave)]">
+                                            <div className="max-w-[180px] truncate text-xs text-(--color-texto-suave)">
                                                 {g.cohorte.programa}
                                             </div>
                                         )}
                                     </>
                                 ) : (
-                                    <span className="inline-flex rounded bg-[var(--color-superficie-2)] px-2 py-0.5 text-xs font-medium text-[var(--color-texto-suave)]">
+                                    <span className="inline-flex rounded bg-(--color-superficie-2) px-2 py-0.5 text-xs font-medium text-(--color-texto-suave)">
                                         Módulo suelto
                                     </span>
                                 )}
                             </td>
-                            <td className="px-4 py-3.5 text-xs text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                            <td className="px-4 py-3.5 text-xs text-(--color-texto-suave) whitespace-nowrap tabular-nums">
                                 {g.periodo_texto || '—'}
                             </td>
                             <td className="px-4 py-3.5">
                                 <div className="flex items-center gap-2">
-                                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-superficie-2)] text-[10px] font-bold text-[var(--color-texto-suave)]">
+                                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-(--color-superficie-2) text-[10px] font-bold text-(--color-texto-suave)">
                                         {inicialesDocente(g.docente)}
                                     </span>
                                     <span className="text-sm">{g.docente ?? 'Sin asignar'}</span>
                                 </div>
                             </td>
                             <td className="px-4 py-3.5 text-xs whitespace-nowrap tabular-nums">
-                                <span className="inline-flex rounded-full bg-[var(--color-superficie-2)] px-2.5 py-0.5 font-semibold">
+                                <span className="inline-flex rounded-full bg-(--color-superficie-2) px-2.5 py-0.5 font-semibold">
                                     {g.inscripciones_count ?? 0}{' '}
                                     {(g.inscripciones_count ?? 0) === 1 ? 'estudiante' : 'estudiantes'}
                                 </span>
                                 {g.cupo_minimo > 0 && (
-                                    <span className={`ml-1.5 font-medium ${cubierto ? 'text-[var(--color-exito)]' : 'text-[var(--color-texto-suave)]'}`}>
+                                    <span className={`ml-1.5 font-medium ${cubierto ? 'text-(--color-exito)' : 'text-(--color-texto-suave)'}`}>
                                         (mín. {g.cupo_minimo})
                                     </span>
                                 )}
@@ -189,8 +189,8 @@ export default function GruposLista() {
                                     className={
                                         'inline-flex rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ' +
                                         (g.estado === 'en_curso'
-                                            ? 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
-                                            : 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)] ring-[var(--color-borde)]')
+                                            ? 'bg-(--color-exito-fondo) text-(--color-exito) ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
+                                            : 'bg-(--color-superficie-2) text-(--color-texto-suave) ring-(--color-borde)')
                                     }
                                 >
                                     {g.estado_label}

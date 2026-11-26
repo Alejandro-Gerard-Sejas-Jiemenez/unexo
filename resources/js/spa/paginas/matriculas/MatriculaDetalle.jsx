@@ -160,7 +160,7 @@ export default function MatriculaDetalle() {
     if (cargando) return <Cargador texto="Cargando" />;
     if (!matricula) {
         return (
-            <p role="alert" className="superficie border-[var(--color-error)] p-4 text-sm text-[var(--color-error)]">
+            <p role="alert" className="superficie border-(--color-error) p-4 text-sm text-(--color-error)">
                 {aviso ?? 'No se encontró la matrícula.'}
             </p>
         );
@@ -176,7 +176,7 @@ export default function MatriculaDetalle() {
             <div className="mb-4">
                 <Link
                     to="/matriculas"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-texto-suave)] no-underline transition-colors hover:text-[var(--color-acento)]"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-(--color-texto-suave) no-underline transition-colors hover:text-(--color-acento)"
                 >
                     <Icono nombre="volver" className="h-4 w-4" />
                     Volver a matrículas
@@ -186,7 +186,7 @@ export default function MatriculaDetalle() {
             <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight">{matricula.estudiante?.nombre}</h1>
-                    <p className="mt-2 text-lg text-[var(--color-texto-suave)]">
+                    <p className="mt-2 text-lg text-(--color-texto-suave)">
                         {matricula.cohorte
                             ? `${matricula.cohorte.programa ? `${matricula.cohorte.programa} · ` : ''}${matricula.cohorte.nombre}`
                             : 'Módulo suelto'}
@@ -194,14 +194,14 @@ export default function MatriculaDetalle() {
                 </div>
 
                 <div>
-                    <Insignia tono={tonoEstado(matricula.estado)} className="!px-3 !py-1 !text-sm shadow-sm">
+                    <Insignia tono={tonoEstado(matricula.estado)} className="px-3! py-1! text-sm! shadow-sm">
                         {matricula.estado_label}
                     </Insignia>
                 </div>
             </div>
 
             {aviso && (
-                <p role="alert" className="superficie mb-6 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-6 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -209,13 +209,13 @@ export default function MatriculaDetalle() {
             <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2">
                     <div className="superficie h-full overflow-hidden rounded-xl shadow-sm">
-                        <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                        <div className="border-b border-(--color-borde) bg-(--color-superficie-cabecera) px-6 py-5">
                             <h2 className="text-lg font-semibold">Detalles de la matrícula</h2>
                         </div>
                         <div className="p-6">
                             <dl className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
                                 <div>
-                                    <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">
+                                    <dt className="mb-1 text-sm font-medium text-(--color-texto-suave)">
                                         Correo institucional
                                     </dt>
                                     <dd className="text-base break-all">
@@ -223,20 +223,20 @@ export default function MatriculaDetalle() {
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">
+                                    <dt className="mb-1 text-sm font-medium text-(--color-texto-suave)">
                                         Origen
                                     </dt>
                                     <dd className="text-base">{matricula.origen_label}</dd>
                                 </div>
                                 <div>
-                                    <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">
+                                    <dt className="mb-1 text-sm font-medium text-(--color-texto-suave)">
                                         Fecha de matrícula
                                     </dt>
                                     <dd className="text-base tabular-nums">{formatoFecha(matricula.fecha_matricula)}</dd>
                                 </div>
                                 {matricula.fecha_retiro && (
                                     <div>
-                                        <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">
+                                        <dt className="mb-1 text-sm font-medium text-(--color-texto-suave)">
                                             Fecha de retiro
                                         </dt>
                                         <dd className="text-base tabular-nums">{formatoFecha(matricula.fecha_retiro)}</dd>
@@ -245,15 +245,15 @@ export default function MatriculaDetalle() {
                                 {resumen && (
                                     <>
                                         <div>
-                                            <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">
+                                            <dt className="mb-1 text-sm font-medium text-(--color-texto-suave)">
                                                 Total pagado
                                             </dt>
-                                            <dd className="text-base font-semibold text-[var(--color-exito)] tabular-nums">
+                                            <dd className="text-base font-semibold text-(--color-exito) tabular-nums">
                                                 {Number(resumen.pagado ?? 0).toFixed(2)} {moneda}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">
+                                            <dt className="mb-1 text-sm font-medium text-(--color-texto-suave)">
                                                 Saldo pendiente
                                             </dt>
                                             <dd className="text-base font-semibold tabular-nums">
@@ -269,12 +269,12 @@ export default function MatriculaDetalle() {
 
                 <div className="lg:col-span-1">
                     <div className="superficie h-full overflow-hidden rounded-xl shadow-sm">
-                        <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                        <div className="border-b border-(--color-borde) bg-(--color-superficie-cabecera) px-6 py-5">
                             <h2 className="text-lg font-semibold">Acciones</h2>
                         </div>
                         <div className="space-y-3 p-6">
                             {estaRetirado && (
-                                <p className="text-sm text-[var(--color-texto-suave)]">
+                                <p className="text-sm text-(--color-texto-suave)">
                                     Matrícula retirada: se conserva como historial y no admite cambios.
                                 </p>
                             )}
@@ -283,7 +283,7 @@ export default function MatriculaDetalle() {
                                 <button
                                     type="button"
                                     onClick={() => cambiarEstado('activo')}
-                                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-exito)] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:brightness-95"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-(--color-exito) px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:brightness-95"
                                 >
                                     <Icono nombre="usuario-activar" className="h-4 w-4" />
                                     Aprobar pago (activar)
@@ -294,7 +294,7 @@ export default function MatriculaDetalle() {
                                 <button
                                     type="button"
                                     onClick={() => cambiarEstado('pendiente')}
-                                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-[var(--color-aviso-fondo)] px-4 py-2.5 text-sm font-medium text-[var(--color-aviso)] shadow-sm transition-colors hover:brightness-95"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-(--color-aviso-fondo) px-4 py-2.5 text-sm font-medium text-(--color-aviso) shadow-sm transition-colors hover:brightness-95"
                                 >
                                     Marcar pendiente
                                 </button>
@@ -304,7 +304,7 @@ export default function MatriculaDetalle() {
                                 <button
                                     type="button"
                                     onClick={() => cambiarEstado('retirado')}
-                                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,transparent)] bg-[var(--color-superficie)] px-4 py-2.5 text-sm font-medium text-[var(--color-error)] shadow-sm transition-colors hover:bg-[var(--color-error-fondo)]"
+                                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,transparent)] bg-(--color-superficie) px-4 py-2.5 text-sm font-medium text-(--color-error) shadow-sm transition-colors hover:bg-(--color-error-fondo)"
                                 >
                                     <Icono nombre="usuario-desactivar" className="h-4 w-4" />
                                     Retirar
@@ -320,7 +320,7 @@ export default function MatriculaDetalle() {
             </div>
             <div className="superficie mb-10 overflow-hidden rounded-xl shadow-sm">
                 {comprobantes.length === 0 ? (
-                    <p className="px-6 py-8 text-center text-sm text-[var(--color-texto-suave)]">
+                    <p className="px-6 py-8 text-center text-sm text-(--color-texto-suave)">
                         El estudiante todavía no subió ningún comprobante.
                     </p>
                 ) : (
@@ -328,18 +328,18 @@ export default function MatriculaDetalle() {
                         <div
                             key={c.id}
                             className={`flex flex-wrap items-center gap-3 px-6 py-4 text-sm ${
-                                idx < comprobantes.length - 1 ? 'border-b border-[var(--color-borde)]' : ''
+                                idx < comprobantes.length - 1 ? 'border-b border-(--color-borde)' : ''
                             }`}
                         >
                             <a
                                 href={c.url_archivo}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="font-medium text-[var(--color-acento)] hover:underline"
+                                className="font-medium text-(--color-acento) hover:underline"
                             >
                                 Ver comprobante
                             </a>
-                            <span className="text-[var(--color-texto-suave)]">
+                            <span className="text-(--color-texto-suave)">
                                 {c.creado} · {c.subido_por}
                             </span>
                             <Insignia tono={tonoEstado(c.estado)}>{c.estado_label}</Insignia>
@@ -348,7 +348,7 @@ export default function MatriculaDetalle() {
                                     <button
                                         type="button"
                                         onClick={() => aprobarComprobante(c.id)}
-                                        className="rounded-lg bg-[var(--color-exito)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-95"
+                                        className="rounded-lg bg-(--color-exito) px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-95"
                                     >
                                         Aprobar pago
                                     </button>
@@ -363,7 +363,7 @@ export default function MatriculaDetalle() {
                                                 confirmarTexto: 'Rechazar',
                                             })
                                         }
-                                        className="rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,transparent)] px-3 py-1.5 text-xs font-semibold text-[var(--color-error)] transition-colors hover:bg-[var(--color-error-fondo)]"
+                                        className="rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,transparent)] px-3 py-1.5 text-xs font-semibold text-(--color-error) transition-colors hover:bg-(--color-error-fondo)"
                                     >
                                         Rechazar
                                     </button>
@@ -376,7 +376,7 @@ export default function MatriculaDetalle() {
 
             <div className="mb-6 flex items-center gap-3">
                 <h2 className="text-2xl font-bold">Grupos de la matrícula</h2>
-                <span className="inline-flex items-center justify-center rounded-full bg-[var(--color-superficie-2)] px-2.5 py-0.5 text-sm font-medium text-[var(--color-texto-suave)]">
+                <span className="inline-flex items-center justify-center rounded-full bg-(--color-superficie-2) px-2.5 py-0.5 text-sm font-medium text-(--color-texto-suave)">
                     {inscripciones.length}
                 </span>
             </div>
@@ -396,13 +396,13 @@ export default function MatriculaDetalle() {
                     vacioDescripcion="Esta matrícula no tiene grupos asignados actualmente."
                 >
                     {inscripciones.map((i) => (
-                        <tr key={i.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <tr key={i.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                             <td className="px-6 py-4 text-sm font-medium">{i.modulo ?? '—'}</td>
                             <td className="px-6 py-4 text-sm">{i.grupo ?? '—'}</td>
-                            <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)]">
+                            <td className="px-6 py-4 text-sm text-(--color-texto-suave)">
                                 {i.docente ?? 'Sin asignar'}
                             </td>
-                            <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] tabular-nums">
+                            <td className="px-6 py-4 text-sm text-(--color-texto-suave) tabular-nums">
                                 {i.periodo_texto ?? '—'}
                             </td>
                         </tr>
@@ -412,10 +412,10 @@ export default function MatriculaDetalle() {
 
             {!estaRetirado && (
                 <div className="superficie mb-10 overflow-hidden rounded-xl shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-(--color-borde) bg-(--color-superficie-cabecera) px-6 py-4">
                         <h2 className="text-lg font-semibold">Cobrar o generar plan de cuotas</h2>
                         {pasarela && (
-                            <span className="text-xs text-[var(--color-texto-suave)]">
+                            <span className="text-xs text-(--color-texto-suave)">
                                 Pasarela activa: <b>{pasarela.driver}</b> ({moneda})
                             </span>
                         )}
@@ -497,16 +497,16 @@ export default function MatriculaDetalle() {
                 vacioDescripcion="Todavía no hay pagos ni planes de cuotas generados para esta matrícula."
             >
                 {pagos.map((t) => (
-                    <tr key={t.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                    <tr key={t.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                         <td className="px-6 py-4 text-sm font-medium">
                             {t.numero_cuota ? `Cuota ${t.numero_cuota} / ${t.total_cuotas}` : 'Pago único'}
                             {t.fecha_vencimiento && (
-                                <span className="ml-2 text-xs text-[var(--color-texto-suave)]">
+                                <span className="ml-2 text-xs text-(--color-texto-suave)">
                                     · vence {formatoFecha(t.fecha_vencimiento)}
                                 </span>
                             )}
                         </td>
-                        <td className="px-6 py-4 text-xs text-[var(--color-texto-suave)]">{t.metodo ?? 'En caja'}</td>
+                        <td className="px-6 py-4 text-xs text-(--color-texto-suave)">{t.metodo ?? 'En caja'}</td>
                         <td className="px-6 py-4 text-sm font-medium tabular-nums">
                             {Number(t.monto ?? 0).toFixed(2)} {moneda}
                         </td>
@@ -519,14 +519,14 @@ export default function MatriculaDetalle() {
                                     <button
                                         type="button"
                                         onClick={() => resolverPago(t.id, 'aprobar')}
-                                        className="border-0 bg-transparent p-0 text-xs font-semibold text-[var(--color-exito)] underline"
+                                        className="border-0 bg-transparent p-0 text-xs font-semibold text-(--color-exito) underline"
                                     >
                                         Aprobar
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => resolverPago(t.id, 'rechazar')}
-                                        className="border-0 bg-transparent p-0 text-xs font-semibold text-[var(--color-error)] underline"
+                                        className="border-0 bg-transparent p-0 text-xs font-semibold text-(--color-error) underline"
                                     >
                                         Rechazar
                                     </button>

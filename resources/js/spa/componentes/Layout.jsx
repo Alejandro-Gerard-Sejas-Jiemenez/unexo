@@ -84,8 +84,8 @@ function Enlace({ item, expandida, anidado = false, alNavegar }) {
             className={({ isActive }) =>
                 'sb-fila ' +
                 (isActive
-                    ? 'bg-[var(--color-acento)] text-[var(--color-acento-texto)] shadow-md'
-                    : 'text-[var(--color-texto-suave)] hover:bg-[var(--color-acento-suave)] hover:text-[var(--color-texto)]')
+                    ? 'bg-(--color-acento) text-(--color-acento-texto) shadow-md'
+                    : 'text-(--color-texto-suave) hover:bg-(--color-acento-suave) hover:text-(--color-texto)')
             }
         >
             {({ isActive }) => (
@@ -133,8 +133,8 @@ function Submenu({ entrada, expandida, alExpandir, alNavegar }) {
                 className={
                     'sb-fila cursor-pointer border-0 ' +
                     (contieneActiva
-                        ? 'bg-[var(--color-acento-suave)] text-[var(--color-acento)] font-semibold'
-                        : 'bg-transparent text-[var(--color-texto-suave)] hover:bg-[var(--color-acento-suave)] hover:text-[var(--color-texto)]')
+                        ? 'bg-(--color-acento-suave) text-(--color-acento) font-semibold'
+                        : 'bg-transparent text-(--color-texto-suave) hover:bg-(--color-acento-suave) hover:text-(--color-texto)')
                 }
             >
                 <span className="sb-icono">
@@ -220,17 +220,17 @@ export default function Layout() {
         <div className="flex h-screen flex-col overflow-hidden">
             <a
                 href="#contenido"
-                className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-[var(--color-acento)] focus:px-4 focus:py-2 focus:text-[var(--color-acento-texto)]"
+                className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-(--color-acento) focus:px-4 focus:py-2 focus:text-(--color-acento-texto)"
             >
                 Saltar al contenido
             </a>
 
-            <header className="z-40 flex h-16 shrink-0 items-center gap-3 border-b border-[var(--color-borde)] bg-[var(--color-superficie)] px-4 sm:px-6">
+            <header className="z-40 flex h-16 shrink-0 items-center gap-3 border-b border-(--color-borde) bg-(--color-superficie) px-4 sm:px-6">
                 <button
                     type="button"
                     onClick={() => setMovilAbierto(true)}
                     aria-label="Abrir menú"
-                    className="rounded-xl p-2 text-[var(--color-texto-suave)] transition-colors hover:bg-[var(--color-superficie-2)] md:hidden"
+                    className="rounded-xl p-2 text-(--color-texto-suave) transition-colors hover:bg-(--color-superficie-2) md:hidden"
                 >
                     <Icono nombre="menu" className="h-6 w-6" />
                 </button>
@@ -244,8 +244,8 @@ export default function Layout() {
                     <span className="hidden text-lg font-bold tracking-tight sm:inline">NEXO SIS</span>
                 </Link>
 
-                <span aria-hidden="true" className="hidden h-6 w-px bg-[var(--color-borde)] md:block" />
-                <p className="hidden truncate text-sm font-semibold text-[var(--color-texto-suave)] md:block">
+                <span aria-hidden="true" className="hidden h-6 w-px bg-(--color-borde) md:block" />
+                <p className="hidden truncate text-sm font-semibold text-(--color-texto-suave) md:block">
                     {seccion}
                 </p>
 
@@ -259,7 +259,7 @@ export default function Layout() {
                         onClick={() => setBuscadorMovil((v) => !v)}
                         aria-label="Buscar en el sistema"
                         aria-expanded={buscadorMovil}
-                        className="btn btn-secundario !min-h-9 !px-2.5 md:hidden"
+                        className="btn btn-secundario min-h-9! px-2.5! md:hidden"
                     >
                         <Icono nombre="buscar" />
                     </button>
@@ -269,7 +269,7 @@ export default function Layout() {
                         onClick={alternarModoRapido}
                         title={modoEfectivo === 'noche' ? 'Cambiar a modo día' : 'Cambiar a modo noche'}
                         aria-label={modoEfectivo === 'noche' ? 'Cambiar a modo día' : 'Cambiar a modo noche'}
-                        className="btn btn-secundario !min-h-9 !px-2.5"
+                        className="btn btn-secundario min-h-9! px-2.5!"
                     >
                         <Icono nombre={modoEfectivo === 'noche' ? 'sol' : 'luna'} />
                     </button>
@@ -282,7 +282,7 @@ export default function Layout() {
                             onClick={() => setPerfilAbierto((v) => !v)}
                             aria-expanded={perfilAbierto}
                             aria-haspopup="menu"
-                            className="flex cursor-pointer items-center gap-2.5 rounded-full p-1.5 pr-2.5 text-left transition-colors hover:bg-[var(--color-superficie-2)]"
+                            className="flex cursor-pointer items-center gap-2.5 rounded-full p-1.5 pr-2.5 text-left transition-colors hover:bg-(--color-superficie-2)"
                         >
                             {usuario?.foto_perfil_url ? (
                                 <AvatarPerfil usuario={usuario} />
@@ -300,9 +300,9 @@ export default function Layout() {
                             )}
                             <span className="hidden flex-col items-start leading-tight sm:flex">
                                 <span className="text-sm font-semibold">{nombreCorto(usuario)}</span>
-                                <span className="text-xs text-[var(--color-texto-suave)]">{usuario?.rol_label}</span>
+                                <span className="text-xs text-(--color-texto-suave)">{usuario?.rol_label}</span>
                             </span>
-                            <Icono nombre="bajar" className="hidden h-4 w-4 text-[var(--color-texto-suave)] sm:block" />
+                            <Icono nombre="bajar" className="hidden h-4 w-4 text-(--color-texto-suave) sm:block" />
                         </button>
 
                         {perfilAbierto && (
@@ -310,16 +310,16 @@ export default function Layout() {
                                 role="menu"
                                 className="superficie animate-fade-in absolute right-0 z-50 mt-2 w-60 rounded-2xl p-2 shadow-xl"
                             >
-                                <div className="mb-1 border-b border-[var(--color-borde)] px-3 py-2">
+                                <div className="mb-1 border-b border-(--color-borde) px-3 py-2">
                                     <p className="truncate text-sm font-semibold">{usuario?.nombre_completo}</p>
-                                    <p className="truncate text-xs text-[var(--color-texto-suave)]">
+                                    <p className="truncate text-xs text-(--color-texto-suave)">
                                         {usuario?.correo_institucional || usuario?.email}
                                     </p>
                                 </div>
                                 <Link
                                     to="/perfil"
                                     role="menuitem"
-                                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium no-underline transition-colors hover:bg-[var(--color-acento-suave)]"
+                                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium no-underline transition-colors hover:bg-(--color-acento-suave)"
                                 >
                                     <Icono nombre="usuarios" className="h-4 w-4" />
                                     Mi perfil
@@ -328,7 +328,7 @@ export default function Layout() {
                                     type="button"
                                     role="menuitem"
                                     onClick={salir}
-                                    className="flex w-full items-center gap-2.5 rounded-xl border-0 bg-transparent px-3 py-2 text-left text-sm font-medium text-[var(--color-error)] transition-colors hover:bg-[var(--color-error-fondo)]"
+                                    className="flex w-full items-center gap-2.5 rounded-xl border-0 bg-transparent px-3 py-2 text-left text-sm font-medium text-(--color-error) transition-colors hover:bg-(--color-error-fondo)"
                                 >
                                     <Icono nombre="salir" className="h-4 w-4" />
                                     Cerrar sesión
@@ -340,7 +340,7 @@ export default function Layout() {
             </header>
 
             {buscadorMovil && (
-                <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie)] px-4 py-2.5 md:hidden">
+                <div className="border-b border-(--color-borde) bg-(--color-superficie) px-4 py-2.5 md:hidden">
                     <BuscadorGlobal />
                 </div>
             )}
@@ -363,7 +363,7 @@ export default function Layout() {
                             aria-expanded={fijada}
                             title="Expandir o colapsar el menú"
                             aria-label="Expandir o colapsar el menú"
-                            className="sb-icono cursor-pointer border-0 bg-transparent text-[var(--color-texto-suave)] focus:outline-none"
+                            className="sb-icono cursor-pointer border-0 bg-transparent text-(--color-texto-suave) focus:outline-none"
                         >
                             <Icono nombre="sidebar" className="h-5 w-5" />
                         </button>
@@ -371,7 +371,7 @@ export default function Layout() {
                             type="button"
                             onClick={() => setMovilAbierto(false)}
                             aria-label="Cerrar menú"
-                            className="ml-auto shrink-0 rounded-full border-0 bg-transparent p-2 text-[var(--color-texto-suave)] hover:bg-[var(--color-superficie-2)] md:hidden"
+                            className="ml-auto shrink-0 rounded-full border-0 bg-transparent p-2 text-(--color-texto-suave) hover:bg-(--color-superficie-2) md:hidden"
                         >
                             <Icono nombre="cerrar" className="h-5 w-5" />
                         </button>
@@ -402,7 +402,7 @@ export default function Layout() {
                     </nav>
 
                     <div className="mt-auto px-5 py-4">
-                        <p className="sb-etiqueta text-[11px] text-[var(--color-texto-suave)]">
+                        <p className="sb-etiqueta text-[11px] text-(--color-texto-suave)">
                             {usuario?.rol_label}
                         </p>
                     </div>

@@ -25,23 +25,18 @@ class VistasPeriodoEdicionTest extends TestCase
         return User::factory()->create(['rol' => $rol]);
     }
 
-    // CA-18
     public function test_el_detalle_de_la_edicion_muestra_el_periodo_de_la_edicion_en_sus_grupos(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-11-10', '2026-12-20');
         $this->crearGrupoConHorarios([], $edicion);
 
-        $this->actingAs($this->usuario(Rol::Administrador))
-            ->get(route('cohortes.show', $edicion))
-            ->assertOk()
-            ->assertSee('Período')
-            ->assertDontSee('Tramo de Fechas')
-            ->assertSee(self::PERIODO)
-            ->assertSee('Añadir grupo paralelo')
-            ->assertDontSee('ej. Grupo B');
+        $res = $this->actingAs($this->usuario(Rol::Administrador))
+            ->getJson("/api/panel/cohortes/{$edicion->id}")
+            ->assertOk();
+
+        $this->assertSame(self::PERIODO, $res->json('data.grupos.0.periodo_texto'));
     }
 
-    // CA-18
     public function test_el_detalle_de_la_edicion_ordena_los_grupos_por_modulo_del_programa_y_luego_por_numero(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-11-10', '2026-12-20');
@@ -52,13 +47,13 @@ class VistasPeriodoEdicionTest extends TestCase
         $edicion->programa->modulos()->attach($primerA->modulo_id, ['orden' => 1]);
         $edicion->programa->modulos()->attach($segundo->modulo_id, ['orden' => 2]);
 
-        $this->actingAs($this->usuario(Rol::Administrador))
-            ->get(route('cohortes.show', $edicion))
-            ->assertOk()
-            ->assertSeeInOrder(['DEMO-Alfa', 'DEMO-Beta', 'DEMO-Zeta']);
+        $res = $this->actingAs($this->usuario(Rol::Administrador))
+            ->getJson("/api/panel/cohortes/{$edicion->id}")
+            ->assertOk();
+
+        $this->assertSame(['DEMO-Alfa', 'DEMO-Beta', 'DEMO-Zeta'], collect($res->json('data.grupos'))->pluck('nombre')->all());
     }
 
-    // CA-01, CA-04
     public function test_catalogo_y_detalle_de_edicion_no_muestran_creditos_ni_nivel_ni_perfil(): void
     {
         $programa = Programa::create(['codigo' => 'DEMO-PC', 'nombre' => 'DEMO Programa', 'version' => '1.0', 'estado_comercial' => EstadoComercial::Abierto]);
@@ -66,32 +61,31 @@ class VistasPeriodoEdicionTest extends TestCase
         $programa->modulos()->attach($modulo->id, ['orden' => 1]);
         $admin = $this->usuario(Rol::Administrador);
 
-        $catalogo = $this->actingAs($admin)->get(route('catalogo'))->assertOk();
-        foreach (['créd', 'Nivel académico', 'Perfil'] as $texto) {
-            $catalogo->assertDontSee($texto);
+        $catalogo = $this->actingAs($admin)->getJson('/api/panel/catalogo-publico')->assertOk()->getContent();
+        foreach (['creditos', 'nivel_academico', 'perfil_egreso'] as $campo) {
+            $this->assertStringNotContainsString("\"{$campo}\"", $catalogo);
         }
 
         $edicion = $this->crearEdicionConPeriodo('2026-11-10', '2026-12-20');
-        $detalle = $this->get(route('cohortes.show', $edicion))->assertOk();
-        foreach (['créditos', 'Nivel académico', 'Perfil del'] as $texto) {
-            $detalle->assertDontSee($texto);
+        $detalle = $this->getJson("/api/panel/cohortes/{$edicion->id}")->assertOk()->getContent();
+        foreach (['creditos', 'nivel_academico', 'perfil_egreso'] as $campo) {
+            $this->assertStringNotContainsString("\"{$campo}\"", $detalle);
         }
     }
 
-    // CA-18
     public function test_el_catalogo_muestra_el_inicio_del_grupo_suelto_y_busca_sin_nivel_academico(): void
     {
         $modulo = Modulo::create(['codigo' => 'DEMO-MS', 'nombre' => 'DEMO Suelto', 'estado_comercial' => EstadoComercial::Abierto]);
         $grupo = $this->crearGrupoConHorarios();
         $grupo->update(['modulo_id' => $modulo->id]);
 
-        $this->actingAs($this->usuario(Rol::Administrador))
-            ->get(route('catalogo', ['q' => 'DEMO']))
-            ->assertOk()
-            ->assertSee('01/03/2026');
+        $res = $this->actingAs($this->usuario(Rol::Administrador))
+            ->getJson('/api/panel/catalogo-publico?q=DEMO')
+            ->assertOk();
+
+        $this->assertSame('2026-03-01', $res->json('modulos.0.grupos_sueltos.0.fecha_inicio'));
     }
 
-    // CA-18
     public function test_los_paneles_y_el_detalle_de_matricula_muestran_el_periodo_de_un_grupo_de_edicion(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-11-10', '2026-12-20');
@@ -102,12 +96,12 @@ class VistasPeriodoEdicionTest extends TestCase
         $matricula = Matricula::create(['estudiante_id' => $estudiante->id, 'cohorte_id' => $edicion->id, 'fecha_matricula' => '2026-05-01']);
         InscripcionGrupo::create(['matricula_id' => $matricula->id, 'grupo_id' => $grupo->id]);
 
-        $this->actingAs($docente)->get(route('panel'))->assertOk()->assertSee(self::PERIODO);
-        $this->actingAs($docente)->get(route('mis-grupos.index'))->assertOk()->assertSee(self::PERIODO);
-        $this->actingAs($estudiante)->get(route('panel'))->assertOk()->assertSee(self::PERIODO);
+        $this->actingAs($docente)->getJson('/api/panel/inicio')->assertOk()->assertJsonPath('proximos.0.periodo_texto', self::PERIODO);
+        $this->actingAs($docente)->getJson('/api/panel/mis-grupos')->assertOk()->assertJsonPath('data.0.periodo_texto', self::PERIODO);
+        $this->actingAs($estudiante)->getJson('/api/panel/inicio')->assertOk()->assertJsonPath('proximos.0.periodo_texto', self::PERIODO);
         $this->actingAs($this->usuario(Rol::Administrador))
-            ->get(route('matriculas.show', $matricula))
+            ->getJson("/api/panel/matriculas/{$matricula->id}")
             ->assertOk()
-            ->assertSee(self::PERIODO);
+            ->assertJsonPath('data.inscripciones.0.periodo_texto', self::PERIODO);
     }
 }

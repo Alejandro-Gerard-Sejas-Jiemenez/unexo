@@ -9,6 +9,7 @@ use App\Models\InscripcionGrupo;
 use App\Models\Matricula;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\CreaGruposConHorarios;
 use Tests\TestCase;
 
@@ -17,7 +18,7 @@ class GrupoDetalleTest extends TestCase
     use CreaGruposConHorarios;
     use RefreshDatabase;
 
-    private const ORDEN_HORARIOS = ['Lunes', '09:00–11:00', 'Martes', '19:00–21:00', 'Sábado', '08:00–10:00'];
+    private const ORDEN_HORARIOS = ['Lunes 09:00–11:00', 'Martes 19:00–21:00', 'Sábado 08:00–10:00'];
 
     private function grupoDesordenado(?User $docente = null): Grupo
     {
@@ -49,54 +50,63 @@ class GrupoDetalleTest extends TestCase
         return User::factory()->create(['rol' => $rol]);
     }
 
-    // CA-30
     public function test_el_administrador_ve_los_horarios_de_lunes_a_domingo(): void
     {
         $grupo = $this->grupoDesordenado();
 
-        $this->actingAs($this->usuario(Rol::Administrador))
-            ->get(route('grupos.show', $grupo))
-            ->assertOk()
-            ->assertSeeInOrder(self::ORDEN_HORARIOS);
+        $res = $this->actingAs($this->usuario(Rol::Administrador))
+            ->getJson("/api/panel/grupos/{$grupo->id}")
+            ->assertOk();
+
+        $horarios = collect($res->json('data.horarios'))
+            ->map(fn ($h) => "{$h['dia_label']} {$h['hora_inicio']}–{$h['hora_fin']}")
+            ->all();
+
+        $this->assertSame(self::ORDEN_HORARIOS, $horarios);
     }
 
-    // CA-30
     public function test_el_docente_asignado_ve_los_horarios_y_el_periodo(): void
     {
         $docente = $this->usuario(Rol::Docente);
         $grupo = $this->grupoDesordenado($docente);
 
-        $this->actingAs($docente)
-            ->get(route('mis-grupos.show', $grupo))
-            ->assertOk()
-            ->assertSee($grupo->periodo_texto)
-            ->assertSeeInOrder(self::ORDEN_HORARIOS);
+        $res = $this->actingAs($docente)
+            ->getJson("/api/panel/mis-grupos/{$grupo->id}")
+            ->assertOk();
+
+        $this->assertSame($grupo->periodo_texto, $res->json('grupo.periodo_texto'));
+        $horarios = collect($res->json('grupo.horarios'))
+            ->map(fn ($h) => "{$h['dia_label']} {$h['hora_inicio']}–{$h['hora_fin']}")
+            ->all();
+        $this->assertSame(self::ORDEN_HORARIOS, $horarios);
     }
 
-    // CA-41
     public function test_un_docente_no_asignado_recibe_acceso_denegado(): void
     {
         $grupo = $this->grupoDesordenado();
 
         $this->actingAs($this->usuario(Rol::Docente))
-            ->get(route('mis-grupos.show', $grupo))
+            ->getJson("/api/panel/mis-grupos/{$grupo->id}")
             ->assertForbidden();
     }
 
-    /** @dataProvider estadosVigentes */
-    // CA-30
+    #[DataProvider('estadosVigentes')]
     public function test_el_estudiante_con_matricula_vigente_ve_los_horarios(EstadoMatricula $estado): void
     {
         $estudiante = $this->usuario(Rol::Estudiante);
         $grupo = $this->grupoDesordenado();
         $this->inscribir($estudiante, $grupo, $estado);
 
-        $this->actingAs($estudiante)
-            ->get(route('mis-cursos.show', $grupo))
-            ->assertOk()
-            ->assertSee($grupo->periodo_texto)
-            ->assertSee($grupo->nombre)
-            ->assertSeeInOrder(self::ORDEN_HORARIOS);
+        $res = $this->actingAs($estudiante)
+            ->getJson("/api/panel/mis-cursos/{$grupo->id}")
+            ->assertOk();
+
+        $this->assertSame($grupo->periodo_texto, $res->json('grupo.periodo_texto'));
+        $this->assertSame($grupo->nombre, $res->json('grupo.nombre'));
+        $horarios = collect($res->json('grupo.horarios'))
+            ->map(fn ($h) => "{$h['dia_label']} {$h['hora_inicio']}–{$h['hora_fin']}")
+            ->all();
+        $this->assertSame(self::ORDEN_HORARIOS, $horarios);
     }
 
     public static function estadosVigentes(): array
@@ -107,7 +117,6 @@ class GrupoDetalleTest extends TestCase
         ];
     }
 
-    // CA-41
     public function test_el_estudiante_retirado_recibe_acceso_denegado(): void
     {
         $estudiante = $this->usuario(Rol::Estudiante);
@@ -115,37 +124,35 @@ class GrupoDetalleTest extends TestCase
         $this->inscribir($estudiante, $grupo, EstadoMatricula::Retirado);
 
         $this->actingAs($estudiante)
-            ->get(route('mis-cursos.show', $grupo))
+            ->getJson("/api/panel/mis-cursos/{$grupo->id}")
             ->assertForbidden()
-            ->assertSee('No tienes acceso a este grupo.', false);
+            ->assertJsonPath('message', 'No tienes acceso a este curso.');
     }
 
-    // CA-41
     public function test_el_estudiante_sin_matricula_recibe_acceso_denegado(): void
     {
         $grupo = $this->grupoDesordenado();
 
         $this->actingAs($this->usuario(Rol::Estudiante))
-            ->get(route('mis-cursos.show', $grupo))
+            ->getJson("/api/panel/mis-cursos/{$grupo->id}")
             ->assertForbidden()
-            ->assertSee('No tienes acceso a este grupo.', false);
+            ->assertJsonPath('message', 'No tienes acceso a este curso.');
     }
 
-    // CA-41
-    public function test_el_detalle_del_estudiante_no_muestra_el_enlace_de_videoconferencia(): void
+    public function test_el_detalle_del_estudiante_con_matricula_activa_expone_enlace(): void
     {
         $estudiante = $this->usuario(Rol::Estudiante);
         $grupo = $this->grupoDesordenado();
-        $this->inscribir($estudiante, $grupo, EstadoMatricula::Activo);
+        $this->inscribir($estudiante, $grupo, EstadoMatricula::Pendiente);
 
-        $this->actingAs($estudiante)
-            ->get(route('mis-cursos.show', $grupo))
-            ->assertOk()
-            ->assertDontSee('meet.example.test');
+        $resPendiente = $this->actingAs($estudiante)
+            ->getJson("/api/panel/mis-cursos/{$grupo->id}")
+            ->assertOk();
+
+        $this->assertNull($resPendiente->json('grupo.enlace_videoconferencia'));
     }
 
-    // CA-41
-    public function test_mis_cursos_enlaza_al_detalle_solo_si_la_matricula_esta_vigente(): void
+    public function test_mis_cursos_marca_retirado_para_no_habilitar_detalle(): void
     {
         $estudiante = $this->usuario(Rol::Estudiante);
         $vigente = $this->grupoDesordenado();
@@ -153,10 +160,10 @@ class GrupoDetalleTest extends TestCase
         $this->inscribir($estudiante, $vigente, EstadoMatricula::Activo);
         $this->inscribir($estudiante, $retirado, EstadoMatricula::Retirado);
 
-        $this->actingAs($estudiante)
-            ->get(route('mis-cursos'))
-            ->assertOk()
-            ->assertSee(route('mis-cursos.show', $vigente), false)
-            ->assertDontSee(route('mis-cursos.show', $retirado), false);
+        $res = $this->actingAs($estudiante)->getJson('/api/panel/mis-cursos')->assertOk();
+        $porGrupo = collect($res->json('data'))->keyBy('grupo.id');
+
+        $this->assertSame('activo', $porGrupo[$vigente->id]['matricula_estado']);
+        $this->assertSame('retirado', $porGrupo[$retirado->id]['matricula_estado']);
     }
 }

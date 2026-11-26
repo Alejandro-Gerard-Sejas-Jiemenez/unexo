@@ -7,10 +7,6 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                // Panel Blade actual: sigue funcionando durante la migración.
-                'resources/css/app.css',
-                'resources/js/app.js',
-                // SPA de React.
                 'resources/css/spa.css',
                 'resources/js/spa/main.jsx',
             ],

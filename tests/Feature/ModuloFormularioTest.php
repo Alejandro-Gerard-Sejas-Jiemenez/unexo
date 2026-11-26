@@ -34,7 +34,6 @@ class ModuloFormularioTest extends TestCase
         ], $extra);
     }
 
-    /** Cohorte con un grupo de un módulo que tiene prerrequisito. */
     private function cohorteConModuloConPrerrequisito(): array
     {
         $programa = Programa::create(['codigo' => 'DEMO-P1', 'nombre' => 'DEMO-Diplomado', 'version' => '1.0', 'estado_comercial' => EstadoComercial::Abierto]);
@@ -46,60 +45,45 @@ class ModuloFormularioTest extends TestCase
         return [$cohorte, $grupo];
     }
 
-    public function test_el_formulario_no_pide_creditos_ni_tipo_de_evaluacion(): void
-    {
-        // CA-01
-        $respuesta = $this->actingAs($this->admin())->get(route('modulos.create'))->assertOk();
-
-        $respuesta->assertDontSee('Créditos', false)
-            ->assertDontSee('Tipo de Evaluación', false)
-            ->assertDontSee('name="creditos"', false)
-            ->assertDontSee('name="tipo_evaluacion"', false)
-            ->assertSee('Prerrequisito (conocimientos previos)')
-            ->assertSee('name="prerrequisito"', false)
-            ->assertSee('0/500');
-    }
-
     public function test_el_listado_de_modulos_y_el_detalle_de_programa_no_muestran_los_campos_retirados(): void
     {
-        // CA-01
         $programa = Programa::create(['codigo' => 'DEMO-P1', 'nombre' => 'DEMO-Diplomado', 'version' => '1.0', 'estado_comercial' => EstadoComercial::Abierto]);
         $modulo = Modulo::create(['codigo' => 'DEMO-M1', 'nombre' => 'DEMO-Excel', 'estado_comercial' => EstadoComercial::Abierto]);
         $programa->modulos()->attach($modulo->id, ['orden' => 1]);
         $admin = $this->admin();
 
-        foreach ([route('modulos.index'), route('programas.show', $programa)] as $url) {
-            $this->actingAs($admin)->get($url)->assertOk()
-                ->assertDontSee('Créditos', false)
-                ->assertDontSee('créditos', false)
-                ->assertDontSee('Tipo de evaluación', false)
-                ->assertDontSee('Tipo de Evaluación', false);
+        foreach (['/api/panel/catalogo/modulos', "/api/panel/catalogo/programas/{$programa->id}"] as $url) {
+            $res = $this->actingAs($admin)->getJson($url)->assertOk();
+            $json = $res->getContent();
+            $this->assertStringNotContainsString('"creditos"', $json);
+            $this->assertStringNotContainsString('"tipo_evaluacion"', $json);
         }
     }
 
     public function test_un_prerrequisito_de_mas_de_500_caracteres_se_rechaza_con_el_maximo(): void
     {
-        // CA-02
-        $this->actingAs($this->admin())->post(route('modulos.store'), $this->datos(['prerrequisito' => str_repeat('a', 501)]))
-            ->assertSessionHasErrors(['prerrequisito' => 'El prerrequisito no puede tener más de 500 caracteres.']);
+        $this->actingAs($this->admin())
+            ->postJson('/api/panel/catalogo/modulos', $this->datos(['prerrequisito' => str_repeat('a', 501)]))
+            ->assertStatus(422)
+            ->assertJsonPath('errors.prerrequisito.0', 'El prerrequisito no puede tener más de 500 caracteres.');
 
         $this->assertDatabaseCount('modulos', 0);
     }
 
     public function test_un_prerrequisito_de_exactamente_500_caracteres_se_acepta(): void
     {
-        // CA-02
-        $this->actingAs($this->admin())->post(route('modulos.store'), $this->datos(['prerrequisito' => str_repeat('a', 500)]))
-            ->assertSessionHasNoErrors()->assertRedirect(route('modulos.index'));
+        $this->actingAs($this->admin())
+            ->postJson('/api/panel/catalogo/modulos', $this->datos(['prerrequisito' => str_repeat('a', 500)]))
+            ->assertCreated();
 
         $this->assertDatabaseHas('modulos', ['codigo' => 'DEMO-M1']);
     }
 
     public function test_el_prerrequisito_es_opcional_y_no_se_guardan_creditos_ni_tipo(): void
     {
-        // CA-01, CA-02
-        $this->actingAs($this->admin())->post(route('modulos.store'), $this->datos(['creditos' => 5, 'tipo_evaluacion' => 'Examen']))
-            ->assertSessionHasNoErrors();
+        $this->actingAs($this->admin())
+            ->postJson('/api/panel/catalogo/modulos', $this->datos(['creditos' => 5, 'tipo_evaluacion' => 'Examen']))
+            ->assertCreated();
 
         $modulo = Modulo::where('codigo', 'DEMO-M1')->firstOrFail();
         $this->assertNull($modulo->prerrequisito);
@@ -108,15 +92,14 @@ class ModuloFormularioTest extends TestCase
 
     public function test_la_matricula_por_cohorte_se_acepta_con_prerrequisito(): void
     {
-        // CA-03
         [$cohorte] = $this->cohorteConModuloConPrerrequisito();
         $estudiante = User::factory()->create(['rol' => Rol::Estudiante]);
 
-        $this->actingAs($this->admin())->post(route('matriculas.store'), [
+        $this->actingAs($this->admin())->postJson('/api/panel/matriculas', [
             'estudiante_id' => $estudiante->id,
             'tipo' => 'cohorte',
             'cohorte_id' => $cohorte->id,
-        ])->assertSessionHasNoErrors()->assertRedirect();
+        ])->assertCreated();
 
         $matricula = Matricula::where('estudiante_id', $estudiante->id)->firstOrFail();
         $this->assertSame(1, $matricula->inscripciones()->count());
@@ -124,7 +107,6 @@ class ModuloFormularioTest extends TestCase
 
     public function test_el_servicio_de_matricula_acepta_un_grupo_con_prerrequisito(): void
     {
-        // CA-03
         [$cohorte, $grupo] = $this->cohorteConModuloConPrerrequisito();
         $estudiante = User::factory()->create(['rol' => Rol::Estudiante]);
 
@@ -135,7 +117,6 @@ class ModuloFormularioTest extends TestCase
 
     public function test_editar_solo_el_prerrequisito_deja_iguales_los_demas_datos(): void
     {
-        // CA-42
         $modulo = Modulo::create([
             'codigo' => 'DEMO-M1',
             'nombre' => 'DEMO-Excel',
@@ -145,11 +126,13 @@ class ModuloFormularioTest extends TestCase
             'estado_comercial' => EstadoComercial::Abierto,
         ]);
 
-        $this->actingAs($this->admin())->put(route('modulos.update', $modulo), $this->datos([
-            'descripcion' => 'DEMO descripción',
-            'pdf_temario_url' => 'https://example.com/temario.pdf',
-            'prerrequisito' => 'Lógica de programación básica',
-        ]))->assertSessionHasNoErrors();
+        $this->actingAs($this->admin())
+            ->putJson("/api/panel/catalogo/modulos/{$modulo->id}", $this->datos([
+                'descripcion' => 'DEMO descripción',
+                'pdf_temario_url' => 'https://example.com/temario.pdf',
+                'prerrequisito' => 'Lógica de programación básica',
+            ]))
+            ->assertOk();
 
         $this->assertDatabaseHas('modulos', [
             'id' => $modulo->id,
@@ -165,10 +148,11 @@ class ModuloFormularioTest extends TestCase
 
     public function test_la_edicion_rechaza_un_prerrequisito_demasiado_largo(): void
     {
-        // CA-02
         $modulo = Modulo::create(['codigo' => 'DEMO-M1', 'nombre' => 'DEMO-Excel', 'estado_comercial' => EstadoComercial::Abierto]);
 
-        $this->actingAs($this->admin())->put(route('modulos.update', $modulo), $this->datos(['prerrequisito' => str_repeat('a', 501)]))
-            ->assertSessionHasErrors('prerrequisito');
+        $this->actingAs($this->admin())
+            ->putJson("/api/panel/catalogo/modulos/{$modulo->id}", $this->datos(['prerrequisito' => str_repeat('a', 501)]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('prerrequisito');
     }
 }

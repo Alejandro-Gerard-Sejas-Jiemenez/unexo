@@ -6,7 +6,10 @@ use App\Enums\EstadoComercial;
 use App\Enums\EstadoMatricula;
 use App\Enums\EstadoPlanificacion;
 use App\Enums\OrigenMatricula;
+use App\Services\ReporteCatalogoService;
 use App\Services\ReporteExcelService;
+use App\Services\ReporteMatriculasService;
+use App\Services\ReporteOcupacionService;
 use App\Services\ReportePdfService;
 use App\Support\Reporte;
 use DateTimeInterface;
@@ -22,8 +25,6 @@ class ReportesDescargaTest extends TestCase
 {
     use CreaDatosDeReportes;
     use RefreshDatabase;
-
-    private const MENSAJE_FALLO = 'No se pudo generar el archivo. Intenta de nuevo.';
 
     private const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -80,16 +81,17 @@ class ReportesDescargaTest extends TestCase
 
     private function desde(string $ruta, array $filtros = [])
     {
-        return $this->actingAs($this->admin())->get(route($ruta, $filtros));
+        $q = $filtros !== [] ? '?'.http_build_query($filtros) : '';
+
+        return $this->actingAs($this->admin())->get($ruta.$q);
     }
 
-    // RF-16 / CA-16
     public function test_el_pdf_responde_con_cabeceras_y_firma_pdf(): void
     {
         $this->datosDeEjemplo();
 
         foreach (['matriculas' => 'matriculas', 'ocupacion' => 'ocupacion-grupos', 'catalogo' => 'catalogo-oferta'] as $reporte => $archivo) {
-            $respuesta = $this->desde("reportes.$reporte.pdf")->assertOk();
+            $respuesta = $this->desde("/api/panel/reportes/{$reporte}/pdf")->assertOk();
 
             $this->assertSame('application/pdf', $respuesta->headers->get('Content-Type'));
             $this->assertMatchesRegularExpression('/^attachment; filename="?reporte-'.$archivo.'-\d{8}-\d{4}\.pdf"?$/', $respuesta->headers->get('Content-Disposition'));
@@ -97,14 +99,19 @@ class ReportesDescargaTest extends TestCase
         }
     }
 
-    // RF-16 / CA-16: la vista del PDF trae lo mismo que la pantalla, en el mismo orden, en los tres reportes
     public function test_la_vista_pdf_trae_titulo_fecha_de_la_paz_filtros_totales_y_el_orden_de_pantalla(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-30 16:05:00', 'UTC'));
         $this->datosDeEjemplo();
 
-        foreach (['matriculas', 'ocupacion', 'catalogo'] as $nombre) {
-            $reporte = $this->desde("reportes.$nombre")->viewData('reporte');
+        $servicios = [
+            'matriculas' => fn () => app(ReporteMatriculasService::class)->generar([]),
+            'ocupacion' => fn () => app(ReporteOcupacionService::class)->generar([]),
+            'catalogo' => fn () => app(ReporteCatalogoService::class)->generar(),
+        ];
+
+        foreach ($servicios as $nombre => $resolver) {
+            $reporte = $resolver();
             $html = view('reportes.pdf', ['reporte' => $reporte])->render();
 
             $this->assertStringContainsString($reporte->titulo, $html);
@@ -117,10 +124,9 @@ class ReportesDescargaTest extends TestCase
             }
             foreach ($reporte->totales as $total) {
                 $this->assertStringContainsString(e($total['etiqueta']), $html);
-                $this->assertStringContainsString('>'.$total['valor'].'</td>', $html); // RF-30 / CA-39: nombre y número
+                $this->assertStringContainsString('>'.$total['valor'].'</td>', $html);
             }
 
-            // Cada celda aparece, en orden, dentro de su propia etiqueta <td> (evita coincidencias con "1" o "0" sueltos).
             $posicion = 0;
             foreach ($reporte->secciones as $seccion) {
                 $this->assertNotFalse($posicion = strpos($html, e($seccion['titulo']), $posicion), "Falta la sección «{$seccion['titulo']}» en el PDF de $nombre.");
@@ -134,13 +140,12 @@ class ReportesDescargaTest extends TestCase
         }
     }
 
-    // RNF-05: las etiquetas son las mismas en pantalla, PDF y Excel
     public function test_las_etiquetas_de_estado_y_origen_son_las_mismas_en_pdf_y_excel(): void
     {
         $this->datosDeEjemplo();
-        $reporte = $this->desde('reportes.matriculas')->viewData('reporte');
+        $reporte = app(ReporteMatriculasService::class)->generar([]);
         $html = view('reportes.pdf', ['reporte' => $reporte])->render();
-        $filas = $this->leerExcel($this->desde('reportes.matriculas.excel')->assertOk());
+        $filas = $this->leerExcel($this->desde('/api/panel/reportes/matriculas/excel')->assertOk());
         $primeraColumna = array_column($filas, 0);
 
         foreach ([...EstadoMatricula::cases(), ...OrigenMatricula::cases()] as $caso) {
@@ -149,27 +154,29 @@ class ReportesDescargaTest extends TestCase
         }
     }
 
-    // RF-17 / CA-17
     public function test_un_filtro_sin_resultados_muestra_el_aviso_en_pantalla_y_en_pdf_y_en_excel(): void
     {
         $this->datosDeEjemplo();
         $consulta = ['desde' => '2030-01-01'];
 
-        $pantalla = $this->desde('reportes.matriculas', $consulta)->assertOk()->assertSee(Reporte::AVISO_SIN_DATOS);
-        $html = view('reportes.pdf', ['reporte' => $pantalla->viewData('reporte')])->render();
+        $this->desde('/api/panel/reportes/matriculas', $consulta)
+            ->assertOk()
+            ->assertJsonPath('aviso_sin_datos', Reporte::AVISO_SIN_DATOS);
+
+        $reporte = app(ReporteMatriculasService::class)->generar($consulta);
+        $html = view('reportes.pdf', ['reporte' => $reporte])->render();
         $this->assertStringContainsString(Reporte::AVISO_SIN_DATOS, $html);
 
-        $filas = $this->leerExcel($this->desde('reportes.matriculas.excel', $consulta)->assertOk());
+        $filas = $this->leerExcel($this->desde('/api/panel/reportes/matriculas/excel', $consulta)->assertOk());
         $this->filaQueEmpiezaCon($filas, Reporte::AVISO_SIN_DATOS);
     }
 
-    // RF-23 / CA-23
     public function test_el_excel_trae_titulo_fecha_filtros_totales_y_tablas_en_el_orden_de_pantalla(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-30 16:05:00', 'UTC'));
         $this->datosDeEjemplo();
 
-        $respuesta = $this->desde('reportes.matriculas.excel', ['desde' => '2026-03-01'])->assertOk();
+        $respuesta = $this->desde('/api/panel/reportes/matriculas/excel', ['desde' => '2026-03-01'])->assertOk();
         $filas = $this->leerExcel($respuesta);
 
         $this->assertSame(self::XLSX, $respuesta->headers->get('Content-Type'));
@@ -189,18 +196,17 @@ class ReportesDescargaTest extends TestCase
         $this->assertSame(['Pendiente de pago', 1, 25], array_slice($this->filaQueEmpiezaCon($filas, 'Pendiente de pago'), 0, 3));
     }
 
-    // RF-24 / CA-24
     public function test_el_excel_guarda_cantidades_y_porcentajes_como_numeros_y_fechas_como_fechas(): void
     {
         $this->datosDeEjemplo();
 
-        $porcentajes = $this->leerExcel($this->desde('reportes.matriculas.excel')->assertOk());
+        $porcentajes = $this->leerExcel($this->desde('/api/panel/reportes/matriculas/excel')->assertOk());
         $fila = $this->filaQueEmpiezaCon($porcentajes, 'Activo (pagado)');
         $this->assertIsNumeric($fila[1]);
         $this->assertIsNumeric($fila[2]);
         $this->assertEquals(50, $fila[2]);
 
-        $ocupacion = $this->leerExcel($this->desde('reportes.ocupacion.excel')->assertOk());
+        $ocupacion = $this->leerExcel($this->desde('/api/panel/reportes/ocupacion/excel')->assertOk());
         $grupo = $this->filaQueEmpiezaCon($ocupacion, 'DEMO Grupo 1');
         $this->assertInstanceOf(DateTimeInterface::class, $grupo[4]);
         $this->assertInstanceOf(DateTimeInterface::class, $grupo[5]);
@@ -214,7 +220,7 @@ class ReportesDescargaTest extends TestCase
     {
         $this->datosDeEjemplo();
 
-        $filas = $this->leerExcel($this->desde('reportes.catalogo.excel')->assertOk());
+        $filas = $this->leerExcel($this->desde('/api/panel/reportes/catalogo/excel')->assertOk());
 
         $this->assertSame('Reporte de catálogo y oferta', $filas[0][0]);
         $this->assertSame('Sin filtros', $this->filaQueEmpiezaCon($filas, 'Filtros')[1]);
@@ -234,31 +240,25 @@ class ReportesDescargaTest extends TestCase
         $this->fail('No hay tabla de programas vacíos.');
     }
 
-    // CA-38
-    public function test_si_falla_el_pdf_se_vuelve_al_reporte_con_el_mensaje(): void
+    public function test_si_falla_el_pdf_devuelve_error_en_json(): void
     {
         $this->mock(ReportePdfService::class)->shouldReceive('generar')->andThrow(new RuntimeException('falla simulada'));
 
-        $consulta = ['desde' => '2026-03-01'];
-        $this->desde('reportes.matriculas.pdf', $consulta)
-            ->assertRedirect(route('reportes.matriculas', $consulta))
-            ->assertSessionHasErrors(['descarga' => self::MENSAJE_FALLO]);
+        $this->desde('/api/panel/reportes/matriculas/pdf', ['desde' => '2026-03-01'])
+            ->assertStatus(500)
+            ->assertJsonStructure(['message']);
     }
 
-    // CA-38
-    public function test_si_falla_el_excel_se_vuelve_al_reporte_con_el_mensaje_y_el_reporte_sigue_en_pantalla(): void
+    public function test_si_falla_el_excel_devuelve_error_en_json(): void
     {
         $this->datosDeEjemplo();
         $this->mock(ReporteExcelService::class)->shouldReceive('generar')->andThrow(new RuntimeException('falla simulada'));
 
-        $this->desde('reportes.ocupacion.excel')
-            ->assertRedirect(route('reportes.ocupacion'))
-            ->assertSessionHasErrors(['descarga' => self::MENSAJE_FALLO]);
-
-        $this->get(route('reportes.ocupacion'))->assertOk()->assertSee(self::MENSAJE_FALLO)->assertSee('DEMO Grupo 1');
+        $this->desde('/api/panel/reportes/ocupacion/excel')
+            ->assertStatus(500)
+            ->assertJsonStructure(['message']);
     }
 
-    // RF-18 / CA-18: consultar y descargar no escribe
     public function test_consultar_y_descargar_no_escribe_en_la_base(): void
     {
         $this->datosDeEjemplo();
@@ -267,31 +267,24 @@ class ReportesDescargaTest extends TestCase
         $contar = fn () => array_map(fn ($tabla) => DB::table($tabla)->count(), $tablas);
         $antes = $contar();
 
-        // RF-18 protege los datos del negocio: un reporte no los altera. La
-        // bitácora de auditoría y el contador de visitas sí escriben en cada
-        // acceso, porque los exigen los requisitos 4 y 7 del enunciado; son
-        // tablas ajenas al dominio y por eso quedan fuera de esta comprobación.
         $auditoria = ['visitas_pagina', 'bitacora'];
-
         $escrituras = [];
         DB::listen(function ($consulta) use (&$escrituras, $auditoria) {
             if (! preg_match('/^\s*(insert|update|delete|create|drop|alter)\b/i', $consulta->sql)) {
                 return;
             }
-
             foreach ($auditoria as $tabla) {
                 if (str_contains($consulta->sql, $tabla)) {
                     return;
                 }
             }
-
             $escrituras[] = $consulta->sql;
         });
 
         $this->actingAs($admin);
         foreach (['matriculas', 'ocupacion', 'catalogo'] as $reporte) {
-            foreach (['', '.pdf', '.excel'] as $sufijo) {
-                $this->get(route("reportes.$reporte$sufijo"))->assertOk();
+            foreach (['', '/pdf', '/excel'] as $sufijo) {
+                $this->get("/api/panel/reportes/{$reporte}{$sufijo}")->assertOk();
             }
         }
 
@@ -299,18 +292,17 @@ class ReportesDescargaTest extends TestCase
         $this->assertSame([], $escrituras, 'Los reportes ejecutaron sentencias de escritura.');
     }
 
-    // RNF-04: sin datos guardados de consultas anteriores
     public function test_los_datos_reflejan_el_momento_de_la_consulta(): void
     {
         $this->matricula();
         $admin = $this->admin();
 
-        $primero = $this->actingAs($admin)->get(route('reportes.matriculas'))->viewData('reporte');
+        $primero = $this->actingAs($admin)->getJson('/api/panel/reportes/matriculas')->assertOk();
         $this->matricula();
-        $segundo = $this->actingAs($admin)->get(route('reportes.matriculas'))->viewData('reporte');
+        $segundo = $this->actingAs($admin)->getJson('/api/panel/reportes/matriculas')->assertOk();
 
-        $this->assertSame(1, $this->totalDe($primero, 'Total de matrículas'));
-        $this->assertSame(2, $this->totalDe($segundo, 'Total de matrículas'));
+        $this->assertSame(1, $primero->json('totales.0.valor'));
+        $this->assertSame(2, $segundo->json('totales.0.valor'));
     }
 
     public function test_el_pdf_de_ocupacion_se_genera_con_muchos_grupos(): void
@@ -319,7 +311,7 @@ class ReportesDescargaTest extends TestCase
             $this->grupo(['cupo_minimo' => 5]);
         }
 
-        $respuesta = $this->desde('reportes.ocupacion.pdf')->assertOk();
+        $respuesta = $this->desde('/api/panel/reportes/ocupacion/pdf')->assertOk();
 
         $this->assertStringStartsWith('%PDF', $respuesta->getContent());
     }

@@ -31,7 +31,7 @@ export default function GrupoDetalle() {
     if (cargando) return <Cargador texto="Cargando" />;
     if (aviso) {
         return (
-            <p role="alert" className="superficie border-[var(--color-error)] p-4 text-sm text-[var(--color-error)]">
+            <p role="alert" className="superficie border-(--color-error) p-4 text-sm text-(--color-error)">
                 {aviso}
             </p>
         );
@@ -57,7 +57,7 @@ export default function GrupoDetalle() {
                 acciones={
                     <>
                         <Insignia tono={tonoEstado(grupo.estado)}>{grupo.estado_label}</Insignia>
-                        <BotonAccion to={`/grupos/${grupo.id}`} icono="editar" className="!rounded-lg !px-4 !py-2">
+                        <BotonAccion to={`/grupos/${grupo.id}`} icono="editar" className="rounded-lg! px-4! py-2!">
                             Editar
                         </BotonAccion>
                     </>
@@ -65,24 +65,24 @@ export default function GrupoDetalle() {
             />
 
             <div className="superficie overflow-hidden rounded-xl shadow-sm">
-                <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-4">
+                <div className="border-b border-(--color-borde) bg-(--color-superficie-cabecera) px-6 py-4">
                     <h2 className="text-base font-bold">Detalles operativos</h2>
                 </div>
                 <dl className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-3">
                     <div>
-                        <dt className="text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                        <dt className="text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                             Docente
                         </dt>
                         <dd className="mt-1 text-sm font-medium">{grupo.docente ?? 'Sin asignar'}</dd>
                     </div>
                     <div>
-                        <dt className="text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                        <dt className="text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                             Período
                         </dt>
                         <dd className="mt-1 text-sm font-medium tabular-nums">{grupo.periodo_texto || '—'}</dd>
                     </div>
                     <div>
-                        <dt className="text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                        <dt className="text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                             Modalidad / Aula
                         </dt>
                         <dd className="mt-1 text-sm font-medium">
@@ -91,7 +91,7 @@ export default function GrupoDetalle() {
                         </dd>
                     </div>
                     <div>
-                        <dt className="text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                        <dt className="text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                             Cupo mínimo
                         </dt>
                         <dd className="mt-1 text-sm font-medium tabular-nums">
@@ -100,7 +100,7 @@ export default function GrupoDetalle() {
                     </div>
                     {grupo.enlace_videoconferencia && (
                         <div className="sm:col-span-2">
-                            <dt className="text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                            <dt className="text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                                 Enlace de videoconferencia
                             </dt>
                             <dd className="mt-1 text-sm break-all">
@@ -108,7 +108,7 @@ export default function GrupoDetalle() {
                                     href={grupo.enlace_videoconferencia}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="inline-flex items-center gap-1.5 font-medium text-[var(--color-acento)]"
+                                    className="inline-flex items-center gap-1.5 font-medium text-(--color-acento)"
                                 >
                                     <Icono nombre="video" className="h-4 w-4 shrink-0" />
                                     {grupo.enlace_videoconferencia}
@@ -130,9 +130,9 @@ export default function GrupoDetalle() {
                     vacioDescripcion="Edita el grupo para agregar días y horas de clase."
                 >
                     {horarios.map((h, i) => (
-                        <tr key={i} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <tr key={i} className="transition-colors hover:bg-(--color-superficie-2)/60">
                             <td className="px-6 py-4 text-sm font-medium">{h.dia_label}</td>
-                            <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] tabular-nums">
+                            <td className="px-6 py-4 text-sm text-(--color-texto-suave) tabular-nums">
                                 {h.hora_inicio} – {h.hora_fin}
                             </td>
                         </tr>
@@ -143,7 +143,7 @@ export default function GrupoDetalle() {
             <div>
                 <div className="mb-3 flex items-center gap-3">
                     <h2 className="text-xl font-bold">Estudiantes inscritos</h2>
-                    <span className="inline-flex rounded-full bg-[var(--color-superficie-2)] px-2.5 py-0.5 text-sm font-medium text-[var(--color-texto-suave)]">
+                    <span className="inline-flex rounded-full bg-(--color-superficie-2) px-2.5 py-0.5 text-sm font-medium text-(--color-texto-suave)">
                         {inscritos.length}
                     </span>
                 </div>
@@ -166,13 +166,13 @@ export default function GrupoDetalle() {
                     }
                 >
                     {inscritos.map((e) => (
-                        <tr key={e.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <tr key={e.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                             <td className="px-6 py-4 text-sm font-semibold">
-                                <Link to={`/matriculas/${e.matricula_id}`} className="no-underline hover:text-[var(--color-acento)] hover:underline">
+                                <Link to={`/matriculas/${e.matricula_id}`} className="no-underline hover:text-(--color-acento) hover:underline">
                                     {e.nombre ?? '—'}
                                 </Link>
                             </td>
-                            <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)]">
+                            <td className="px-6 py-4 text-sm text-(--color-texto-suave)">
                                 {e.correo_institucional || e.email || '—'}
                             </td>
                             <td className="px-6 py-4 text-right whitespace-nowrap">

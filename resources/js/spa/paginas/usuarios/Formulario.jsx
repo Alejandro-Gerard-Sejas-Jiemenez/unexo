@@ -132,7 +132,7 @@ export default function UsuarioFormulario() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -141,7 +141,7 @@ export default function UsuarioFormulario() {
                 <form onSubmit={enviar} noValidate className="p-6 sm:p-8">
                     <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
                         <div className="space-y-4">
-                            <h3 className="mb-4 border-b border-[var(--color-borde)] pb-2 text-lg font-medium">
+                            <h3 className="mb-4 border-b border-(--color-borde) pb-2 text-lg font-medium">
                                 Información de la cuenta
                             </h3>
 
@@ -213,7 +213,7 @@ export default function UsuarioFormulario() {
                         </div>
 
                         <div className="mt-8 space-y-4 md:mt-0">
-                            <h3 className="mb-4 border-b border-[var(--color-borde)] pb-2 text-lg font-medium">
+                            <h3 className="mb-4 border-b border-(--color-borde) pb-2 text-lg font-medium">
                                 Datos personales
                             </h3>
 
@@ -276,7 +276,7 @@ export default function UsuarioFormulario() {
                         </div>
                     </div>
 
-                    <div className="mt-6 border-t border-[var(--color-borde)] pt-6">
+                    <div className="mt-6 border-t border-(--color-borde) pt-6">
                         <ZonaArchivo
                             etiqueta="Foto de perfil (opcional)"
                             ayuda="JPG, PNG o WebP de hasta 2 MB."

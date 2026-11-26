@@ -19,21 +19,13 @@ class ModulosLibresTest extends TestCase
         return User::factory()->create(['rol' => Rol::Administrador]);
     }
 
-    public function test_el_formulario_de_modulo_no_pide_requisitos_ni_marca_de_independiente(): void
-    {
-        $this->actingAs($this->admin())->get(route('modulos.create'))
-            ->assertOk()
-            ->assertDontSee('Requisitos')
-            ->assertDontSee('tomar por separado');
-    }
-
     public function test_se_puede_crear_un_modulo_sin_programa_ni_requisitos(): void
     {
-        $this->actingAs($this->admin())->post(route('modulos.store'), [
+        $this->actingAs($this->admin())->postJson('/api/panel/catalogo/modulos', [
             'codigo' => 'M-1',
             'nombre' => 'SQL para análisis',
             'estado_comercial' => EstadoComercial::Abierto->value,
-        ])->assertSessionHasNoErrors()->assertRedirect(route('modulos.index'));
+        ])->assertCreated();
 
         $this->assertDatabaseHas('modulos', ['codigo' => 'M-1']);
     }
@@ -43,10 +35,11 @@ class ModulosLibresTest extends TestCase
         Modulo::create(['codigo' => 'M-1', 'nombre' => 'Módulo libre', 'estado_comercial' => EstadoComercial::Abierto]);
         Modulo::create(['codigo' => 'M-2', 'nombre' => 'Módulo en borrador', 'estado_comercial' => EstadoComercial::Borrador]);
 
-        $this->actingAs($this->admin())->get(route('catalogo'))
-            ->assertSee('Módulo libre')
-            ->assertDontSee('Módulo en borrador');
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/catalogo-publico')->assertOk();
+        $nombres = collect($res->json('modulos'))->pluck('nombre')->all();
 
+        $this->assertContains('Módulo libre', $nombres);
+        $this->assertNotContains('Módulo en borrador', $nombres);
         $this->assertSame(1, Modulo::visibleParaCrm()->count());
     }
 }

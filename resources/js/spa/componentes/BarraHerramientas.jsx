@@ -25,8 +25,8 @@ export default function BarraHerramientas({
                             className={
                                 'cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors ' +
                                 (activo
-                                    ? 'bg-[var(--color-acento-suave)] text-[var(--color-acento)] ring-1 ring-[var(--color-acento)]/30 ring-inset'
-                                    : 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)] hover:text-[var(--color-texto)]')
+                                    ? 'bg-(--color-acento-suave) text-(--color-acento) ring-1 ring-(--color-acento)/30 ring-inset'
+                                    : 'bg-(--color-superficie-2) text-(--color-texto-suave) hover:text-(--color-texto)')
                             }
                         >
                             {p.etiqueta}
@@ -45,7 +45,7 @@ export default function BarraHerramientas({
                     className="flex w-full items-center gap-2 lg:w-auto lg:min-w-[300px]"
                 >
                     <div className="relative flex-1">
-                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--color-texto-suave)]">
+                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-(--color-texto-suave)">
                             <Icono nombre="buscar" className="h-4 w-4" />
                         </span>
                         <input
@@ -54,20 +54,20 @@ export default function BarraHerramientas({
                             onChange={(e) => alCambiarBusqueda(e.target.value)}
                             placeholder={placeholder}
                             aria-label={placeholder}
-                            className="w-full rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] py-2 pr-3 pl-9 text-sm text-[var(--color-texto)] transition-all focus:border-[var(--color-acento)] focus:bg-[var(--color-superficie)] focus:ring-2 focus:ring-[var(--color-realce)]/30 focus:outline-none"
+                            className="w-full rounded-lg border border-(--color-borde) bg-(--color-superficie-cabecera) py-2 pr-3 pl-9 text-sm text-(--color-texto) transition-all focus:border-(--color-acento) focus:bg-(--color-superficie) focus:ring-2 focus:ring-(--color-realce)/30 focus:outline-none"
                         />
                     </div>
                     {busqueda && alLimpiarBusqueda && (
                         <button
                             type="button"
                             onClick={alLimpiarBusqueda}
-                            className="rounded-lg bg-[var(--color-superficie-2)] px-2.5 py-2 text-xs font-medium text-[var(--color-texto-suave)] transition-colors hover:text-[var(--color-texto)]"
+                            className="rounded-lg bg-(--color-superficie-2) px-2.5 py-2 text-xs font-medium text-(--color-texto-suave) transition-colors hover:text-(--color-texto)"
                         >
                             Limpiar
                         </button>
                     )}
                     {mostrarBotonBuscar && (
-                        <button type="submit" className="btn btn-primario !min-h-9 !px-4 text-sm">
+                        <button type="submit" className="btn btn-primario min-h-9! px-4! text-sm">
                             Buscar
                         </button>
                     )}

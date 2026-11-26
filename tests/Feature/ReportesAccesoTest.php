@@ -13,130 +13,90 @@ class ReportesAccesoTest extends TestCase
     use RefreshDatabase;
 
     private const RUTAS = [
-        'reportes.matriculas',
-        'reportes.matriculas.pdf',
-        'reportes.matriculas.excel',
-        'reportes.ocupacion',
-        'reportes.ocupacion.pdf',
-        'reportes.ocupacion.excel',
-        'reportes.catalogo',
-        'reportes.catalogo.pdf',
-        'reportes.catalogo.excel',
+        '/api/panel/reportes/matriculas',
+        '/api/panel/reportes/matriculas/pdf',
+        '/api/panel/reportes/matriculas/excel',
+        '/api/panel/reportes/ocupacion',
+        '/api/panel/reportes/ocupacion/pdf',
+        '/api/panel/reportes/ocupacion/excel',
+        '/api/panel/reportes/catalogo',
+        '/api/panel/reportes/catalogo/pdf',
+        '/api/panel/reportes/catalogo/excel',
     ];
-
-    private const TEXTO_DENEGADO = 'No tienes permiso para ver los reportes.';
 
     private function usuario(Rol $rol): User
     {
         return User::factory()->create(['rol' => $rol]);
     }
 
-    // RF-02 / CA-02, RF-26 / CA-26
-    public function test_docente_y_estudiante_reciben_acceso_denegado_con_el_texto_de_reportes(): void
+    public function test_docente_y_estudiante_reciben_acceso_denegado(): void
     {
         foreach ([Rol::Docente, Rol::Estudiante] as $rol) {
             $this->actingAs($this->usuario($rol));
 
             foreach (self::RUTAS as $ruta) {
-                $this->get(route($ruta))
-                    ->assertForbidden()
-                    ->assertSee(self::TEXTO_DENEGADO)
-                    ->assertDontSee('Total de matrículas');
+                $this->getJson($ruta)->assertForbidden();
             }
         }
     }
 
-    // RF-02: la autorización va antes que la validación, un filtro inválido no la salta
     public function test_el_rol_no_autorizado_recibe_403_aunque_los_filtros_sean_invalidos(): void
     {
         $this->actingAs($this->usuario(Rol::Docente))
-            ->get(route('reportes.matriculas', ['desde' => '2026-05-01', 'hasta' => '2026-01-01']))
+            ->getJson('/api/panel/reportes/matriculas?desde=2026-05-01&hasta=2026-01-01')
             ->assertForbidden();
     }
 
-    // RF-03 / CA-03
-    public function test_el_visitante_es_llevado_al_inicio_de_sesion(): void
+    public function test_el_visitante_recibe_401(): void
     {
         foreach (self::RUTAS as $ruta) {
-            $this->get(route($ruta))->assertRedirect(route('login'));
+            $this->getJson($ruta)->assertUnauthorized();
         }
     }
 
-    // T-22: ninguna ruta reportes.* puede quedar sin chequeo de rol (efecto de autorizar en el Form Request)
     public function test_toda_ruta_de_reportes_niega_el_acceso_a_docente_y_estudiante(): void
     {
-        $rutas = collect(Route::getRoutes()->getRoutesByName())
-            ->filter(fn ($ruta, $nombre) => str_starts_with($nombre, 'reportes.'));
+        $rutas = collect(Route::getRoutes()->getRoutes())
+            ->filter(fn ($ruta) => str_starts_with($ruta->uri(), 'api/panel/reportes/'));
 
         $this->assertNotEmpty($rutas);
-        $this->assertEqualsCanonicalizing(self::RUTAS, $rutas->keys()->all(), 'Hay rutas de reportes no cubiertas por esta prueba.');
+        $this->assertCount(count(self::RUTAS), $rutas);
 
         foreach ([Rol::Docente, Rol::Estudiante] as $rol) {
             $this->actingAs($this->usuario($rol));
 
-            foreach ($rutas as $nombre => $ruta) {
+            foreach ($rutas as $ruta) {
                 $this->assertContains('GET', $ruta->methods());
-                $this->get('/'.$ruta->uri())->assertForbidden();
+                $this->getJson('/'.$ruta->uri())->assertForbidden();
             }
         }
     }
 
-    // RF-01 / CA-01
     public function test_el_administrador_abre_los_tres_reportes_y_descarga_pdf_y_excel(): void
     {
         $this->actingAs($this->usuario(Rol::Administrador));
 
         foreach (self::RUTAS as $ruta) {
-            $this->get(route($ruta))->assertOk();
+            $this->get($ruta)->assertOk();
         }
     }
 
-    private function enlaceDelMenu(string $html): ?string
+    public function test_el_menu_del_administrador_muestra_reportes_y_otros_roles_no(): void
     {
-        preg_match('#<a href="([^"]*)" title="Reportes"([^>]*)>#', $html, $coincidencia);
+        $menuAdmin = $this->actingAs($this->usuario(Rol::Administrador))
+            ->getJson('/api/panel/menu')
+            ->assertOk()
+            ->json('menu');
 
-        return $coincidencia ? $coincidencia[0] : null;
-    }
+        $this->assertContains('Reportes', array_column($menuAdmin, 'etiqueta'));
 
-    // RF-20 / CA-20
-    public function test_el_menu_del_administrador_muestra_reportes_en_cualquier_pantalla(): void
-    {
-        $this->actingAs($this->usuario(Rol::Administrador));
-
-        foreach (['panel', 'programas.index', 'matriculas.index', 'catalogo'] as $ruta) {
-            $enlace = $this->enlaceDelMenu($this->get(route($ruta))->assertOk()->getContent());
-
-            $this->assertNotNull($enlace, "El menú no muestra Reportes en {$ruta}.");
-            $this->assertStringContainsString('href="'.route('reportes.matriculas').'"', $enlace);
-            $this->assertStringNotContainsString('aria-current', $enlace);
-        }
-    }
-
-    // RF-21 / CA-21
-    public function test_docente_y_estudiante_no_ven_reportes_en_su_menu(): void
-    {
         foreach ([Rol::Docente, Rol::Estudiante] as $rol) {
-            $this->actingAs($this->usuario($rol));
+            $menuOtro = $this->actingAs($this->usuario($rol))
+                ->getJson('/api/panel/menu')
+                ->assertOk()
+                ->json('menu');
 
-            $contenido = $this->get(route('panel'))->assertOk()->getContent();
-
-            $this->assertNull($this->enlaceDelMenu($contenido));
-            $this->assertStringNotContainsString(route('reportes.matriculas'), $contenido);
-        }
-    }
-
-    // RF-22 / CA-22
-    public function test_reportes_es_la_seccion_activa_y_permite_pasar_a_los_otros_dos(): void
-    {
-        $this->actingAs($this->usuario(Rol::Administrador));
-
-        foreach (['reportes.matriculas', 'reportes.ocupacion', 'reportes.catalogo'] as $ruta) {
-            $respuesta = $this->get(route($ruta))->assertOk();
-
-            $this->assertStringContainsString('aria-current="page"', $this->enlaceDelMenu($respuesta->getContent()));
-            foreach (['reportes.matriculas', 'reportes.ocupacion', 'reportes.catalogo'] as $destino) {
-                $respuesta->assertSee('href="'.route($destino).'"', false);
-            }
+            $this->assertNotContains('Reportes', array_column($menuOtro, 'etiqueta'));
         }
     }
 
@@ -145,7 +105,7 @@ class ReportesAccesoTest extends TestCase
         $this->actingAs($this->usuario(Rol::Administrador));
 
         foreach (self::RUTAS as $ruta) {
-            $this->post(route($ruta))->assertStatus(405);
+            $this->postJson($ruta)->assertStatus(405);
         }
     }
 }

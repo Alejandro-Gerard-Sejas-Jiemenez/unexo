@@ -63,7 +63,7 @@ class AuthController extends Controller
         }
 
         RateLimiter::clear($clave);
-        Auth::login($usuario, $request->boolean('recordar'));
+        Auth::guard('web')->login($usuario, $request->boolean('recordar'));
         $request->session()->regenerate();
         $this->bitacora->loginExitoso($request, $usuario->id);
 
@@ -77,7 +77,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $this->bitacora->logout($request, $request->user()?->id);
-        Auth::logout();
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

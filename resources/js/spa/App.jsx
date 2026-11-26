@@ -11,8 +11,8 @@ import Panel from './paginas/Panel';
 import Perfil from './paginas/Perfil';
 import UsuariosLista from './paginas/usuarios/Lista';
 import UsuarioFormulario from './paginas/usuarios/Formulario';
-import Dashboard from './paginas/Dashboard';
-import Bitacora from './paginas/Bitacora';
+import Dashboard from './paginas/reportes/Dashboard';
+import Bitacora from './paginas/sistema/Bitacora';
 import Pagos from './paginas/Pagos';
 import ProgramasLista from './paginas/catalogo/ProgramasLista';
 import ProgramaDetalle from './paginas/catalogo/ProgramaDetalle';
@@ -27,14 +27,14 @@ import GrupoDetalle from './paginas/planificacion/GrupoDetalle';
 import MatriculasLista from './paginas/matriculas/MatriculasLista';
 import MatriculaNueva from './paginas/matriculas/MatriculaNueva';
 import MatriculaDetalle from './paginas/matriculas/MatriculaDetalle';
-import Reportes from './paginas/Reportes';
+import Reportes from './paginas/reportes/Reportes';
 import CatalogoPublico from './paginas/CatalogoPublico';
-import Calendario from './paginas/Calendario';
-import MisClases from './paginas/MisClases';
-import MiGrupoDetalle from './paginas/MiGrupoDetalle';
-import MiCursoDetalle from './paginas/MiCursoDetalle';
-import ClientesApi from './paginas/ClientesApi';
-import Aulas from './paginas/Aulas';
+import Calendario from './paginas/docencia/Calendario';
+import MisClases from './paginas/docencia/MisClases';
+import MiGrupoDetalle from './paginas/docencia/MiGrupoDetalle';
+import MiCursoDetalle from './paginas/docencia/MiCursoDetalle';
+import ClientesApi from './paginas/sistema/ClientesApi';
+import Aulas from './paginas/sistema/Aulas';
 
 const ADMIN = ['administrador'];
 const DOCENTE = ['docente'];
@@ -321,7 +321,7 @@ export default function App() {
     return (
         <TemaProvider>
             <ToastProvider>
-                <BrowserRouter basename={`${BASE}/app`}>
+                <BrowserRouter basename={BASE || '/'}>
                     <AuthProvider>
                         <Rutas />
                     </AuthProvider>

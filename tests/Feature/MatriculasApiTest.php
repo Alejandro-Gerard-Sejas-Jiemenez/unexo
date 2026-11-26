@@ -126,12 +126,13 @@ class MatriculasApiTest extends TestCase
     {
         $admin = User::factory()->create(['rol' => Rol::Administrador]);
 
-        $this->actingAs($admin)->post(route('clientes-api.store'), ['nombre' => 'CRM'])
-            ->assertRedirect()->assertSessionHas('token');
+        $this->actingAs($admin)->postJson('/api/panel/clientes-api', ['nombre' => 'CRM'])
+            ->assertCreated()
+            ->assertJsonStructure(['cliente' => ['id', 'nombre'], 'token', 'mensaje']);
         $cliente = ClienteApi::firstOrFail();
         $this->assertSame(1, $cliente->tokens()->count());
 
-        $this->actingAs($admin)->delete(route('clientes-api.destroy', $cliente))->assertRedirect();
+        $this->actingAs($admin)->deleteJson("/api/panel/clientes-api/{$cliente->id}")->assertOk();
         $this->assertSame(0, ClienteApi::count());
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }
@@ -142,10 +143,12 @@ class MatriculasApiTest extends TestCase
         $alumno = User::factory()->create(['rol' => Rol::Estudiante]);
         $matricula = Matricula::create(['estudiante_id' => $alumno->id, 'estado' => EstadoMatricula::Activo, 'origen' => OrigenMatricula::Manual, 'fecha_matricula' => today()]);
 
-        $this->actingAs($admin)->patch(route('matriculas.estado', $matricula), ['estado' => 'retirado'])->assertRedirect();
+        $this->actingAs($admin)->patchJson("/api/panel/matriculas/{$matricula->id}/estado", ['estado' => 'retirado'])->assertOk();
         $this->assertNotNull($matricula->fresh()->fecha_retiro);
 
-        $this->actingAs($admin)->patch(route('matriculas.estado', $matricula), ['estado' => 'activo'])->assertSessionHasErrors('estado');
+        $this->actingAs($admin)->patchJson("/api/panel/matriculas/{$matricula->id}/estado", ['estado' => 'activo'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('estado');
         $this->assertSame(EstadoMatricula::Retirado, $matricula->fresh()->estado);
     }
 
@@ -156,15 +159,15 @@ class MatriculasApiTest extends TestCase
         $alumno = User::factory()->create(['rol' => Rol::Estudiante]);
         $matricula = Matricula::create(['estudiante_id' => $alumno->id, 'estado' => EstadoMatricula::Pendiente, 'origen' => OrigenMatricula::Manual, 'fecha_matricula' => today()]);
 
-        $this->actingAs($alumno)->post(route('comprobantes.store', $matricula), ['archivo' => UploadedFile::fake()->image('pago.png')])
-            ->assertSessionHasNoErrors();
+        $this->actingAs($alumno)->postJson("/api/panel/matriculas/{$matricula->id}/comprobantes", ['archivo' => UploadedFile::fake()->image('pago.png')])
+            ->assertCreated();
         $comprobante = $matricula->comprobantes()->firstOrFail();
         $this->assertSame(EstadoComprobante::Pendiente, $comprobante->estado);
 
-        $this->actingAs($alumno)->get(route('comprobantes.ver', $comprobante))->assertOk();
-        $this->actingAs($alumno)->patch(route('comprobantes.aprobar', $comprobante))->assertForbidden();
+        $this->actingAs($alumno)->get("/api/panel/comprobantes/{$comprobante->id}")->assertOk();
+        $this->actingAs($alumno)->patchJson("/api/panel/comprobantes/{$comprobante->id}/aprobar")->assertForbidden();
 
-        $this->actingAs($admin)->patch(route('comprobantes.aprobar', $comprobante))->assertRedirect();
+        $this->actingAs($admin)->patchJson("/api/panel/comprobantes/{$comprobante->id}/aprobar")->assertOk();
         $this->assertSame(EstadoComprobante::Aprobado, $comprobante->fresh()->estado);
         $this->assertSame(EstadoMatricula::Activo, $matricula->fresh()->estado);
     }
@@ -177,8 +180,9 @@ class MatriculasApiTest extends TestCase
         $ajena = Matricula::create(['estudiante_id' => $otro->id, 'estado' => EstadoMatricula::Pendiente, 'fecha_matricula' => today()]);
         $propia = Matricula::create(['estudiante_id' => $alumno->id, 'estado' => EstadoMatricula::Pendiente, 'fecha_matricula' => today()]);
 
-        $this->actingAs($alumno)->post(route('comprobantes.store', $ajena), ['archivo' => UploadedFile::fake()->image('p.png')])->assertForbidden();
-        $this->actingAs($alumno)->post(route('comprobantes.store', $propia), ['archivo' => UploadedFile::fake()->create('virus.exe', 10)])
-            ->assertSessionHasErrors('archivo');
+        $this->actingAs($alumno)->postJson("/api/panel/matriculas/{$ajena->id}/comprobantes", ['archivo' => UploadedFile::fake()->image('p.png')])->assertForbidden();
+        $this->actingAs($alumno)->postJson("/api/panel/matriculas/{$propia->id}/comprobantes", ['archivo' => UploadedFile::fake()->create('virus.exe', 10)])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('archivo');
     }
 }

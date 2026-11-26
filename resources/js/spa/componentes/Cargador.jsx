@@ -7,8 +7,8 @@ export default function Cargador({
 }) {
     if (!pantallaCompleta && !enContenido) {
         return (
-            <div className="flex items-center justify-center gap-3 py-8 text-sm text-[var(--color-texto-suave)]" role="status">
-                <div className="cargando-marca !h-8 !w-8">
+            <div className="flex items-center justify-center gap-3 py-8 text-sm text-(--color-texto-suave)" role="status">
+                <div className="cargando-marca h-8! w-8!">
                     <div className="cargando-anillo" />
                     <img src={conBase('/images/logo_v2.png')} alt="" className="h-4 w-4 object-contain" />
                 </div>

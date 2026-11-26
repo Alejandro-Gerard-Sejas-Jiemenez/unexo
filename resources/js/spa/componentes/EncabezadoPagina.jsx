@@ -15,7 +15,7 @@ export default function EncabezadoPagina({
             {volverA && (
                 <Link
                     to={volverA}
-                    className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-texto-suave)] no-underline transition-colors hover:text-[var(--color-acento)]"
+                    className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-(--color-texto-suave) no-underline transition-colors hover:text-(--color-acento)"
                 >
                     <Icono nombre="volver" className="h-4 w-4" />
                     {volverTexto}
@@ -37,7 +37,7 @@ export default function EncabezadoPagina({
                         {extraTitulo}
                     </div>
                     {subtitulo && (
-                        <p className="mt-1.5 text-sm text-[var(--color-texto-suave)] sm:text-base">
+                        <p className="mt-1.5 text-sm text-(--color-texto-suave) sm:text-base">
                             {subtitulo}
                         </p>
                     )}

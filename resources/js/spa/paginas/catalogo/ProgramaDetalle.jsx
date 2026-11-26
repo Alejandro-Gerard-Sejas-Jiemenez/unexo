@@ -51,7 +51,7 @@ export default function ProgramaDetalle() {
     if (cargando) return <Cargador texto="Cargando" />;
     if (!programa) {
         return (
-            <p role="alert" className="superficie border-[var(--color-error)] p-4 text-sm text-[var(--color-error)]">
+            <p role="alert" className="superficie border-(--color-error) p-4 text-sm text-(--color-error)">
                 {aviso ?? 'No se encontró el programa.'}
             </p>
         );
@@ -66,12 +66,12 @@ export default function ProgramaDetalle() {
                 <div>
                     <h1 className="flex flex-wrap items-center gap-3 text-3xl font-bold tracking-tight">
                         <span>{programa.nombre}</span>
-                        <span className="rounded-full bg-[var(--color-superficie-2)] px-2.5 py-0.5 text-sm font-semibold text-[var(--color-texto-suave)] ring-1 ring-[var(--color-borde)] ring-inset">
+                        <span className="rounded-full bg-(--color-superficie-2) px-2.5 py-0.5 text-sm font-semibold text-(--color-texto-suave) ring-1 ring-(--color-borde) ring-inset">
                             v{programa.version}
                         </span>
                     </h1>
-                    <p className="mt-2 flex flex-wrap items-center gap-2 font-medium text-[var(--color-texto-suave)]">
-                        <span className="font-bold text-[var(--color-acento)]">{programa.codigo}</span>
+                    <p className="mt-2 flex flex-wrap items-center gap-2 font-medium text-(--color-texto-suave)">
+                        <span className="font-bold text-(--color-acento)">{programa.codigo}</span>
                         {programa.descripcion && (
                             <>
                                 <span className="opacity-40">&bull;</span>
@@ -86,23 +86,23 @@ export default function ProgramaDetalle() {
                         className={
                             'inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ring-1 ring-inset ' +
                             (programa.estado_comercial === 'abierto'
-                                ? 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
-                                : 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)] ring-[var(--color-borde)]')
+                                ? 'bg-(--color-exito-fondo) text-(--color-exito) ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
+                                : 'bg-(--color-superficie-2) text-(--color-texto-suave) ring-(--color-borde)')
                         }
                     >
                         {programa.estado_label}
                     </span>
-                    <BotonAccion to={`/programas/${programa.id}`} icono="editar" className="!px-4 !py-2 !text-sm !rounded-lg">
+                    <BotonAccion to={`/programas/${programa.id}`} icono="editar" className="px-4! py-2! text-sm! rounded-lg!">
                         Editar
                     </BotonAccion>
-                    <BotonAccion to="/programas" icono="volver" className="!px-4 !py-2 !text-sm !rounded-lg">
+                    <BotonAccion to="/programas" icono="volver" className="px-4! py-2! text-sm! rounded-lg!">
                         Volver
                     </BotonAccion>
                 </div>
             </div>
 
             {aviso && (
-                <p role="alert" className="superficie my-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie my-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -128,15 +128,15 @@ export default function ProgramaDetalle() {
                     vacioDescripcion="Agrega módulos desde el selector inferior para armar el plan de estudios."
                 >
                     {plan.map((m, i) => (
-                        <tr key={m.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
-                            <td className="px-6 py-4 text-sm font-bold text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                        <tr key={m.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
+                            <td className="px-6 py-4 text-sm font-bold text-(--color-texto-suave) whitespace-nowrap tabular-nums">
                                 {m.orden ?? i + 1}
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium text-[var(--color-texto-suave)] whitespace-nowrap">
+                            <td className="px-6 py-4 text-sm font-medium text-(--color-texto-suave) whitespace-nowrap">
                                 {m.codigo}
                             </td>
                             <td className="px-6 py-4 text-sm font-medium">{m.nombre}</td>
-                            <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                            <td className="px-6 py-4 text-sm text-(--color-texto-suave) whitespace-nowrap tabular-nums">
                                 {m.duracion_horas ?? '—'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -144,8 +144,8 @@ export default function ProgramaDetalle() {
                                     className={
                                         'inline-flex rounded-md px-2.5 py-1 text-xs font-medium ' +
                                         (m.estado_comercial === 'abierto'
-                                            ? 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)]'
-                                            : 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)]')
+                                            ? 'bg-(--color-exito-fondo) text-(--color-exito)'
+                                            : 'bg-(--color-superficie-2) text-(--color-texto-suave)')
                                     }
                                 >
                                     {m.estado_label}
@@ -164,7 +164,7 @@ export default function ProgramaDetalle() {
                                                     }),
                                                 )
                                             }
-                                            className="rounded-md border-0 bg-transparent p-1.5 text-[var(--color-texto-suave)] transition-colors hover:bg-[var(--color-acento-suave)] hover:text-[var(--color-acento)]"
+                                            className="rounded-md border-0 bg-transparent p-1.5 text-(--color-texto-suave) transition-colors hover:bg-(--color-acento-suave) hover:text-(--color-acento)"
                                         >
                                             <Icono nombre="subir" className="h-4 w-4" />
                                         </button>
@@ -181,7 +181,7 @@ export default function ProgramaDetalle() {
                                                     }),
                                                 )
                                             }
-                                            className="rounded-md border-0 bg-transparent p-1.5 text-[var(--color-texto-suave)] transition-colors hover:bg-[var(--color-acento-suave)] hover:text-[var(--color-acento)]"
+                                            className="rounded-md border-0 bg-transparent p-1.5 text-(--color-texto-suave) transition-colors hover:bg-(--color-acento-suave) hover:text-(--color-acento)"
                                         >
                                             <Icono nombre="bajar" className="h-4 w-4" />
                                         </button>
@@ -193,7 +193,7 @@ export default function ProgramaDetalle() {
                                         onClick={() =>
                                             operarPlan(() => cliente.delete(`/catalogo/programas/${id}/modulos/${m.id}`))
                                         }
-                                        className="ml-1 rounded-md border-0 bg-transparent p-1.5 text-[var(--color-error)] transition-colors hover:bg-[var(--color-error-fondo)]"
+                                        className="ml-1 rounded-md border-0 bg-transparent p-1.5 text-(--color-error) transition-colors hover:bg-(--color-error-fondo)"
                                     >
                                         <Icono nombre="cerrar" className="h-4 w-4" />
                                     </button>
@@ -205,12 +205,12 @@ export default function ProgramaDetalle() {
             </div>
 
             <h2 className="mb-3 text-lg font-bold">Agregar un módulo</h2>
-            <div className="rounded-xl border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-5">
+            <div className="rounded-xl border border-(--color-borde) bg-(--color-superficie-cabecera) p-5">
                 {opciones.modulos_disponibles.length === 0 ? (
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-texto-suave)]">
-                        <Icono nombre="alerta" className="h-5 w-5 text-[var(--color-aviso)]" />
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-(--color-texto-suave)">
+                        <Icono nombre="alerta" className="h-5 w-5 text-(--color-aviso)" />
                         <span>No quedan módulos por agregar.</span>
-                        <Link to="/modulos/nuevo" className="font-medium text-[var(--color-acento)] hover:underline">
+                        <Link to="/modulos/nuevo" className="font-medium text-(--color-acento) hover:underline">
                             Crear un módulo nuevo
                         </Link>
                     </div>
@@ -251,7 +251,7 @@ export default function ProgramaDetalle() {
                             </button>
                         </div>
                         {opciones.modulos_disponibles_total > limiteSelect && (
-                            <p className="mt-2 text-xs text-[var(--color-aviso)]">
+                            <p className="mt-2 text-xs text-(--color-aviso)">
                                 Se muestran los primeros {opciones.modulos_disponibles.length} de{' '}
                                 {opciones.modulos_disponibles_total} módulos disponibles.
                             </p>

@@ -142,7 +142,7 @@ export default function EdicionDetalle() {
                 />
 
                 {aviso && (
-                    <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                    <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                         {aviso}
                     </p>
                 )}
@@ -150,11 +150,11 @@ export default function EdicionDetalle() {
                 <div className="superficie max-w-3xl overflow-hidden rounded-xl shadow-sm">
                     <form onSubmit={guardar} noValidate className="p-6 sm:p-8">
                         {!editando && (
-                            <div className="mb-6 flex items-start gap-3 rounded-xl border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-4">
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-acento-suave)] text-[var(--color-acento)]">
+                            <div className="mb-6 flex items-start gap-3 rounded-xl border border-(--color-borde) bg-(--color-superficie-cabecera) p-4">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-(--color-acento-suave) text-(--color-acento)">
                                     <Icono nombre="info" className="h-4 w-4" />
                                 </span>
-                                <p className="text-xs leading-relaxed text-[var(--color-texto-suave)] sm:text-sm">
+                                <p className="text-xs leading-relaxed text-(--color-texto-suave) sm:text-sm">
                                     El nombre se generará automáticamente de forma correlativa (<b>Edición 1</b>,{' '}
                                     <b>Edición 2</b>…) según el programa seleccionado. Luego podrás planificar o aperturar
                                     todos sus grupos en un clic.
@@ -271,7 +271,7 @@ export default function EdicionDetalle() {
             <div className="mb-4">
                 <Link
                     to="/cohortes"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-texto-suave)] no-underline transition-colors hover:text-[var(--color-acento)]"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-(--color-texto-suave) no-underline transition-colors hover:text-(--color-acento)"
                 >
                     <Icono nombre="volver" className="h-4 w-4" />
                     Volver a ediciones
@@ -279,7 +279,7 @@ export default function EdicionDetalle() {
             </div>
 
             {aviso && (
-                <p role="alert" className="superficie mb-6 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-6 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -290,14 +290,14 @@ export default function EdicionDetalle() {
                         <h1 className="text-3xl font-bold tracking-tight">{cohorte.nombre}</h1>
                         <Insignia tono={tonoEstado(cohorte.estado)}>{cohorte.estado_label}</Insignia>
                     </div>
-                    <p className="mt-1 text-sm text-[var(--color-texto-suave)]">
-                        Programa: <span className="font-semibold text-[var(--color-texto)]">{cohorte.programa?.nombre}</span>{' '}
+                    <p className="mt-1 text-sm text-(--color-texto-suave)">
+                        Programa: <span className="font-semibold text-(--color-texto)">{cohorte.programa?.nombre}</span>{' '}
                         (v{cohorte.programa?.version})
                         {cohorte.programa?.codigo && (
                             <>
                                 {' '}
                                 · Código:{' '}
-                                <code className="rounded bg-[var(--color-acento-suave)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-acento)]">
+                                <code className="rounded bg-(--color-acento-suave) px-1.5 py-0.5 font-mono text-xs text-(--color-acento)">
                                     {cohorte.programa.codigo}
                                 </code>
                             </>
@@ -306,12 +306,12 @@ export default function EdicionDetalle() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    <label className="inline-flex items-center gap-2 text-xs font-medium text-[var(--color-texto-suave)]">
+                    <label className="inline-flex items-center gap-2 text-xs font-medium text-(--color-texto-suave)">
                         Estado:
                         <select
                             value={cohorte.estado}
                             onChange={(e) => cambiarEstado(e.target.value)}
-                            className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie)] py-1.5 pr-8 pl-3 text-xs font-semibold shadow-sm focus:border-[var(--color-acento)] focus:outline-none"
+                            className="rounded-lg border border-(--color-borde) bg-(--color-superficie) py-1.5 pr-8 pl-3 text-xs font-semibold shadow-sm focus:border-(--color-acento) focus:outline-none"
                         >
                             {opciones.estados.map((est) => (
                                 <option key={est.valor} value={est.valor}>
@@ -324,7 +324,7 @@ export default function EdicionDetalle() {
                     <BotonAccion
                         to={`/cohortes/${id}?editar=1`}
                         icono="editar"
-                        className="!rounded-lg !px-3.5 !py-2"
+                        className="rounded-lg! px-3.5! py-2!"
                     >
                         Editar edición
                     </BotonAccion>
@@ -333,34 +333,34 @@ export default function EdicionDetalle() {
 
             <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="superficie rounded-xl p-5 shadow-sm">
-                    <div className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                    <div className="mb-1 text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                         Fechas Globales
                     </div>
                     <div className="text-base font-bold tabular-nums">
                         {formatoFecha(cohorte.fecha_inicio)} – {formatoFecha(cohorte.fecha_fin)}
                     </div>
                     {semanas && (
-                        <div className="mt-1 text-xs text-[var(--color-texto-suave)]">
+                        <div className="mt-1 text-xs text-(--color-texto-suave)">
                             {semanas} semanas de duración
                         </div>
                     )}
                 </div>
 
                 <div className="superficie rounded-xl p-5 shadow-sm">
-                    <div className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                    <div className="mb-1 text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                         Módulos del Programa
                     </div>
-                    <div className="text-2xl font-bold text-[var(--color-acento)] tabular-nums">
+                    <div className="text-2xl font-bold text-(--color-acento) tabular-nums">
                         {modulosCubiertos} / {totalModulos}
                     </div>
                     <div className="mt-1 text-xs">
                         {pendientes.length === 0 ? (
-                            <span className="inline-flex items-center gap-1 font-medium text-[var(--color-exito)]">
+                            <span className="inline-flex items-center gap-1 font-medium text-(--color-exito)">
                                 <Icono nombre="check" className="h-3.5 w-3.5" />
                                 Planificación completa
                             </span>
                         ) : (
-                            <span className="font-medium text-[var(--color-aviso)]">
+                            <span className="font-medium text-(--color-aviso)">
                                 Faltan {pendientes.length} por aperturar
                             </span>
                         )}
@@ -368,38 +368,38 @@ export default function EdicionDetalle() {
                 </div>
 
                 <div className="superficie rounded-xl p-5 shadow-sm">
-                    <div className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                    <div className="mb-1 text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                         Grupos Aperturados
                     </div>
                     <div className="text-2xl font-bold tabular-nums">{grupos.length}</div>
-                    <div className="mt-1 text-xs text-[var(--color-texto-suave)]">Grupos operativos activos</div>
+                    <div className="mt-1 text-xs text-(--color-texto-suave)">Grupos operativos activos</div>
                 </div>
 
                 <div className="superficie rounded-xl p-5 shadow-sm">
-                    <div className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                    <div className="mb-1 text-xs font-semibold tracking-wider text-(--color-texto-suave) uppercase">
                         Alumnos Matriculados
                     </div>
-                    <div className="text-2xl font-bold text-[var(--color-exito)] tabular-nums">
+                    <div className="text-2xl font-bold text-(--color-exito) tabular-nums">
                         {cohorte.matriculas_count ?? totalInscritos}
                     </div>
-                    <div className="mt-1 text-xs text-[var(--color-texto-suave)]">Estudiantes en la edición</div>
+                    <div className="mt-1 text-xs text-(--color-texto-suave)">Estudiantes en la edición</div>
                 </div>
             </div>
 
             {pendientes.length > 0 && (
                 <form
                     onSubmit={aperturar}
-                    className="mb-8 rounded-xl border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-[var(--color-acento-suave)]/70 p-6 shadow-sm"
+                    className="mb-8 rounded-xl border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-(--color-acento-suave)/70 p-6 shadow-sm"
                 >
                     <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
                         <div className="max-w-2xl">
-                            <div className="mb-1 flex items-center gap-2 text-base font-bold text-[var(--color-acento)]">
+                            <div className="mb-1 flex items-center gap-2 text-base font-bold text-(--color-acento)">
                                 <Icono nombre="modulos" className="h-5 w-5" />
                                 <span>Apertura Asistida de Grupos Operativos</span>
                             </div>
-                            <p className="text-xs text-[var(--color-texto-suave)] sm:text-sm">
+                            <p className="text-xs text-(--color-texto-suave) sm:text-sm">
                                 Esta edición tiene{' '}
-                                <span className="font-bold text-[var(--color-acento)]">
+                                <span className="font-bold text-(--color-acento)">
                                     {pendientes.length} módulo(s) pendiente(s)
                                 </span>{' '}
                                 de apertura. El generador creará un grupo por módulo con el período de esta edición.
@@ -408,7 +408,7 @@ export default function EdicionDetalle() {
                                 {pendientes.map((pend) => (
                                     <span
                                         key={pend.id}
-                                        className="inline-flex items-center rounded border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-[var(--color-superficie)] px-2 py-0.5 font-mono text-[11px] font-medium"
+                                        className="inline-flex items-center rounded border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-(--color-superficie) px-2 py-0.5 font-mono text-[11px] font-medium"
                                     >
                                         {pend.codigo}: {pend.nombre.slice(0, 26)}
                                     </span>
@@ -418,9 +418,9 @@ export default function EdicionDetalle() {
 
                         <div className="flex flex-wrap items-end gap-2.5">
                             <label className="text-xs font-medium">
-                                <span className="mb-1 block text-[var(--color-texto-suave)]">Docente inicial</span>
+                                <span className="mb-1 block text-(--color-texto-suave)">Docente inicial</span>
                                 <select
-                                    className={`${claseControl} !min-h-9 text-xs`}
+                                    className={`${claseControl} min-h-9! text-xs`}
                                     value={apertura.docente_id}
                                     onChange={(e) => setApertura((a) => ({ ...a, docente_id: e.target.value }))}
                                 >
@@ -434,9 +434,9 @@ export default function EdicionDetalle() {
                             </label>
 
                             <label className="text-xs font-medium">
-                                <span className="mb-1 block text-[var(--color-texto-suave)]">Modalidad</span>
+                                <span className="mb-1 block text-(--color-texto-suave)">Modalidad</span>
                                 <select
-                                    className={`${claseControl} !min-h-9 text-xs`}
+                                    className={`${claseControl} min-h-9! text-xs`}
                                     value={apertura.modalidad}
                                     onChange={(e) => setApertura((a) => ({ ...a, modalidad: e.target.value }))}
                                 >
@@ -448,7 +448,7 @@ export default function EdicionDetalle() {
                                 </select>
                             </label>
 
-                            <button type="submit" disabled={enviando} className="btn btn-primario !min-h-9 text-xs">
+                            <button type="submit" disabled={enviando} className="btn btn-primario min-h-9! text-xs">
                                 <Icono nombre="mas" className="h-4 w-4" />
                                 Aperturar {pendientes.length} Grupos
                             </button>
@@ -460,14 +460,14 @@ export default function EdicionDetalle() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 className="text-xl font-bold">Grupos de la edición</h2>
-                    <p className="text-xs text-[var(--color-texto-suave)]">
+                    <p className="text-xs text-(--color-texto-suave)">
                         Puedes gestionar docentes, modalidades y horarios o agregar grupos paralelos.
                     </p>
                 </div>
                 <BotonAccion
                     to={`/grupos/nuevo?cohorte_id=${id}`}
                     icono="mas"
-                    className="!rounded-lg !px-3.5 !py-2"
+                    className="rounded-lg! px-3.5! py-2!"
                 >
                     Añadir grupo paralelo
                 </BotonAccion>
@@ -492,21 +492,21 @@ export default function EdicionDetalle() {
                     const cubierto = g.cupo_minimo > 0 && (g.inscripciones_count ?? 0) >= g.cupo_minimo;
 
                     return (
-                        <tr key={g.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <tr key={g.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                             <td className="px-6 py-4">
                                 <div className="text-sm font-semibold">{g.modulo?.nombre}</div>
-                                <div className="font-mono text-xs text-[var(--color-texto-suave)]">
+                                <div className="font-mono text-xs text-(--color-texto-suave)">
                                     {g.modulo?.codigo}
                                     {g.modulo?.duracion_horas ? ` · ${g.modulo.duracion_horas}h` : ''}
                                 </div>
                             </td>
                             <td className="px-6 py-4">
-                                <div className="text-sm font-semibold text-[var(--color-acento)]">{g.nombre}</div>
-                                <div className="text-xs text-[var(--color-texto-suave)]">
+                                <div className="text-sm font-semibold text-(--color-acento)">{g.nombre}</div>
+                                <div className="text-xs text-(--color-texto-suave)">
                                     {g.modalidad_label} · {g.docente ?? 'Sin asignar'}
                                 </div>
                             </td>
-                            <td className="px-6 py-4 text-xs text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                            <td className="px-6 py-4 text-xs text-(--color-texto-suave) whitespace-nowrap tabular-nums">
                                 {g.periodo_texto || '—'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -517,12 +517,12 @@ export default function EdicionDetalle() {
                             <td className="px-6 py-4 text-sm whitespace-nowrap tabular-nums">
                                 <span className="font-semibold">{g.inscripciones_count ?? 0}</span>
                                 {g.cupo_minimo ? (
-                                    <span className="ml-1 text-xs text-[var(--color-texto-suave)]">
+                                    <span className="ml-1 text-xs text-(--color-texto-suave)">
                                         (mín. {g.cupo_minimo})
                                     </span>
                                 ) : null}
                                 {cubierto && (
-                                    <span className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-[var(--color-exito-fondo)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-exito)]">
+                                    <span className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-(--color-exito-fondo) px-2 py-0.5 text-[11px] font-semibold text-(--color-exito)">
                                         <Icono nombre="check" className="h-3 w-3" />
                                         Cubierto
                                     </span>

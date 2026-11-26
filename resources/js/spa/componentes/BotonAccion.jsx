@@ -2,10 +2,10 @@ import { Link } from 'react-router-dom';
 import Icono from './Icono';
 
 const VARIANTES = {
-    neutro: 'border-[var(--color-borde)] bg-[var(--color-superficie)] text-[var(--color-texto-suave)] hover:bg-[var(--color-superficie-2)] hover:text-[var(--color-acento)]',
-    peligro: 'border-[color-mix(in_srgb,var(--color-error)_35%,transparent)] bg-[var(--color-superficie)] text-[var(--color-error)] hover:bg-[var(--color-error-fondo)]',
-    exito: 'border-[color-mix(in_srgb,var(--color-exito)_35%,transparent)] bg-[var(--color-superficie)] text-[var(--color-exito)] hover:bg-[var(--color-exito-fondo)]',
-    primario: 'border-transparent bg-[var(--color-acento)] text-[var(--color-acento-texto)] hover:bg-[var(--color-acento-hover)]',
+    neutro: 'border-(--color-borde) bg-(--color-superficie) text-(--color-texto-suave) hover:bg-(--color-superficie-2) hover:text-(--color-acento)',
+    peligro: 'border-[color-mix(in_srgb,var(--color-error)_35%,transparent)] bg-(--color-superficie) text-(--color-error) hover:bg-(--color-error-fondo)',
+    exito: 'border-[color-mix(in_srgb,var(--color-exito)_35%,transparent)] bg-(--color-superficie) text-(--color-exito) hover:bg-(--color-exito-fondo)',
+    primario: 'border-transparent bg-(--color-acento) text-(--color-acento-texto) hover:bg-(--color-acento-hover)',
 };
 
 export default function BotonAccion({

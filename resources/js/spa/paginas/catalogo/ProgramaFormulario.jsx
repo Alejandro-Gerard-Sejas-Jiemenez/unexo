@@ -123,7 +123,7 @@ export default function ProgramaFormulario() {
             />
 
             {aviso && (
-                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-(--color-error) p-3 text-sm text-(--color-error)">
                     {aviso}
                 </p>
             )}
@@ -131,7 +131,7 @@ export default function ProgramaFormulario() {
             <div className="superficie max-w-3xl overflow-hidden rounded-xl shadow-sm">
                 <form onSubmit={enviar} noValidate className="p-6 sm:p-8">
                     <div className="mb-8">
-                        <h2 className="mb-4 border-b border-[var(--color-borde)] pb-2 text-lg font-semibold">
+                        <h2 className="mb-4 border-b border-(--color-borde) pb-2 text-lg font-semibold">
                             1. Datos Generales y Académicos
                         </h2>
                         <div className="mb-2 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
@@ -195,7 +195,7 @@ export default function ProgramaFormulario() {
                     </div>
 
                     <div className="mb-8">
-                        <h2 className="mb-4 border-b border-[var(--color-borde)] pb-2 text-lg font-semibold">
+                        <h2 className="mb-4 border-b border-(--color-borde) pb-2 text-lg font-semibold">
                             2. Contenido y Difusión
                         </h2>
 
@@ -245,7 +245,7 @@ export default function ProgramaFormulario() {
                     </div>
 
                     <div className="mb-8">
-                        <h2 className="mb-4 border-b border-[var(--color-borde)] pb-2 text-lg font-semibold">
+                        <h2 className="mb-4 border-b border-(--color-borde) pb-2 text-lg font-semibold">
                             3. Configuración Comercial y API
                         </h2>
                         <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">

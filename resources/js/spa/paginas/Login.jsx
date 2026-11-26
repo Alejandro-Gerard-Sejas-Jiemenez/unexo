@@ -106,14 +106,14 @@ export default function Login() {
                     </div>
                 </section>
 
-                <section className="relative flex flex-1 flex-col justify-center bg-[var(--color-superficie)] px-4 py-12 sm:px-6 md:py-0 lg:w-7/12 lg:flex-none lg:px-20 xl:px-24">
+                <section className="relative flex flex-1 flex-col justify-center bg-(--color-superficie) px-4 py-12 sm:px-6 md:py-0 lg:w-7/12 lg:flex-none lg:px-20 xl:px-24">
                     <div className="absolute top-4 right-4 z-20 sm:top-6 sm:right-6">
                         <PanelAccesibilidad />
                     </div>
 
                     <div className="animate-fade-in relative z-10 mx-auto w-full max-w-sm lg:w-96">
                         <div className="mb-10 text-center md:hidden">
-                            <span className="mx-auto inline-flex items-center justify-center rounded-2xl border border-[var(--color-borde)] bg-white p-4 shadow-sm">
+                            <span className="mx-auto inline-flex items-center justify-center rounded-2xl border border-(--color-borde) bg-white p-4 shadow-sm">
                                 <img
                                     src={conBase('/images/logo_v2.png')}
                                     alt="NEXO SIS"
@@ -126,7 +126,7 @@ export default function Login() {
                             <h1 className="text-3xl font-extrabold tracking-tight">
                                 Te damos la bienvenida
                             </h1>
-                            <p className="mt-3 text-sm font-medium text-[var(--color-texto-suave)]">
+                            <p className="mt-3 text-sm font-medium text-(--color-texto-suave)">
                                 Ingresa con tu correo institucional o personal.
                             </p>
                         </div>
@@ -136,7 +136,7 @@ export default function Login() {
                                 <div
                                     role="alert"
                                     id="error-acceso"
-                                    className="mb-6 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,transparent)] bg-[var(--color-error-fondo)] p-4 text-[var(--color-error)] shadow-sm"
+                                    className="mb-6 rounded-lg border border-[color-mix(in_srgb,var(--color-error)_35%,transparent)] bg-(--color-error-fondo) p-4 text-(--color-error) shadow-sm"
                                 >
                                     <div className="flex items-start gap-3">
                                         <Icono nombre="alerta" className="mt-0.5 h-5 w-5 shrink-0" />
@@ -195,7 +195,7 @@ export default function Login() {
                                     <input
                                         id="recordar"
                                         type="checkbox"
-                                        className="h-4 w-4 cursor-pointer rounded border-[var(--color-borde)] accent-[var(--color-acento)]"
+                                        className="h-4 w-4 cursor-pointer rounded border-(--color-borde) accent-(--color-acento)"
                                         checked={datos.recordar}
                                         onChange={cambiar('recordar')}
                                     />
@@ -207,15 +207,15 @@ export default function Login() {
                                 <button
                                     type="submit"
                                     disabled={enviando}
-                                    className="btn btn-primario w-full !py-3 transition-all active:scale-[0.98]"
+                                    className="btn btn-primario w-full py-3! transition-all active:scale-[0.98]"
                                 >
                                     <Icono nombre="entrar" className="h-5 w-5" />
                                     {enviando ? 'Entrando…' : 'Acceder'}
                                 </button>
                             </form>
 
-                            <div className="mt-10 border-t border-[var(--color-borde)] pt-6">
-                                <p className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-4 text-center text-sm font-medium text-[var(--color-texto-suave)]">
+                            <div className="mt-10 border-t border-(--color-borde) pt-6">
+                                <p className="rounded-lg border border-(--color-borde) bg-(--color-superficie-cabecera) p-4 text-center text-sm font-medium text-(--color-texto-suave)">
                                     ¿No puedes ingresar?
                                     <br />
                                     Comunícate con la administración de NEXO SIS para recuperar tu acceso.

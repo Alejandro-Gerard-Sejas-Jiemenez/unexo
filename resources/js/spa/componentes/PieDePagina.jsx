@@ -52,15 +52,15 @@ export default function PieDePagina({ rutaFija = null }) {
     }, [rutaActual]);
 
     return (
-        <footer className="border-t border-[var(--color-borde)] bg-[var(--color-superficie)] px-4 py-3 text-xs text-[var(--color-texto-suave)] sm:px-6">
+        <footer className="border-t border-(--color-borde) bg-(--color-superficie) px-4 py-3 text-xs text-(--color-texto-suave) sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <span>NEXO SIS · Universidad Autónoma Gabriel René Moreno</span>
                 {visitas && (
                     <span>
                         Visitas de esta página:{' '}
-                        <b className="text-[var(--color-texto)]">{visitas.pagina.toLocaleString('es-BO')}</b> · Total
+                        <b className="text-(--color-texto)">{visitas.pagina.toLocaleString('es-BO')}</b> · Total
                         del sitio:{' '}
-                        <b className="text-[var(--color-texto)]">{visitas.total.toLocaleString('es-BO')}</b>
+                        <b className="text-(--color-texto)">{visitas.total.toLocaleString('es-BO')}</b>
                     </span>
                 )}
             </div>

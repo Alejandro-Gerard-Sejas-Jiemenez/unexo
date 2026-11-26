@@ -27,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $proxies = env('TRUSTED_PROXIES', '*');
         $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', (string) $proxies)));
-        $middleware->redirectUsersTo('/panel');
+        $middleware->redirectUsersTo('/');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // La API siempre responde JSON (401/403/404/422), aunque el cliente no mande Accept.
