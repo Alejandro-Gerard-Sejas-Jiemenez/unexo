@@ -11,5 +11,5 @@ Route::get('/app/{cualquiera?}', fn (?string $cualquiera = null) => redirect('/'
     ->where('cualquiera', '.*');
 
 Route::view('/{cualquiera?}', 'spa')
-    ->where('cualquiera', '^(?!api|up|sanctum|storage|images|build).*$')
+    ->where('cualquiera', '^(?!api|up|sanctum|storage|images|build|docs).*$')
     ->name('spa');
