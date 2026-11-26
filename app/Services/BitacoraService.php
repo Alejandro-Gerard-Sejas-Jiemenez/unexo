@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\TamanoPagina;
 use App\Models\Bitacora;
 use App\Models\User;
 use App\Support\ConsultaTexto;
@@ -79,6 +80,6 @@ class BitacoraService
                 ConsultaTexto::dondeContiene($b, 'identificador', $busqueda, true);
             }))
             ->orderByDesc('created_at')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
     }
 }

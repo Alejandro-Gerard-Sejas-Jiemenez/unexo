@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Panel;
 
+use App\Support\TamanoPagina;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AulaRequest;
 use App\Http\Requests\ClienteApiRequest;
@@ -15,7 +16,7 @@ class ConfiguracionApiController extends Controller
     {
         $pagina = Aula::withCount('grupos')
             ->orderBy('nombre')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
 
         return response()->json([
             'data' => $pagina->getCollection()->map(fn (Aula $a) => [
@@ -52,7 +53,7 @@ class ConfiguracionApiController extends Controller
     {
         $pagina = ClienteApi::withCount('tokens')
             ->orderBy('nombre')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
 
         return response()->json([
             'data' => $pagina->getCollection()->map(fn (ClienteApi $c) => [

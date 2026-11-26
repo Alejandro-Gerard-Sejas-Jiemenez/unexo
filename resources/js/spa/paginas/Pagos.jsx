@@ -8,9 +8,11 @@ import DialogoConfirmacion from '../componentes/DialogoConfirmacion';
 import EncabezadoPagina from '../componentes/EncabezadoPagina';
 import Icono from '../componentes/Icono';
 import Insignia, { tonoEstado } from '../componentes/Insignia';
+import Paginacion from '../componentes/Paginacion';
 import TablaDatos from '../componentes/TablaDatos';
 import TablaResponsiva from '../componentes/TablaResponsiva';
 import { useToast } from '../componentes/ToastContext';
+import usePaginaLocal from '../hooks/usePaginaLocal';
 import { formatoFecha } from '../lib/fechas';
 
 const VACIO = {
@@ -58,6 +60,7 @@ export default function Pagos() {
 
     const [pestana, setPestana] = useState(esEstudiante ? 'cuotas' : 'metodos');
     const [metodos, setMetodos] = useState(() => cacheMetodos?.data ?? []);
+    const paginaMetodos = usePaginaLocal(metodos);
     const [matriculas, setMatriculas] = useState(() => cacheMatriculas?.data ?? []);
     const [pasarela, setPasarela] = useState(() => cacheMatriculas?.pasarela ?? null);
     const [metodoElegido, setMetodoElegido] = useState({});
@@ -476,7 +479,7 @@ export default function Pagos() {
                                 vacioTitulo="Sin métodos de pago"
                                 vacioDescripcion="Todavía no registraste ningún método de pago en tu cuenta."
                             >
-                                {metodos.map((m) => (
+                                {paginaMetodos.visibles.map((m) => (
                                     <tr key={m.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                                         <td className="px-6 py-4 text-sm">
                                             <span className="font-medium">{m.descripcion}</span>
@@ -500,6 +503,7 @@ export default function Pagos() {
                                     </tr>
                                 ))}
                             </TablaDatos>
+                            <Paginacion meta={paginaMetodos.meta} irAPagina={paginaMetodos.irAPagina} cambiarTamano={paginaMetodos.cambiarTamano} sustantivo="métodos" />
 
                             <form onSubmit={enviarMetodo} noValidate className="superficie p-5">
                                 <h2 className="mb-1 text-lg font-semibold">Registrar método de pago</h2>

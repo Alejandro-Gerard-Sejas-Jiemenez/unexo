@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\TamanoPagina;
 use App\Enums\EstadoComercial;
 use App\Models\Modulo;
 use App\Models\Programa;
@@ -32,7 +33,7 @@ class CatalogoConsultaService
                 ConsultaTexto::dondeContiene($b, 'nombre', $busqueda, true);
             }))
             ->orderBy('nombre')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
     }
 
     /**
@@ -51,6 +52,6 @@ class CatalogoConsultaService
                 ConsultaTexto::dondeContiene($b, 'nombre', $busqueda, true);
             }))
             ->orderBy('nombre')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
     }
 }

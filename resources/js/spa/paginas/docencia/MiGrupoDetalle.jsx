@@ -4,7 +4,9 @@ import cliente from '../../api/cliente';
 import Cargador from '../../componentes/Cargador';
 import Icono from '../../componentes/Icono';
 import Insignia, { tonoEstado } from '../../componentes/Insignia';
+import Paginacion from '../../componentes/Paginacion';
 import TablaDatos from '../../componentes/TablaDatos';
+import usePaginaLocal from '../../hooks/usePaginaLocal';
 
 export default function MiGrupoDetalle() {
     const { id } = useParams();
@@ -25,6 +27,8 @@ export default function MiGrupoDetalle() {
             vigente = false;
         };
     }, [id]);
+
+    const paginaEstudiantes = usePaginaLocal(datos?.estudiantes ?? [], id);
 
     if (cargando) return <Cargador texto="Cargando" />;
     if (aviso) {
@@ -145,7 +149,7 @@ export default function MiGrupoDetalle() {
                 vacioTitulo="No hay estudiantes inscritos"
                 vacioDescripcion="Aparecerán aquí cuando la administración los inscriba."
             >
-                {datos.estudiantes.map((e) => (
+                {paginaEstudiantes.visibles.map((e) => (
                     <tr key={e.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                         <td className="px-6 py-4 text-sm font-medium">{e.nombre ?? '—'}</td>
                         <td className="px-6 py-4 text-sm text-(--color-texto-suave)">
@@ -159,6 +163,7 @@ export default function MiGrupoDetalle() {
                     </tr>
                 ))}
             </TablaDatos>
+            <Paginacion meta={paginaEstudiantes.meta} irAPagina={paginaEstudiantes.irAPagina} cambiarTamano={paginaEstudiantes.cambiarTamano} sustantivo="estudiantes" />
         </section>
     );
 }

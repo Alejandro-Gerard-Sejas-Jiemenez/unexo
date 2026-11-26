@@ -12,7 +12,7 @@ import useListado from '../../hooks/useListado';
 
 export default function Aulas() {
     const { mostrar } = useToast();
-    const { filas: aulas, meta, cargando, aviso, setAviso, irAPagina, refrescar } = useListado('/aulas');
+    const { filas: aulas, meta, cargando, aviso, setAviso, irAPagina, cambiarTamano, refrescar } = useListado('/aulas');
 
     const [editando, setEditando] = useState(null);
     const [datos, setDatos] = useState({ nombre: '', capacidad: '' });
@@ -161,7 +161,7 @@ export default function Aulas() {
                 ))}
             </TablaDatos>
 
-            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="aulas" />
+            <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="aulas" />
         </section>
     );
 }

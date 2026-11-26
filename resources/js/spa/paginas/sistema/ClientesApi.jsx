@@ -13,7 +13,7 @@ import useListado from '../../hooks/useListado';
 
 export default function ClientesApi() {
     const { mostrar } = useToast();
-    const { filas: clientes, meta, cargando, aviso, setAviso, irAPagina, refrescar } =
+    const { filas: clientes, meta, cargando, aviso, setAviso, irAPagina, cambiarTamano, refrescar } =
         useListado('/clientes-api');
 
     const [nombre, setNombre] = useState('');
@@ -300,7 +300,7 @@ export default function ClientesApi() {
                         </div>
                     </div>
 
-                    <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="clientes" />
+                    <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="clientes" />
                 </div>
             </div>
 

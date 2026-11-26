@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\TamanoPagina;
 use App\Enums\EstadoMatricula;
 use App\Enums\EstadoPlanificacion;
 use App\Models\Cohorte;
@@ -31,7 +32,7 @@ class PlanificacionConsultaService
                 $b->orWhereHas('programa', fn ($p) => ConsultaTexto::dondeContiene($p, 'nombre', $busqueda));
             }))
             ->orderByDesc('fecha_inicio')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
     }
 
     /**
@@ -57,6 +58,6 @@ class PlanificacionConsultaService
                 $b->orWhereHas('modulo', fn ($m) => ConsultaTexto::dondeContiene($m, 'nombre', $busqueda));
             }))
             ->ordenadoPorPeriodo('desc')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
     }
 }

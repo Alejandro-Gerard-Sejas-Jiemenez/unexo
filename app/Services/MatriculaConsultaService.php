@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\TamanoPagina;
 use App\Enums\EstadoMatricula;
 use App\Models\Matricula;
 use App\Support\ConsultaTexto;
@@ -31,6 +32,6 @@ class MatriculaConsultaService
                 ConsultaTexto::dondeContiene($u, 'email', $busqueda, true);
             }))
             ->orderByDesc('fecha_matricula')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
     }
 }

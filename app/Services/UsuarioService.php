@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\TamanoPagina;
 use App\Enums\Rol;
 use App\Models\User;
 use App\Support\ConsultaTexto;
@@ -33,7 +34,7 @@ class UsuarioService
             }))
             ->orderBy('apellidos')
             ->orderBy('nombres')
-            ->paginate(config('limites.por_pagina'));
+            ->paginate(TamanoPagina::elegido());
     }
 
     /**

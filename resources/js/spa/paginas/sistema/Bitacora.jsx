@@ -25,7 +25,7 @@ export default function Bitacora() {
         filtrar,
         filtrarConRetraso,
         limpiarFiltros,
-        irAPagina,
+        irAPagina, cambiarTamano,
     } = useListado('/bitacora');
 
     const [busqueda, setBusqueda] = useState(valorDe('q'));
@@ -143,7 +143,7 @@ export default function Bitacora() {
                 ))}
             </TablaDatos>
 
-            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="eventos" />
+            <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="eventos" />
         </section>
     );
 }

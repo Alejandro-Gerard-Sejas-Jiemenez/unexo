@@ -6,7 +6,9 @@ import Cargador from '../../componentes/Cargador';
 import EncabezadoPagina from '../../componentes/EncabezadoPagina';
 import Icono from '../../componentes/Icono';
 import Insignia, { tonoEstado } from '../../componentes/Insignia';
+import Paginacion from '../../componentes/Paginacion';
 import TablaDatos from '../../componentes/TablaDatos';
+import usePaginaLocal from '../../hooks/usePaginaLocal';
 
 export default function GrupoDetalle() {
     const { id } = useParams();
@@ -27,6 +29,8 @@ export default function GrupoDetalle() {
             vigente = false;
         };
     }, [id]);
+
+    const paginaInscritos = usePaginaLocal(grupo?.inscritos ?? [], id);
 
     if (cargando) return <Cargador texto="Cargando" />;
     if (aviso) {
@@ -165,7 +169,7 @@ export default function GrupoDetalle() {
                         </Link>
                     }
                 >
-                    {inscritos.map((e) => (
+                    {paginaInscritos.visibles.map((e) => (
                         <tr key={e.id} className="transition-colors hover:bg-(--color-superficie-2)/60">
                             <td className="px-6 py-4 text-sm font-semibold">
                                 <Link to={`/matriculas/${e.matricula_id}`} className="no-underline hover:text-(--color-acento) hover:underline">
@@ -183,6 +187,7 @@ export default function GrupoDetalle() {
                         </tr>
                     ))}
                 </TablaDatos>
+                <Paginacion meta={paginaInscritos.meta} irAPagina={paginaInscritos.irAPagina} cambiarTamano={paginaInscritos.cambiarTamano} sustantivo="estudiantes" />
             </div>
         </section>
     );
