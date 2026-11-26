@@ -85,7 +85,7 @@ php artisan serve
 pnpm run dev
 ```
 
-Y entrar a `http://127.0.0.1:8000`, que redirige solo a `/app`.
+Y entrar a `http://127.0.0.1:8000`: la SPA vive en la raíz (`/app` solo redirige a ella).
 
 Si se quiere probar el build de producción en lugar del servidor de desarrollo,
 alcanza con `pnpm run build` y entonces basta `php artisan serve`.
@@ -125,6 +125,10 @@ Host: tecnoweb.org.bo    Usuario: grupo06sa
 
 ### 3. El problema del subdirectorio
 
+> Despliegue real (2026-11-26): toda la app va en `~/proyecto2` con un `.htaccess` en la raíz
+> (`RewriteRule ^(?!public/)(.*)$ public/$1 [L]`) y `public/index.php` ajusta `SCRIPT_NAME`
+> para que Laravel reconozca el prefijo. Nunca subir `public/hot` ni dejar el `.env` accesible.
+
 Laravel espera `public/` como raíz del sitio, pero la app cuelga de
 `/inf513/grupo06sa/proyecto2`. Dos variantes:
 
@@ -157,23 +161,25 @@ variable incluya la ruta completa.
 ### 4. En el servidor
 
 ```bash
-cp .env.produccion.example .env
-nano .env                      # completar DB_PASSWORD
-php artisan key:generate
+# subir el .env del servidor (plantilla: .env.servidor-tecnoweb) por scp
+# OJO: desde el servidor la base está en la misma máquina → DB_HOST=localhost
+# (con db.tecnoweb.org.bo da "Conexión rehusada"). Sin nano: usar vi o sed.
+php artisan key:generate        # solo si APP_KEY está vacío
 chmod -R 775 storage bootstrap/cache
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
 
-Las migraciones **no** se corren de nuevo: el schema `unexo_web` ya está creado
-con sus datos desde local.
+Si es la primera vez o la base fue borrada: `php artisan nexo:salud --reparar`
+(ver `docs/restablecer.md`). También sirve para diagnosticar en cualquier momento.
 
 ## Comprobaciones después de subir
 
 | Qué | Cómo |
 |---|---|
-| La SPA carga | Abrir `/inf513/grupo06sa/proyecto2/` (redirige a `/app`) |
+| La SPA carga | Abrir `/inf513/grupo06sa/proyecto2/` |
+| La salud responde | `curl.exe -s …/proyecto2/health` → `{"estado":"ok"}` |
 | Los assets resuelven | Sin 404 de `/build/...` en la consola del navegador |
 | El prefijo llegó bien | Ver el `<meta name="base-path">` en el HTML: debe decir `/inf513/grupo06sa/proyecto2` |
 | El login funciona | Si da 419, revisar `SESSION_PATH` y `SESSION_DOMAIN` |

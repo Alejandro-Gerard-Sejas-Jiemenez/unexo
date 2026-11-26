@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HealthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -10,6 +11,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/app/{cualquiera?}', fn (?string $cualquiera = null) => redirect('/'.ltrim((string) $cualquiera, '/')))
     ->where('cualquiera', '.*');
 
+/*
+ * Salud pública para monitores. Sin el grupo web: no abre sesión ni escribe en
+ * la base, así responde aunque esa base esté caída o vacía.
+ */
+Route::get('/health', HealthController::class)->withoutMiddleware('web')->name('health');
+
 Route::view('/{cualquiera?}', 'spa')
-    ->where('cualquiera', '^(?!api|up|sanctum|storage|images|build).*$')
+    ->where('cualquiera', '^(?!api|up|health|sanctum|storage|images|build).*$')
     ->name('spa');

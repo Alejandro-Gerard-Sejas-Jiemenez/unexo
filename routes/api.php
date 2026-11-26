@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Panel\MisClasesApiController;
 use App\Http\Controllers\Api\Panel\PagoApiController;
 use App\Http\Controllers\Api\Panel\PlanificacionApiController;
 use App\Http\Controllers\Api\Panel\ReporteApiController;
+use App\Http\Controllers\Api\Panel\SaludApiController;
 use App\Http\Controllers\Api\Panel\UsuarioApiController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,7 @@ Route::prefix('panel')->middleware('web')->group(function () {
         Route::get('catalogo/modulos/{modulo}', [CatalogoApiController::class, 'modulo'])->whereUuid('modulo');
 
         Route::middleware('rol:administrador')->group(function () {
+            Route::get('salud', SaludApiController::class);
             Route::get('catalogo/opciones', [CatalogoApiController::class, 'opciones']);
             Route::post('catalogo/programas', [CatalogoApiController::class, 'guardarPrograma']);
             Route::put('catalogo/programas/{programa}', [CatalogoApiController::class, 'actualizarPrograma'])->whereUuid('programa');
