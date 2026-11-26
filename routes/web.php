@@ -18,5 +18,5 @@ Route::get('/app/{cualquiera?}', fn (?string $cualquiera = null) => redirect('/'
 Route::get('/health', HealthController::class)->withoutMiddleware('web')->name('health');
 
 Route::view('/{cualquiera?}', 'spa')
-    ->where('cualquiera', '^(?!api|up|health|sanctum|storage|images|build).*$')
+    ->where('cualquiera', '^(?!api|up|health|sanctum|storage|images|build|docs).*$')
     ->name('spa');
