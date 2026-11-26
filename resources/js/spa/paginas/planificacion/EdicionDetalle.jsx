@@ -28,7 +28,7 @@ export default function EdicionDetalle() {
     const [cohorte, setCohorte] = useState(null);
     const [pendientes, setPendientes] = useState([]);
     const [opciones, setOpciones] = useState({ programas: [], docentes: [], estados: [], modalidades: [] });
-    const [apertura, setApertura] = useState({ docente_id: '', cupo_minimo: '', modalidad: 'virtual' });
+    const [apertura, setApertura] = useState({ docentes: {}, cupo_minimo: '', modalidad: 'virtual' });
     const [errores, setErrores] = useState({});
     const [aviso, setAviso] = useState(null);
     const [cargando, setCargando] = useState(true);
@@ -107,13 +107,18 @@ export default function EdicionDetalle() {
             if (error instanceof ErrorDeValidacion) {
                 const mapeados = Object.fromEntries(Object.entries(error.errores).map(([c, l]) => [c, l[0]]));
                 setErrores(mapeados);
-                setAviso(mapeados.cohorte ?? mapeados.docente ?? error.message);
+                setAviso(mapeados.cohorte ?? mapeados.docentes ?? mapeados.docente ?? error.message);
             } else {
                 setAviso(error.message);
             }
         } finally {
             setEnviando(false);
         }
+    }
+
+    function aplicarATodos(docenteId) {
+        if (!docenteId) return;
+        setApertura((a) => ({ ...a, docentes: Object.fromEntries(pendientes.map((m) => [m.id, docenteId])) }));
     }
 
     async function cambiarEstado(estado) {
@@ -265,6 +270,7 @@ export default function EdicionDetalle() {
     const modulosCubiertos = new Set(grupos.map((g) => g.modulo_id)).size;
     const totalModulos = new Set([...grupos.map((g) => g.modulo_id), ...pendientes.map((m) => m.id)]).size;
     const totalInscritos = grupos.reduce((acc, g) => acc + (g.inscripciones_count ?? 0), 0);
+    const faltanDocentes = pendientes.some((m) => !apertura.docentes[m.id]);
 
     return (
         <section>
@@ -391,68 +397,91 @@ export default function EdicionDetalle() {
                     onSubmit={aperturar}
                     className="mb-8 rounded-xl border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-(--color-acento-suave)/70 p-6 shadow-sm"
                 >
-                    <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-                        <div className="max-w-2xl">
-                            <div className="mb-1 flex items-center gap-2 text-base font-bold text-(--color-acento)">
-                                <Icono nombre="modulos" className="h-5 w-5" />
-                                <span>Apertura Asistida de Grupos Operativos</span>
-                            </div>
-                            <p className="text-xs text-(--color-texto-suave) sm:text-sm">
-                                Esta edición tiene{' '}
-                                <span className="font-bold text-(--color-acento)">
-                                    {pendientes.length} módulo(s) pendiente(s)
-                                </span>{' '}
-                                de apertura. El generador creará un grupo por módulo con el período de esta edición.
-                            </p>
-                            <div className="mt-2.5 flex flex-wrap gap-1.5">
-                                {pendientes.map((pend) => (
-                                    <span
-                                        key={pend.id}
-                                        className="inline-flex items-center rounded border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-(--color-superficie) px-2 py-0.5 font-mono text-[11px] font-medium"
-                                    >
-                                        {pend.codigo}: {pend.nombre.slice(0, 26)}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
+                    <div className="mb-1 flex items-center gap-2 text-base font-bold text-(--color-acento)">
+                        <Icono nombre="modulos" className="h-5 w-5" />
+                        <span>Apertura Asistida de Grupos Operativos</span>
+                    </div>
+                    <p className="text-xs text-(--color-texto-suave) sm:text-sm">
+                        Esta edición tiene{' '}
+                        <span className="font-bold text-(--color-acento)">{pendientes.length} módulo(s) pendiente(s)</span>{' '}
+                        de apertura. Se creará un grupo por módulo con el período de esta edición. Los horarios se
+                        completan después, editando cada grupo.
+                    </p>
 
-                        <div className="flex flex-wrap items-end gap-2.5">
-                            <label className="text-xs font-medium">
-                                <span className="mb-1 block text-(--color-texto-suave)">Docente inicial</span>
+                    <div className="mt-4 flex flex-wrap items-end gap-3">
+                        <label className="text-xs font-medium">
+                            <span className="mb-1 block text-(--color-texto-suave)">Aplicar un docente a todos</span>
+                            <select
+                                className={`${claseControl} min-h-9! text-xs`}
+                                value=""
+                                onChange={(e) => aplicarATodos(e.target.value)}
+                            >
+                                <option value="">Elige un docente</option>
+                                {opciones.docentes.map((d) => (
+                                    <option key={d.id} value={d.id}>
+                                        {d.nombre} ({d.grupos_activos_count ?? 0})
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <label className="text-xs font-medium">
+                            <span className="mb-1 block text-(--color-texto-suave)">Modalidad</span>
+                            <select
+                                className={`${claseControl} min-h-9! text-xs`}
+                                value={apertura.modalidad}
+                                onChange={(e) => setApertura((a) => ({ ...a, modalidad: e.target.value }))}
+                            >
+                                {opciones.modalidades.map((m) => (
+                                    <option key={m.valor} value={m.valor}>
+                                        {m.etiqueta}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+
+                    <ul className="mt-4 space-y-2">
+                        {pendientes.map((pend) => (
+                            <li
+                                key={pend.id}
+                                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-(--color-borde) bg-(--color-superficie) px-3 py-2"
+                            >
+                                <label htmlFor={`docente-${pend.id}`} className="text-sm">
+                                    <span className="font-mono text-xs text-(--color-texto-suave)">{pend.codigo}</span>{' '}
+                                    {pend.nombre}
+                                </label>
                                 <select
-                                    className={`${claseControl} min-h-9! text-xs`}
-                                    value={apertura.docente_id}
-                                    onChange={(e) => setApertura((a) => ({ ...a, docente_id: e.target.value }))}
+                                    id={`docente-${pend.id}`}
+                                    className={`${claseControl} min-h-9! w-64! text-xs`}
+                                    value={apertura.docentes[pend.id] ?? ''}
+                                    onChange={(e) =>
+                                        setApertura((a) => ({ ...a, docentes: { ...a.docentes, [pend.id]: e.target.value } }))
+                                    }
                                 >
-                                    <option value="">Por asignar</option>
+                                    <option value="">Elige un docente</option>
                                     {opciones.docentes.map((d) => (
                                         <option key={d.id} value={d.id}>
                                             {d.nombre} ({d.grupos_activos_count ?? 0})
                                         </option>
                                     ))}
                                 </select>
-                            </label>
+                            </li>
+                        ))}
+                    </ul>
 
-                            <label className="text-xs font-medium">
-                                <span className="mb-1 block text-(--color-texto-suave)">Modalidad</span>
-                                <select
-                                    className={`${claseControl} min-h-9! text-xs`}
-                                    value={apertura.modalidad}
-                                    onChange={(e) => setApertura((a) => ({ ...a, modalidad: e.target.value }))}
-                                >
-                                    {opciones.modalidades.map((m) => (
-                                        <option key={m.valor} value={m.valor}>
-                                            {m.etiqueta}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-
-                            <button type="submit" disabled={enviando} className="btn btn-primario min-h-9! text-xs">
-                                <Icono nombre="mas" className="h-4 w-4" />
-                                Aperturar {pendientes.length} Grupos
-                            </button>
-                        </div>
+                    <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+                        {faltanDocentes && (
+                            <p className="text-xs text-(--color-texto-suave)">Elige un docente para cada módulo.</p>
+                        )}
+                        <button
+                            type="submit"
+                            disabled={enviando || faltanDocentes}
+                            className="btn btn-primario min-h-9! text-xs"
+                        >
+                            <Icono nombre="mas" className="h-4 w-4" />
+                            Aperturar {pendientes.length} Grupos
+                        </button>
                     </div>
                 </form>
             )}

@@ -26,7 +26,8 @@ class PlanificacionCohorteService
         Cohorte $cohorte,
         ?User $docente = null,
         ?int $cupoMinimo = null,
-        Modalidad $modalidad = Modalidad::Virtual
+        Modalidad $modalidad = Modalidad::Virtual,
+        ?array $docentesPorModulo = null
     ): Collection {
         $cohorte->loadMissing('programa.modulos');
 
@@ -38,11 +39,11 @@ class PlanificacionCohorteService
         }
 
         // Si no se especifica docente, tomar el primer docente activo del sistema como responsable inicial
-        $docenteAsignado = $docente ?? User::where('rol', Rol::Docente->value)
+        $docenteAsignado = $docentesPorModulo ? null : ($docente ?? User::where('rol', Rol::Docente->value)
             ->where('estado', 'activo')
-            ->first();
+            ->first());
 
-        if (! $docenteAsignado) {
+        if (! $docentesPorModulo && ! $docenteAsignado) {
             throw ValidationException::withMessages([
                 'docente' => 'Se requiere al menos un docente registrado en el sistema para la apertura de grupos.',
             ]);
@@ -56,12 +57,16 @@ class PlanificacionCohorteService
             return collect();
         }
 
+        if ($docentesPorModulo && $modulosParaAperturar->contains(fn (Modulo $m) => empty($docentesPorModulo[$m->id]))) {
+            throw ValidationException::withMessages(['docentes' => 'Elige un docente para cada módulo.']);
+        }
+
         $grupos = app(GrupoService::class);
 
         return DB::transaction(fn () => $modulosParaAperturar->map(fn (Modulo $modulo) => $grupos->crear([
             'modulo_id' => $modulo->id,
             'cohorte_id' => $cohorte->id,
-            'docente_id' => $docenteAsignado->id,
+            'docente_id' => $docentesPorModulo[$modulo->id] ?? $docenteAsignado->id,
             'modalidad' => $modalidad,
             'enlace_videoconferencia' => $modalidad === Modalidad::Virtual
                 ? rtrim((string) config('services.videoconferencia.base_url', 'https://meet.jit.si'), '/').'/nexo-'.substr($cohorte->id, 0, 8)

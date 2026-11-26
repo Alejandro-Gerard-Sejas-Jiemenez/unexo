@@ -17,9 +17,20 @@ class AperturarGruposRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'docente_id' => ['nullable', 'uuid', Rule::exists('users', 'id')->where('rol', Rol::Docente->value)],
+            'docente_id' => ['nullable', 'uuid', DocenteGrupoRequest::docenteActivo()],
+            // Mapa módulo => docente. Si llega, debe cubrir todos los módulos pendientes.
+            'docentes' => ['nullable', 'array'],
+            'docentes.*' => ['required', 'uuid', DocenteGrupoRequest::docenteActivo()],
             'modalidad' => ['nullable', Rule::enum(Modalidad::class)],
             'cupo_minimo' => ['nullable', 'integer', 'min:0', 'max:'.config('limites.grupos.cupo_minimo')],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'docente_id.exists' => 'Elige un docente activo.',
+            'docentes.*.exists' => 'Elige un docente activo.',
         ];
     }
 }
