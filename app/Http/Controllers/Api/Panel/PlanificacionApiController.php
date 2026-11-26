@@ -10,6 +10,7 @@ use App\Enums\Rol;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AperturarGruposRequest;
 use App\Http\Requests\CohorteRequest;
+use App\Http\Requests\DocenteGrupoRequest;
 use App\Http\Requests\StoreGrupoRequest;
 use App\Http\Requests\UpdateGrupoRequest;
 use App\Http\Resources\CohortePanelResource;
@@ -104,6 +105,7 @@ class PlanificacionApiController extends Controller
             isset($datos['docente_id']) ? User::find($datos['docente_id']) : null,
             ! empty($datos['cupo_minimo']) ? (int) $datos['cupo_minimo'] : null,
             isset($datos['modalidad']) ? Modalidad::from($datos['modalidad']) : Modalidad::Virtual,
+            $datos['docentes'] ?? null,
         );
 
         return response()->json([
@@ -179,6 +181,13 @@ class PlanificacionApiController extends Controller
             'grupo' => new GrupoPanelResource($actualizado->load(['modulo', 'docente', 'aula', 'cohorte.programa', 'horarios'])),
             'mensaje' => 'Grupo actualizado correctamente.',
         ]);
+    }
+
+    public function cambiarDocenteGrupo(DocenteGrupoRequest $request, Grupo $grupo): JsonResponse
+    {
+        $this->grupos->cambiarDocente($grupo, $request->validated('docente_id'));
+
+        return response()->json(['mensaje' => 'Docente actualizado.']);
     }
 
     public function opciones(): JsonResponse

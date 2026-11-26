@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoPlanificacion;
 use App\Enums\Modalidad;
 use App\Models\Grupo;
 use App\Models\HorarioGrupo;
@@ -13,6 +14,20 @@ use Illuminate\Validation\ValidationException;
 
 class GrupoService
 {
+    /** Cambia solo el docente. Los grupos cerrados conservan quién los dictó. */
+    public function cambiarDocente(Grupo $grupo, string $docenteId): Grupo
+    {
+        if (! in_array($grupo->estado, [EstadoPlanificacion::Programado, EstadoPlanificacion::EnCurso], true)) {
+            throw ValidationException::withMessages([
+                'docente_id' => 'No se puede cambiar el docente de un grupo finalizado o cancelado.',
+            ]);
+        }
+
+        $grupo->update(['docente_id' => $docenteId]);
+
+        return $grupo;
+    }
+
     private const INTENTOS = 5;
 
     private const NUMERO_MAXIMO = 65535;

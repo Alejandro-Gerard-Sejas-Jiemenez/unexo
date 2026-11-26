@@ -96,6 +96,7 @@ Route::prefix('panel')->middleware('web')->group(function () {
             Route::post('grupos', [PlanificacionApiController::class, 'guardarGrupo']);
             Route::get('grupos/{grupo}', [PlanificacionApiController::class, 'grupo'])->whereUuid('grupo');
             Route::put('grupos/{grupo}', [PlanificacionApiController::class, 'actualizarGrupo'])->whereUuid('grupo');
+            Route::patch('grupos/{grupo}/docente', [PlanificacionApiController::class, 'cambiarDocenteGrupo'])->whereUuid('grupo');
 
             Route::get('reportes/matriculas', [ReporteApiController::class, 'matriculas']);
             Route::get('reportes/matriculas/pdf', [ReporteApiController::class, 'matriculasPdf']);
