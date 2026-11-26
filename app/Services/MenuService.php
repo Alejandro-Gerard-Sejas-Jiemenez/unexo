@@ -81,7 +81,8 @@ class MenuService
 
     private function asegurarCatalogo(): void
     {
-        if (Schema::hasTable('roles') && ! RolModelo::query()->exists()) {
+        // Los roles base ya vienen de la migración: lo que puede faltar es el menú.
+        if (Schema::hasTable('menu_items') && ! MenuItem::query()->exists()) {
             (new RbacMenuSeeder())->run();
         }
     }

@@ -23,7 +23,7 @@ class RegistraAcceso
 
         $this->sinRomper(function () use ($peticion, $respuesta) {
             if ($this->debeContarVisita($peticion, $respuesta)) {
-                $this->visitas->registrar($peticion->path());
+                $this->visitas->registrar($peticion->path(), $peticion->user()?->id);
             }
         });
 

@@ -13,5 +13,5 @@ class ClienteApi extends Model
 
     protected $table = 'api_clientes';
 
-    protected $fillable = ['nombre'];
+    protected $fillable = ['nombre', 'creado_por'];
 }

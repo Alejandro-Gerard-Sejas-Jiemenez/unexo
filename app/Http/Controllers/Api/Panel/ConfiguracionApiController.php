@@ -72,7 +72,7 @@ class ConfiguracionApiController extends Controller
 
     public function crearClienteApi(ClienteApiRequest $request): JsonResponse
     {
-        $cliente = ClienteApi::create($request->validated());
+        $cliente = ClienteApi::create($request->validated() + ['creado_por' => $request->user()->id]);
 
         return response()->json([
             'cliente' => ['id' => $cliente->id, 'nombre' => $cliente->nombre],
