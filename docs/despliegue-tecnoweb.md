@@ -169,6 +169,20 @@ php artisan view:cache
 Las migraciones **no** se corren de nuevo: el schema `unexo_web` ya está creado
 con sus datos desde local.
 
+## Pagos con Stripe (modo de prueba)
+
+Spec 010. Antes de activar `PAYMENTS_DRIVER=stripe`:
+
+- Correr la migración nueva (`php artisan migrate --force`) contra la base que
+  use cada entorno. Nunca `migrate:fresh` contra el servidor.
+- El destino del webhook (`/api/webhooks/stripe`) debe enviar
+  `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+  `checkout.session.async_payment_failed` y `checkout.session.expired`.
+- Poner en el `.env` el `whsec_` de ese destino y en `STRIPE_API_VERSION` la
+  misma versión de API que se eligió en él.
+- La clave restringida necesita escritura en Checkout Sessions y lectura en
+  PaymentIntents.
+
 ## Comprobaciones después de subir
 
 | Qué | Cómo |
