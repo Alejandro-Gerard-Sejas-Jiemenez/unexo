@@ -47,7 +47,7 @@ class AuditoriaApiController extends Controller
     public function registrarVisita(VisitaRequest $request): JsonResponse
     {
         $ruta = $this->normalizarRuta((string) $request->validated('ruta'));
-        $this->visitas->registrar($ruta);
+        $this->visitas->registrar($ruta, $request->user()?->id);
 
         return response()->json([
             'ruta' => $ruta,

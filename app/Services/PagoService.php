@@ -221,6 +221,23 @@ class PagoService
     }
 
     /**
+     * Pago al que pertenece un aviso auténtico, aunque no llegue a cambiarlo.
+     *
+     * @param  array<string, mixed>  $objeto
+     */
+    public function pagoDelAviso(array $objeto): ?string
+    {
+        if ($cargo = $this->cargoDeSesion($objeto)) {
+            return $cargo->id;
+        }
+
+        // Un aviso atrasado de un intento anterior sigue perteneciendo a su pago.
+        $id = $objeto['metadata']['transaccion_id'] ?? null;
+
+        return $id && Str::isUuid($id) ? Transaccion::whereKey($id)->value('id') : null;
+    }
+
+    /**
      * Aplica una confirmación auténtica de Stripe. Si no corresponde, no cambia nada.
      *
      * @param  array<string, mixed>  $sesion

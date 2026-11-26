@@ -27,15 +27,16 @@ class StripeWebhookController extends Controller
 
         // El registro del evento y su efecto van juntos: si algo falla, Stripe lo reenvía.
         DB::transaction(function () use ($evento, $pagos) {
+            $sesion = $evento['data']['object'] ?? [];
+
             DB::table('stripe_events')->insert([
                 'id' => (string) Str::uuid(),
                 'stripe_event_id' => $evento['id'],
                 'tipo' => $evento['type'],
+                'transaccion_id' => $pagos->pagoDelAviso($sesion),
                 'procesado_en' => now(),
                 'created_at' => now(),
             ]);
-
-            $sesion = $evento['data']['object'] ?? [];
 
             match ($evento['type']) {
                 'checkout.session.completed', 'checkout.session.async_payment_succeeded' => $pagos->confirmarSesion($sesion),
