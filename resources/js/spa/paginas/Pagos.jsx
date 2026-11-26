@@ -80,6 +80,11 @@ export default function Pagos() {
             const listaMetodos = resMetodos.data.data ?? [];
             setMetodos(listaMetodos);
 
+            setPasarela(resMetodos.data.pasarela ?? null);
+            if (resMetodos.data.pasarela?.driver === 'stripe') {
+                setDatos((d) => (d.tipo === 'tarjeta' ? { ...d, tipo: 'qr' } : d));
+            }
+
             if (resMatriculas) {
                 guardarCache(claveCache('/mis-matriculas'), resMatriculas.data);
                 const listaMat = resMatriculas.data.data ?? [];
@@ -107,6 +112,33 @@ export default function Pagos() {
     useEffect(() => {
         cargar();
     }, [cargar]);
+
+    // Al volver de Stripe solo se informa el estado registrado: volver no aprueba el pago.
+    const parametros = new URLSearchParams(window.location.search);
+    const cargoDeRetorno = matriculas
+        .flatMap((item) => item.transacciones)
+        .find((t) => t.id === parametros.get('cargo'));
+    let avisoRetorno = null;
+    if (parametros.get('pago') && cargoDeRetorno) {
+        if (cargoDeRetorno.estado === 'aprobada') {
+            avisoRetorno = 'Pago confirmado.';
+        } else if (parametros.get('pago') === 'cancelado') {
+            avisoRetorno = 'Volviste sin completar el pago. Puedes continuarlo cuando quieras.';
+        } else if (cargoDeRetorno.estado === 'procesando') {
+            avisoRetorno = 'Estamos confirmando tu pago.';
+        } else {
+            avisoRetorno = 'El pago no se completó.';
+        }
+    }
+
+    function continuarPago(data) {
+        if (data.url) {
+            window.location.assign(data.url);
+            return true;
+        }
+        mostrar(data.mensaje);
+        return false;
+    }
 
     async function enviarMetodo(e) {
         e.preventDefault();
@@ -175,11 +207,7 @@ export default function Pagos() {
             const { data } = await cliente.post(`/matriculas/${mId}/pagar`, {
                 metodo_pago_id: metodoElegido[mId] || null,
             });
-            mostrar(
-                data.transaccion?.estado === 'requiere_accion'
-                    ? 'El pago requiere confirmación adicional en la pasarela.'
-                    : data.mensaje,
-            );
+            if (continuarPago(data)) return;
             await cargar();
         } catch (error) {
             if (error instanceof ErrorDeValidacion) {
@@ -200,11 +228,7 @@ export default function Pagos() {
             const { data } = await cliente.post(`/transacciones/${transaccionId}/pagar`, {
                 metodo_pago_id: metodoElegido[mId] || null,
             });
-            mostrar(
-                data.transaccion?.estado === 'requiere_accion'
-                    ? 'La cuota requiere confirmación adicional en la pasarela.'
-                    : data.mensaje,
-            );
+            if (continuarPago(data)) return;
             await cargar();
         } catch (error) {
             if (error instanceof ErrorDeValidacion) {
@@ -218,7 +242,8 @@ export default function Pagos() {
         }
     }
 
-    const esTarjeta = datos.tipo === 'tarjeta';
+    const esStripe = pasarela?.driver === 'stripe';
+    const esTarjeta = !esStripe && datos.tipo === 'tarjeta';
     const moneda = pasarela?.moneda ?? 'BOB';
 
     return (
@@ -230,7 +255,7 @@ export default function Pagos() {
                 acciones={
                     pasarela && (
                         <Insignia tono="acento">
-                            Pasarela: {pasarela.driver === 'stripe' ? 'Stripe' : 'Simulada'} · {moneda}
+                            Pasarela: {esStripe ? 'Stripe · sin dinero real' : 'Simulada'} · {moneda}
                         </Insignia>
                     )
                 }
@@ -265,6 +290,12 @@ export default function Pagos() {
                 </p>
             )}
 
+            {avisoRetorno && (
+                <p role="status" className="superficie p-3 text-sm">
+                    {avisoRetorno}
+                </p>
+            )}
+
             {cargando ? (
                 <Cargador texto="Cargando" />
             ) : (
@@ -277,10 +308,9 @@ export default function Pagos() {
                                 </p>
                             ) : (
                                 matriculas.map(({ matricula, transacciones, resumen }) => {
-                                    const cuotasPendientes = transacciones.filter((t) => t.estado === 'pendiente');
                                     const puedePagoCompleto =
                                         matricula.estado === 'pendiente' &&
-                                        cuotasPendientes.length === 0 &&
+                                        transacciones.length === 0 &&
                                         Number(matricula.cohorte?.precio ?? 0) > 0;
 
                                     return (
@@ -317,28 +347,30 @@ export default function Pagos() {
                                                         {Number(resumen.pendiente ?? 0).toFixed(2)} {moneda}
                                                     </p>
                                                 </div>
-                                                <div className="rounded-lg border border-(--color-borde) bg-(--color-superficie-2) p-3">
-                                                    <label className="block text-xs text-(--color-texto-suave)">
-                                                        Método para pagar
-                                                        <select
-                                                            className={`${claseControl} mt-1 min-h-8! text-xs`}
-                                                            value={metodoElegido[matricula.id] ?? ''}
-                                                            onChange={(e) =>
-                                                                setMetodoElegido((p) => ({
-                                                                    ...p,
-                                                                    [matricula.id]: e.target.value,
-                                                                }))
-                                                            }
-                                                        >
-                                                            <option value="">Selecciona o usa predeterminado</option>
-                                                            {metodos.map((m) => (
-                                                                <option key={m.id} value={m.id}>
-                                                                    {m.descripcion}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </label>
-                                                </div>
+                                                {!esStripe && (
+                                                    <div className="rounded-lg border border-(--color-borde) bg-(--color-superficie-2) p-3">
+                                                        <label className="block text-xs text-(--color-texto-suave)">
+                                                            Método para pagar
+                                                            <select
+                                                                className={`${claseControl} mt-1 min-h-8! text-xs`}
+                                                                value={metodoElegido[matricula.id] ?? ''}
+                                                                onChange={(e) =>
+                                                                    setMetodoElegido((p) => ({
+                                                                        ...p,
+                                                                        [matricula.id]: e.target.value,
+                                                                    }))
+                                                                }
+                                                            >
+                                                                <option value="">Selecciona o usa predeterminado</option>
+                                                                {metodos.map((m) => (
+                                                                    <option key={m.id} value={m.id}>
+                                                                        {m.descripcion}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </label>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {puedePagoCompleto && (
@@ -398,7 +430,7 @@ export default function Pagos() {
                                                                         </Insignia>
                                                                     </td>
                                                                     <td className="p-2.5 text-right">
-                                                                        {t.estado === 'pendiente' &&
+                                                                        {['pendiente', 'rechazada', 'procesando'].includes(t.estado) &&
                                                                             matricula.estado !== 'retirado' && (
                                                                                 <button
                                                                                     type="button"
@@ -410,7 +442,9 @@ export default function Pagos() {
                                                                                 >
                                                                                     {pagandoClave === `t-${t.id}`
                                                                                         ? 'Procesando…'
-                                                                                        : 'Pagar cuota'}
+                                                                                        : t.estado === 'procesando'
+                                                                                          ? 'Continuar pago'
+                                                                                          : 'Pagar'}
                                                                                 </button>
                                                                             )}
                                                                     </td>
@@ -470,7 +504,9 @@ export default function Pagos() {
                             <form onSubmit={enviarMetodo} noValidate className="superficie p-5">
                                 <h2 className="mb-1 text-lg font-semibold">Registrar método de pago</h2>
                                 <p className="mb-4 text-xs text-(--color-texto-suave)">
-                                    Por seguridad, el servidor solo conserva los últimos cuatro dígitos de tu tarjeta.
+                                    {esStripe
+                                        ? 'Las tarjetas se ingresan solo en la página de Stripe.'
+                                        : 'Por seguridad, el servidor solo conserva los últimos cuatro dígitos de tu tarjeta.'}
                                 </p>
 
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -482,7 +518,7 @@ export default function Pagos() {
                                                 value={datos.tipo}
                                                 onChange={(e) => setDatos((d) => ({ ...d, tipo: e.target.value }))}
                                             >
-                                                <option value="tarjeta">Tarjeta</option>
+                                                {!esStripe && <option value="tarjeta">Tarjeta</option>}
                                                 <option value="qr">Pago con QR</option>
                                                 <option value="transferencia">Transferencia bancaria</option>
                                             </select>

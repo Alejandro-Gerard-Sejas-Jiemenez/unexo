@@ -13,11 +13,12 @@ use App\Http\Resources\TransaccionResource;
 use App\Models\Matricula;
 use App\Models\MetodoPago;
 use App\Models\Transaccion;
+use App\Models\User;
 use App\Services\PagoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Collection;
 
 class PagoApiController extends Controller
 {
@@ -25,7 +26,8 @@ class PagoApiController extends Controller
 
     public function metodos(Request $request): AnonymousResourceCollection
     {
-        return MetodoPagoResource::collection($request->user()->metodosPago()->get());
+        return MetodoPagoResource::collection($this->metodosDisponibles($request->user()))
+            ->additional(['pasarela' => ['driver' => config('services.payments.driver', 'simulado')]]);
     }
 
     public function guardarMetodo(MetodoPagoRequest $request): JsonResponse
@@ -80,7 +82,7 @@ class PagoApiController extends Controller
         return response()->json([
             'data' => TransaccionResource::collection($transacciones),
             'metodos_estudiante' => $request->user()->rol === Rol::Administrador
-                ? MetodoPagoResource::collection($matricula->estudiante?->metodosPago()->get() ?? collect())
+                ? MetodoPagoResource::collection($matricula->estudiante ? $this->metodosDisponibles($matricula->estudiante) : collect())
                 : [],
             'resumen' => [
                 'pagado' => $this->pagos->totalPagado($matricula, $transacciones),
@@ -113,16 +115,11 @@ class PagoApiController extends Controller
 
             $mensaje = "Plan de {$datos['cuotas']} cuotas generado.";
         } else {
-            $resultado = $this->pagos->procesarPagoUnico(
-                $matricula,
-                $metodo,
-                (float) $datos['monto'],
-                $request->user(),
-            );
+            $cargo = $this->pagos->registrarCargo($matricula, $metodo, (float) $datos['monto'], $request->user());
 
-            $mensaje = $resultado['transaccion']->estado === 'aprobada'
+            $mensaje = $cargo->estado === 'aprobada'
                 ? 'Pago registrado y aprobado.'
-                : 'Intento de pago iniciado.';
+                : 'Cargo registrado: queda por pagar.';
         }
 
         $transacciones = $matricula->transacciones()->with('metodoPago')->orderBy('numero_cuota')->orderBy('created_at')->get();
@@ -140,55 +137,66 @@ class PagoApiController extends Controller
 
     public function pagarMatricula(EstudiantePagoRequest $request, Matricula $matricula): JsonResponse
     {
-        $this->verificarAcceso($request, $matricula);
+        $this->verificarPuedePagar($request, $matricula);
 
-        $datos = $request->validated();
-        $metodo = isset($datos['metodo_pago_id'])
-            ? MetodoPago::find($datos['metodo_pago_id'])
-            : $matricula->estudiante?->metodosPago()->first();
+        $resultado = $this->pagos->pagarMatricula($matricula, $this->metodoElegido($request, $matricula), $request->user());
 
-        $monto = isset($datos['monto'])
-            ? (float) $datos['monto']
-            : (float) ($matricula->cohorte?->programa?->precio ?? 0);
-
-        if ($monto <= 0) {
-            throw ValidationException::withMessages([
-                'monto' => 'Debes indicar un monto mayor que cero para procesar el pago.',
-            ]);
-        }
-
-        $resultado = $this->pagos->procesarPagoUnico($matricula, $metodo, $monto, $request->user());
-
-        return response()->json([
-            'transaccion' => new TransaccionResource($resultado['transaccion']->load('metodoPago')),
-            'client_secret' => $resultado['client_secret'],
-            'proveedor' => $resultado['transaccion']->proveedor,
-            'mensaje' => $resultado['transaccion']->estado === 'aprobada'
-                ? 'Pago procesado correctamente.'
-                : 'Pago iniciado. Completa la confirmación.',
-        ], 201);
+        return $this->respuestaDePago($resultado, 201);
     }
 
     public function pagarTransaccion(EstudiantePagoRequest $request, Transaccion $transaccion): JsonResponse
     {
         $matricula = $transaccion->matricula;
-        $this->verificarAcceso($request, $matricula);
+        $this->verificarPuedePagar($request, $matricula);
 
-        $datos = $request->validated();
-        $metodo = isset($datos['metodo_pago_id'])
-            ? MetodoPago::find($datos['metodo_pago_id'])
-            : $matricula->estudiante?->metodosPago()->first();
+        $resultado = $this->pagos->pagar($transaccion, $this->metodoElegido($request, $matricula), $request->user());
 
-        $resultado = $this->pagos->pagarCuota($transaccion, $metodo, $request->user());
+        return $this->respuestaDePago($resultado, 200);
+    }
+
+    /** @param array{transaccion: Transaccion, url: ?string} $resultado */
+    private function respuestaDePago(array $resultado, int $codigo): JsonResponse
+    {
+        $cargo = $resultado['transaccion']->load('metodoPago');
 
         return response()->json([
-            'transaccion' => new TransaccionResource($resultado['transaccion']),
-            'client_secret' => $resultado['client_secret'],
-            'proveedor' => $resultado['transaccion']->proveedor,
-            'mensaje' => $resultado['transaccion']->estado === 'aprobada'
-                ? 'Cuota pagada correctamente.'
-                : 'Pago de cuota iniciado.',
-        ]);
+            'transaccion' => new TransaccionResource($cargo),
+            'url' => $resultado['url'],
+            'mensaje' => match (true) {
+                $cargo->estado === 'aprobada' => 'Pago procesado correctamente.',
+                $resultado['url'] !== null => 'Te llevamos a la página de pago.',
+                default => 'Estamos confirmando tu pago.',
+            },
+        ], $codigo);
+    }
+
+    private function metodoElegido(Request $request, Matricula $matricula): ?MetodoPago
+    {
+        $id = $request->input('metodo_pago_id');
+
+        return $id
+            ? MetodoPago::find($id)
+            : $matricula->estudiante?->metodosPago()->orderByDesc('predeterminado')->first();
+    }
+
+    /** En modo Stripe no se ofrecen tarjetas: se ingresan solo en la página de Stripe. */
+    private function metodosDisponibles(User $usuario): Collection
+    {
+        return $usuario->metodosPago()
+            ->when(config('services.payments.driver') === 'stripe', fn ($q) => $q->where('tipo', '!=', 'tarjeta'))
+            ->get();
+    }
+
+    /** En modo Stripe solo paga el dueño de la matrícula. */
+    private function verificarPuedePagar(Request $request, Matricula $matricula): void
+    {
+        $this->verificarAcceso($request, $matricula);
+
+        abort_if(
+            config('services.payments.driver') === 'stripe' && $matricula->estudiante_id !== $request->user()->id,
+            403,
+            'Solo el estudiante puede pagar su matrícula en Stripe.',
+        );
     }
 
     public function aprobar(Transaccion $transaccion): JsonResponse

@@ -244,10 +244,13 @@ class TransversalesApiTest extends TestCase
     public function test_un_pago_unico_aprobado_activa_la_matricula(): void
     {
         $admin = $this->admin();
-        $matricula = $this->matricula($this->estudiante());
+        $estudiante = $this->estudiante();
+        $matricula = $this->matricula($estudiante);
+        $metodo = MetodoPago::create(['user_id' => $estudiante->id, 'tipo' => 'qr', 'titular' => 'DEMO']);
 
         $this->actingAs($admin)->postJson("/api/panel/matriculas/{$matricula->id}/cobrar", [
             'monto' => 1500,
+            'metodo_pago_id' => $metodo->id,
         ])->assertCreated()->assertJsonPath('resumen.estado_matricula', 'activo');
 
         $this->assertSame(EstadoMatricula::Activo, $matricula->fresh()->estado);

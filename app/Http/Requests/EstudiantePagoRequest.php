@@ -12,11 +12,11 @@ class EstudiantePagoRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    // El importe lo fija el sistema: cualquier «monto» enviado se ignora.
     public function rules(): array
     {
         return [
             'metodo_pago_id' => ['nullable', 'uuid', Rule::exists('metodos_pago', 'id')],
-            'monto' => ['sometimes', 'numeric', 'min:0.01', 'max:999999.99'],
         ];
     }
 
@@ -24,14 +24,6 @@ class EstudiantePagoRequest extends FormRequest
     {
         return [
             'metodo_pago_id' => 'método de pago',
-            'monto' => 'monto',
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'monto.min' => 'El monto debe ser mayor que cero.',
         ];
     }
 }

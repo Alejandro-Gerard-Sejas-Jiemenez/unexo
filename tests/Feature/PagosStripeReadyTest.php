@@ -99,6 +99,7 @@ class PagosStripeReadyTest extends TestCase
         $estudiante = $this->estudiante();
         $ajeno = $this->estudiante();
         $matricula = $this->matriculaConPrograma($estudiante, 600);
+        MetodoPago::create(['user_id' => $estudiante->id, 'tipo' => 'qr', 'titular' => 'DEMO']);
 
         $this->actingAs($admin)->postJson("/api/panel/matriculas/{$matricula->id}/cobrar", [
             'monto' => 600,
@@ -146,21 +147,23 @@ class PagosStripeReadyTest extends TestCase
         $tx = Transaccion::create([
             'matricula_id' => $matricula->id,
             'monto' => 800,
-            'estado' => 'requiere_accion',
+            'estado' => 'procesando',
             'referencia' => 'pi_test_999',
             'proveedor' => 'stripe',
-            'stripe_payment_intent_id' => 'pi_test_999',
-            'pagado_en' => now(),
+            'stripe_checkout_session_id' => 'cs_test_999',
+            'stripe_intento' => 1,
         ]);
 
         // Firma inválida -> 400
         $payload = json_encode([
             'id' => 'evt_test_1',
-            'type' => 'payment_intent.succeeded',
+            'type' => 'checkout.session.completed',
             'data' => [
                 'object' => [
-                    'id' => 'pi_test_999',
-                    'latest_charge' => 'ch_test_999',
+                    'id' => 'cs_test_999',
+                    'payment_status' => 'paid',
+                    'amount_total' => 80000,
+                    'currency' => 'bob',
                 ],
             ],
         ]);

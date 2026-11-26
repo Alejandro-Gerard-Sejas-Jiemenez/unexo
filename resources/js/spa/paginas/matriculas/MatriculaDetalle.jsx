@@ -460,7 +460,7 @@ export default function MatriculaDetalle() {
                                         value={cobro.metodo_pago_id}
                                         onChange={(e) => setCobro((c) => ({ ...c, metodo_pago_id: e.target.value }))}
                                     >
-                                        <option value="">En caja / sin método</option>
+                                        <option value="">Sin método (queda por pagar)</option>
                                         {metodosEstudiante.map((m) => (
                                             <option key={m.id} value={m.id}>
                                                 {m.descripcion} — {m.titular}
@@ -473,7 +473,7 @@ export default function MatriculaDetalle() {
 
                         <button type="submit" disabled={enviandoAccion} className="btn btn-primario mt-2">
                             <Icono nombre="tarjeta" />
-                            {enviandoAccion ? 'Procesando…' : cobro.cuotas ? 'Generar plan de cuotas' : 'Registrar pago'}
+                            {enviandoAccion ? 'Procesando…' : cobro.cuotas ? 'Generar plan de cuotas' : 'Registrar cargo'}
                         </button>
                     </form>
                 </div>
@@ -506,7 +506,7 @@ export default function MatriculaDetalle() {
                                 </span>
                             )}
                         </td>
-                        <td className="px-6 py-4 text-xs text-(--color-texto-suave)">{t.metodo ?? 'En caja'}</td>
+                        <td className="px-6 py-4 text-xs text-(--color-texto-suave)">{t.metodo ?? '—'}</td>
                         <td className="px-6 py-4 text-sm font-medium tabular-nums">
                             {Number(t.monto ?? 0).toFixed(2)} {moneda}
                         </td>
@@ -514,7 +514,7 @@ export default function MatriculaDetalle() {
                             <Insignia tono={tonoEstado(t.estado)}>{t.estado_label}</Insignia>
                         </td>
                         <td className="px-6 py-4 text-right whitespace-nowrap">
-                            {t.estado === 'pendiente' && (
+                            {t.puede_resolver_manual && matricula.estado !== 'retirado' && (
                                 <div className="inline-flex gap-3">
                                     <button
                                         type="button"

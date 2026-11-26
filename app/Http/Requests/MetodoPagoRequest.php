@@ -17,19 +17,15 @@ class MetodoPagoRequest extends FormRequest
         $usaStripe = config('services.payments.driver') === 'stripe';
 
         return [
-            'tipo' => ['required', Rule::in(['tarjeta', 'qr', 'transferencia'])],
+            'tipo' => ['required', Rule::in($usaStripe ? ['qr', 'transferencia'] : ['tarjeta', 'qr', 'transferencia'])],
             'titular' => ['required', 'string', 'max:120'],
             'numero' => [
-                Rule::requiredIf(fn () => $this->input('tipo') === 'tarjeta' && ! $usaStripe && ! $this->filled('stripe_payment_method_id')),
+                Rule::requiredIf(fn () => ! $usaStripe && $this->input('tipo') === 'tarjeta'),
                 'nullable', 'string', 'min:13', 'max:23',
             ],
             'vencimiento' => [
-                Rule::requiredIf(fn () => $this->input('tipo') === 'tarjeta' && ! $usaStripe && ! $this->filled('stripe_payment_method_id')),
+                Rule::requiredIf(fn () => ! $usaStripe && $this->input('tipo') === 'tarjeta'),
                 'nullable', 'string', 'regex:/^(0[1-9]|1[0-2])\/\d{2}$/',
-            ],
-            'stripe_payment_method_id' => [
-                Rule::requiredIf(fn () => $this->input('tipo') === 'tarjeta' && $usaStripe),
-                'nullable', 'string', 'max:100',
             ],
             'etiqueta' => ['nullable', 'string', 'max:60'],
             'predeterminado' => ['boolean'],
@@ -43,7 +39,6 @@ class MetodoPagoRequest extends FormRequest
             'titular' => 'titular',
             'numero' => 'número de tarjeta',
             'vencimiento' => 'fecha de vencimiento',
-            'stripe_payment_method_id' => 'método de pago de Stripe',
             'etiqueta' => 'etiqueta',
         ];
     }
@@ -51,6 +46,9 @@ class MetodoPagoRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'tipo.in' => config('services.payments.driver') === 'stripe'
+                ? 'Con Stripe activo, las tarjetas se ingresan solo en la página de Stripe.'
+                : 'El tipo de método no es válido.',
             'vencimiento.regex' => 'La fecha de vencimiento debe tener el formato MM/AA.',
             'numero.min' => 'El número de tarjeta no parece completo.',
         ];
