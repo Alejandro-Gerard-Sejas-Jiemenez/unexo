@@ -94,8 +94,15 @@ export default function useListado(ruta) {
     );
 
     const limpiarFiltros = useCallback(() => {
-        setParametros(new URLSearchParams());
-    }, [setParametros]);
+        // El tamaño de página no es un filtro: se conserva.
+        const tamano = parametros.get('per_page');
+        setParametros(new URLSearchParams(tamano ? { per_page: tamano } : {}));
+    }, [parametros, setParametros]);
+
+    const cambiarTamano = useCallback(
+        (tamano) => filtrarVarios({ per_page: String(tamano) }),
+        [filtrarVarios],
+    );
 
     const irAPagina = useCallback(
         (numero) => {
@@ -119,6 +126,7 @@ export default function useListado(ruta) {
         filtrarConRetraso,
         limpiarFiltros,
         irAPagina,
+        cambiarTamano,
         refrescar: () => recargar(clave, true),
     };
 }

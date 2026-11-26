@@ -13,7 +13,7 @@ import useListado from '../../hooks/useListado';
 export default function ProgramasLista() {
     const { usuario } = useAuth();
     const esAdmin = usuario?.rol === 'administrador';
-    const { filas, meta, cargando, aviso, valorDe, filtrarVarios, filtrarConRetraso, limpiarFiltros, irAPagina } =
+    const { filas, meta, cargando, aviso, valorDe, filtrarVarios, filtrarConRetraso, limpiarFiltros, irAPagina, cambiarTamano } =
         useListado('/catalogo/programas');
 
     const [busqueda, setBusqueda] = useState(valorDe('q'));
@@ -161,7 +161,7 @@ export default function ProgramasLista() {
                 ))}
             </TablaDatos>
 
-            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="programas" />
+            <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="programas" />
         </section>
     );
 }

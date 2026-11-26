@@ -13,7 +13,7 @@ import useListado from '../../hooks/useListado';
 export default function ModulosLista() {
     const { usuario } = useAuth();
     const esAdmin = usuario?.rol === 'administrador';
-    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina } =
+    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina, cambiarTamano } =
         useListado('/catalogo/modulos');
 
     const [busqueda, setBusqueda] = useState(valorDe('q'));
@@ -122,7 +122,7 @@ export default function ModulosLista() {
                 ))}
             </TablaDatos>
 
-            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="módulos" />
+            <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="módulos" />
         </section>
     );
 }

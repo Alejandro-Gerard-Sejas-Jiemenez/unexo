@@ -32,7 +32,7 @@ function claseEstado(estado) {
 }
 
 export default function EdicionesLista() {
-    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina } =
+    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina, cambiarTamano } =
         useListado('/cohortes');
 
     const [busqueda, setBusqueda] = useState(valorDe('q'));
@@ -153,7 +153,7 @@ export default function EdicionesLista() {
                 ))}
             </TablaDatos>
 
-            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="ediciones" />
+            <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="ediciones" />
         </section>
     );
 }

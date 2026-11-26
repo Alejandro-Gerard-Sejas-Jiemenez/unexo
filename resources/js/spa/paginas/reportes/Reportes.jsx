@@ -6,8 +6,10 @@ import { claseControl } from '../../componentes/Campo';
 import Cargador from '../../componentes/Cargador';
 import EncabezadoPagina from '../../componentes/EncabezadoPagina';
 import Icono from '../../componentes/Icono';
+import Paginacion from '../../componentes/Paginacion';
 import TablaDatos from '../../componentes/TablaDatos';
 import { useToast } from '../../componentes/ToastContext';
+import usePaginaLocal from '../../hooks/usePaginaLocal';
 
 const REPORTES = [
     {
@@ -47,6 +49,47 @@ const ETIQUETA_ESTADO = {
     finalizado: 'Finalizado',
     cancelado: 'Cancelado',
 };
+
+/** Los totales y las descargas usan todas las filas: solo se pagina lo que se ve. */
+function SeccionReporte({ seccion, avisoSinDatos }) {
+    const pagina = usePaginaLocal(seccion.filas);
+
+    return (
+        <div>
+            <h2 className="mb-3 text-lg font-semibold">{seccion.titulo}</h2>
+            <TablaDatos
+                caption={seccion.titulo}
+                columnas={seccion.columnas.map((c) => ({
+                    etiqueta: c.titulo,
+                    alinear: c.tipo === 'entero' || c.tipo === 'porcentaje' ? 'derecha' : 'izquierda',
+                }))}
+                vacio={seccion.filas.length === 0}
+                vacioIcono="reportes"
+                vacioTitulo="Sin filas"
+                vacioDescripcion={seccion.vacio ?? avisoSinDatos}
+            >
+                {pagina.visibles.map((fila, i) => (
+                    <tr key={i} className="transition-colors hover:bg-(--color-superficie-2)/60">
+                        {fila.map((celda, j) => {
+                            const esNum =
+                                seccion.columnas[j]?.tipo === 'entero' ||
+                                seccion.columnas[j]?.tipo === 'porcentaje';
+                            return (
+                                <td
+                                    key={j}
+                                    className={`px-6 py-4 text-sm ${esNum ? 'text-right tabular-nums' : ''}`}
+                                >
+                                    {celda}
+                                </td>
+                            );
+                        })}
+                    </tr>
+                ))}
+            </TablaDatos>
+            <Paginacion meta={pagina.meta} irAPagina={pagina.irAPagina} cambiarTamano={pagina.cambiarTamano} sustantivo="filas" />
+        </div>
+    );
+}
 
 export default function Reportes() {
     const { mostrar } = useToast();
@@ -390,38 +433,11 @@ export default function Reportes() {
                     )}
 
                     {reporte.secciones.map((seccion) => (
-                        <div key={seccion.titulo}>
-                            <h2 className="mb-3 text-lg font-semibold">{seccion.titulo}</h2>
-                            <TablaDatos
-                                caption={seccion.titulo}
-                                columnas={seccion.columnas.map((c) => ({
-                                    etiqueta: c.titulo,
-                                    alinear: c.tipo === 'entero' || c.tipo === 'porcentaje' ? 'derecha' : 'izquierda',
-                                }))}
-                                vacio={seccion.filas.length === 0}
-                                vacioIcono="reportes"
-                                vacioTitulo="Sin filas"
-                                vacioDescripcion={seccion.vacio ?? reporte.aviso_sin_datos}
-                            >
-                                {seccion.filas.map((fila, i) => (
-                                    <tr key={i} className="transition-colors hover:bg-(--color-superficie-2)/60">
-                                        {fila.map((celda, j) => {
-                                            const esNum =
-                                                seccion.columnas[j]?.tipo === 'entero' ||
-                                                seccion.columnas[j]?.tipo === 'porcentaje';
-                                            return (
-                                                <td
-                                                    key={j}
-                                                    className={`px-6 py-4 text-sm ${esNum ? 'text-right tabular-nums' : ''}`}
-                                                >
-                                                    {celda}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                ))}
-                            </TablaDatos>
-                        </div>
+                        <SeccionReporte
+                            key={`${activo}|${query}|${seccion.titulo}`}
+                            seccion={seccion}
+                            avisoSinDatos={reporte.aviso_sin_datos}
+                        />
                     ))}
                 </div>
             )}

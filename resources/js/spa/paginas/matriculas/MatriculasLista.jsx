@@ -26,7 +26,7 @@ const ESTADOS = [
 ];
 
 export default function MatriculasLista() {
-    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina } =
+    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina, cambiarTamano } =
         useListado('/matriculas');
 
     const [busqueda, setBusqueda] = useState(valorDe('q'));
@@ -157,7 +157,7 @@ export default function MatriculasLista() {
                 ))}
             </TablaDatos>
 
-            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="matrículas" />
+            <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="matrículas" />
         </section>
     );
 }

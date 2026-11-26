@@ -30,7 +30,7 @@ function inicialesDocente(nombre) {
 }
 
 export default function GruposLista() {
-    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina } =
+    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina, cambiarTamano } =
         useListado('/grupos');
 
     const [busqueda, setBusqueda] = useState(valorDe('q'));
@@ -211,7 +211,7 @@ export default function GruposLista() {
                 })}
             </TablaDatos>
 
-            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="grupos" />
+            <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="grupos" />
         </section>
     );
 }

@@ -9,6 +9,9 @@ return [
     // Filas por página en los listados.
     'por_pagina' => 10,
 
+    // Opciones del selector «por página» de las tablas.
+    'tamanos_pagina' => [5, 10, 25, 50],
+
     // Máximo de opciones que se cargan en un <select>; si hay más, el formulario avisa.
     'opciones_select' => 100,
 

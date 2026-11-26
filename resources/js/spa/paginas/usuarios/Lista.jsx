@@ -53,7 +53,7 @@ export default function UsuariosLista() {
         filtrarVarios,
         filtrarConRetraso,
         limpiarFiltros,
-        irAPagina,
+        irAPagina, cambiarTamano,
         refrescar,
     } = useListado('/usuarios');
 
@@ -214,7 +214,7 @@ export default function UsuariosLista() {
                 ))}
             </TablaDatos>
 
-            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="usuarios" />
+            <Paginacion meta={meta} irAPagina={irAPagina} cambiarTamano={cambiarTamano} sustantivo="usuarios" />
 
             <DialogoConfirmacion
                 abierto={Boolean(confirmando)}
