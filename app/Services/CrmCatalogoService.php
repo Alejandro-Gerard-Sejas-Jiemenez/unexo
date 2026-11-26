@@ -7,6 +7,7 @@ use App\Enums\EstadoPlanificacion;
 use App\Models\Cohorte;
 use App\Models\Modulo;
 use App\Models\Programa;
+use App\Support\ConsultaTexto;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -21,11 +22,11 @@ class CrmCatalogoService
     public function programasVisibles(?string $busqueda = null): Collection
     {
         return $this->consultaProgramas()
-            ->when($busqueda, fn (Builder $q) => $q->where(fn (Builder $b) => $b
-                ->where('nombre', 'like', "%{$busqueda}%")
-                ->orWhere('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('descripcion', 'like', "%{$busqueda}%")
-            ))
+            ->when($busqueda, fn (Builder $q) => $q->where(function (Builder $b) use ($busqueda) {
+                ConsultaTexto::dondeContiene($b, 'nombre', $busqueda);
+                ConsultaTexto::dondeContiene($b, 'codigo', $busqueda, true);
+                ConsultaTexto::dondeContiene($b, 'descripcion', $busqueda, true);
+            }))
             ->orderBy('nombre')
             ->get();
     }
@@ -39,11 +40,11 @@ class CrmCatalogoService
     public function modulosVisibles(?string $busqueda = null): Collection
     {
         return $this->consultaModulos()
-            ->when($busqueda, fn (Builder $q) => $q->where(fn (Builder $b) => $b
-                ->where('nombre', 'like', "%{$busqueda}%")
-                ->orWhere('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('descripcion', 'like', "%{$busqueda}%")
-            ))
+            ->when($busqueda, fn (Builder $q) => $q->where(function (Builder $b) use ($busqueda) {
+                ConsultaTexto::dondeContiene($b, 'nombre', $busqueda);
+                ConsultaTexto::dondeContiene($b, 'codigo', $busqueda, true);
+                ConsultaTexto::dondeContiene($b, 'descripcion', $busqueda, true);
+            }))
             ->orderBy('nombre')
             ->get();
     }

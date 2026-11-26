@@ -1,24 +1,19 @@
 import { useId, useState } from 'react';
 
-/**
- * Tendencia en el tiempo: una sola serie, así que área + línea en un tono y sin
- * leyenda (el título nombra la serie). Lleva capa de hover con guía y globo,
- * que es lo que se espera de un gráfico en pantalla.
- */
-export default function SerieTemporal({ titulo, descripcion, datos }) {
+export default function SerieTemporal({ titulo, descripcion, datos = [] }) {
     const id = useId();
     const [activo, setActivo] = useState(null);
 
     const ANCHO = 640;
     const ALTO = 180;
-    const MARGEN = { arriba: 12, derecha: 8, abajo: 24, izquierda: 36 };
+    const MARGEN = { arriba: 14, derecha: 12, abajo: 24, izquierda: 36 };
 
     if (datos.length === 0) {
         return (
-            <section className="superficie p-4">
+            <section className="superficie p-5">
                 <h3 className="text-sm font-semibold">{titulo}</h3>
                 <p className="mt-4 text-sm text-[var(--color-texto-suave)]">
-                    Todavía no hay accesos registrados en el periodo.
+                    Todavía no hay accesos registrados en el período.
                 </p>
             </section>
         );
@@ -29,14 +24,20 @@ export default function SerieTemporal({ titulo, descripcion, datos }) {
     const altoUtil = ALTO - MARGEN.arriba - MARGEN.abajo;
     const paso = datos.length > 1 ? anchoUtil / (datos.length - 1) : 0;
 
-    const x = (i) => MARGEN.izquierda + i * paso;
+    const x = (i) => (datos.length === 1 ? MARGEN.izquierda + anchoUtil / 2 : MARGEN.izquierda + i * paso);
     const y = (v) => MARGEN.arriba + altoUtil - (v / tope) * altoUtil;
 
     const linea = datos.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(d.valor)}`).join(' ');
-    const area = `${linea} L${x(datos.length - 1)},${MARGEN.arriba + altoUtil} L${x(0)},${MARGEN.arriba + altoUtil} Z`;
+    const area =
+        datos.length === 1
+            ? `M${x(0) - 2},${MARGEN.arriba + altoUtil} L${x(0)},${y(datos[0].valor)} L${x(0) + 2},${MARGEN.arriba + altoUtil} Z`
+            : `${linea} L${x(datos.length - 1)},${MARGEN.arriba + altoUtil} L${x(0)},${MARGEN.arriba + altoUtil} Z`;
+
+    const porcentajeTooltip =
+        activo !== null ? Math.min(88, Math.max(12, (x(activo) / ANCHO) * 100)) : 50;
 
     return (
-        <section className="superficie p-4">
+        <section className="superficie p-5">
             <h3 className="text-sm font-semibold">{titulo}</h3>
             {descripcion && (
                 <p className="mt-0.5 text-xs text-[var(--color-texto-suave)]">{descripcion}</p>
@@ -45,9 +46,9 @@ export default function SerieTemporal({ titulo, descripcion, datos }) {
             <div className="relative mt-3">
                 <svg
                     viewBox={`0 0 ${ANCHO} ${ALTO}`}
-                    className="w-full"
+                    className="w-full select-none"
                     role="img"
-                    aria-label={`${titulo}. Máximo ${tope} en el periodo.`}
+                    aria-label={`${titulo}. Máximo ${tope} en el período.`}
                     onMouseLeave={() => setActivo(null)}
                 >
                     <defs>
@@ -57,7 +58,6 @@ export default function SerieTemporal({ titulo, descripcion, datos }) {
                         </linearGradient>
                     </defs>
 
-                    {/* Rejilla recesiva: guía la lectura sin competir con el dato. */}
                     {[0, 0.5, 1].map((f) => (
                         <g key={f}>
                             <line
@@ -90,7 +90,7 @@ export default function SerieTemporal({ titulo, descripcion, datos }) {
                         strokeLinecap="round"
                     />
 
-                    {activo !== null && (
+                    {activo !== null && datos[activo] && (
                         <>
                             <line
                                 x1={x(activo)}
@@ -99,8 +99,8 @@ export default function SerieTemporal({ titulo, descripcion, datos }) {
                                 y2={MARGEN.arriba + altoUtil}
                                 stroke="var(--color-texto-suave)"
                                 strokeWidth="1"
+                                strokeDasharray="3 3"
                             />
-                            {/* Anillo de superficie para que el punto se despegue del área. */}
                             <circle
                                 cx={x(activo)}
                                 cy={y(datos[activo].valor)}
@@ -112,26 +112,44 @@ export default function SerieTemporal({ titulo, descripcion, datos }) {
                         </>
                     )}
 
-                    {/* Zonas de contacto anchas: el objetivo es mayor que la marca. */}
-                    {datos.map((d, i) => (
-                        <rect
-                            key={d.etiqueta}
-                            x={x(i) - paso / 2}
-                            y={MARGEN.arriba}
-                            width={Math.max(paso, 8)}
-                            height={altoUtil}
-                            fill="transparent"
-                            onMouseEnter={() => setActivo(i)}
-                        >
-                            <title>{`${d.etiqueta}: ${d.valor}`}</title>
-                        </rect>
-                    ))}
+                    {datos.map((d, i) => {
+                        const anchoZona = datos.length === 1 ? anchoUtil : Math.max(paso, 12);
+                        return (
+                            <rect
+                                key={d.etiqueta}
+                                x={x(i) - anchoZona / 2}
+                                y={MARGEN.arriba}
+                                width={anchoZona}
+                                height={altoUtil}
+                                fill="transparent"
+                                tabIndex={0}
+                                aria-label={`${d.etiqueta}: ${d.valor}`}
+                                onMouseEnter={() => setActivo(i)}
+                                onClick={() => setActivo((prev) => (prev === i ? null : i))}
+                                onFocus={() => setActivo(i)}
+                                onBlur={() => setActivo(null)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'ArrowRight') {
+                                        e.preventDefault();
+                                        setActivo(Math.min(datos.length - 1, i + 1));
+                                    } else if (e.key === 'ArrowLeft') {
+                                        e.preventDefault();
+                                        setActivo(Math.max(0, i - 1));
+                                    } else if (e.key === 'Escape') {
+                                        setActivo(null);
+                                    }
+                                }}
+                            >
+                                <title>{`${d.etiqueta}: ${d.valor}`}</title>
+                            </rect>
+                        );
+                    })}
                 </svg>
 
-                {activo !== null && (
+                {activo !== null && datos[activo] && (
                     <p
-                        className="superficie pointer-events-none absolute top-0 px-2 py-1 text-xs"
-                        style={{ left: `${(x(activo) / ANCHO) * 100}%`, transform: 'translateX(-50%)' }}
+                        className="superficie pointer-events-none absolute top-0 px-2.5 py-1 text-xs shadow-sm"
+                        style={{ left: `${porcentajeTooltip}%`, transform: 'translateX(-50%)' }}
                     >
                         <b>{datos[activo].valor}</b> el {datos[activo].etiqueta}
                     </p>

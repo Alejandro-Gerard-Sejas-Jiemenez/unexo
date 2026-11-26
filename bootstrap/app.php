@@ -3,6 +3,7 @@
 use App\Http\Middleware\RegistraAcceso;
 use App\Http\Middleware\RolRequerido;
 use App\Http\Middleware\SoloClienteApi;
+use App\Http\Middleware\SoloUsuarioPanel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,8 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'rol' => RolRequerido::class,
             'cliente.api' => SoloClienteApi::class,
+            'usuario.panel' => SoloUsuarioPanel::class,
         ]);
-        $middleware->trustProxies(at: '*');
+        $proxies = env('TRUSTED_PROXIES', '*');
+        $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', (string) $proxies)));
         $middleware->redirectUsersTo('/panel');
     })
     ->withExceptions(function (Exceptions $exceptions): void {

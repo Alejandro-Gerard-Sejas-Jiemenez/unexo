@@ -19,6 +19,7 @@ class CohortePanelResource extends JsonResource
             'programa_id' => $this->programa_id,
             'programa' => $this->whenLoaded('programa', fn () => [
                 'id' => $this->programa->id,
+                'codigo' => $this->programa->codigo,
                 'nombre' => $this->programa->nombre,
                 'version' => $this->programa->version,
             ]),

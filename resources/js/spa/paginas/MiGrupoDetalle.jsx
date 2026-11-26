@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import cliente from '../api/cliente';
+import Cargador from '../componentes/Cargador';
+import Icono from '../componentes/Icono';
+import Insignia, { tonoEstado } from '../componentes/Insignia';
+import TablaDatos from '../componentes/TablaDatos';
 
-/** Detalle de un grupo del docente, con la lista de estudiantes inscritos. */
 export default function MiGrupoDetalle() {
     const { id } = useParams();
-    const navegar = useNavigate();
     const [datos, setDatos] = useState(null);
     const [aviso, setAviso] = useState(null);
     const [cargando, setCargando] = useState(true);
@@ -24,77 +26,139 @@ export default function MiGrupoDetalle() {
         };
     }, [id]);
 
-    if (cargando) return <p role="status" className="text-[var(--color-texto-suave)]">Cargando…</p>;
-    if (aviso) return <p role="alert" className="text-sm text-[var(--color-error)]">{aviso}</p>;
+    if (cargando) return <Cargador texto="Cargando" />;
+    if (aviso) {
+        return (
+            <p role="alert" className="superficie border-[var(--color-error)] p-4 text-sm text-[var(--color-error)]">
+                {aviso}
+            </p>
+        );
+    }
 
     const g = datos.grupo;
+    const horarios = g.horarios ?? [];
+    const subtitulo = [g.cohorte?.programa, g.cohorte?.nombre ?? 'Módulo suelto', g.nombre]
+        .filter(Boolean)
+        .join(' · ');
 
     return (
-        <section className="max-w-3xl">
-            <div className="mb-4 flex items-start justify-between">
+        <section>
+            <div className="mb-4">
+                <Link
+                    to="/mis-grupos"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-texto-suave)] no-underline transition-colors hover:text-[var(--color-acento)]"
+                >
+                    <Icono nombre="volver" className="h-4 w-4" />
+                    Volver a mis grupos
+                </Link>
+            </div>
+
+            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                 <div>
-                    <h1 className="text-2xl font-semibold">{g.modulo?.nombre}</h1>
-                    <p className="text-sm text-[var(--color-texto-suave)]">
-                        {g.nombre} · {g.modalidad_label} · {g.estado_label}
-                        {g.cohorte?.nombre ? ` · ${g.cohorte.nombre}` : ''}
-                    </p>
+                    <h1 className="text-3xl font-extrabold tracking-tight">{g.modulo?.nombre}</h1>
+                    <p className="mt-2 text-lg text-[var(--color-texto-suave)]">{subtitulo}</p>
                 </div>
-                <button type="button" onClick={() => navegar('/app/mis-grupos')}
-                    className="superficie px-4 py-2 text-sm">
-                    Volver
-                </button>
+                <div>
+                    <Insignia tono={tonoEstado(g.fase)} className="!px-3 !py-1 !text-sm shadow-sm">
+                        {g.fase_etiqueta ?? g.estado_label}
+                    </Insignia>
+                </div>
             </div>
 
-            <div className="superficie mb-6 p-4 text-sm">
-                <p><b>Periodo:</b> {g.fecha_inicio ?? '—'} → {g.fecha_fin ?? '—'}</p>
-                {(g.horarios ?? []).length > 0 && (
-                    <p className="mt-1">
-                        <b>Horarios:</b>{' '}
-                        {g.horarios.map((h) => `${h.dia_label} ${h.hora_inicio}–${h.hora_fin}`).join(' · ')}
-                    </p>
-                )}
-                {g.aula && <p className="mt-1"><b>Aula:</b> {g.aula}</p>}
-                {g.enlace_videoconferencia && (
-                    <p className="mt-1">
-                        <b>Videoconferencia:</b>{' '}
-                        <a href={g.enlace_videoconferencia} target="_blank" rel="noreferrer">
-                            {g.enlace_videoconferencia}
-                        </a>
-                    </p>
-                )}
-            </div>
-
-            <h2 className="mb-2 text-lg font-semibold">
-                Estudiantes inscritos ({datos.estudiantes.length})
-            </h2>
-            <div className="superficie overflow-hidden">
-                <table className="w-full border-collapse text-sm">
-                    <caption className="sr-only">Estudiantes inscritos en el grupo</caption>
-                    <thead>
-                        <tr className="border-b border-[var(--color-borde)] text-left">
-                            <th scope="col" className="p-3">Estudiante</th>
-                            <th scope="col" className="p-3">Correo</th>
-                            <th scope="col" className="p-3">Matrícula</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {datos.estudiantes.length === 0 && (
-                            <tr>
-                                <td colSpan={3} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    Todavía no hay estudiantes inscritos.
-                                </td>
-                            </tr>
+            <div className="superficie mb-10 max-w-3xl overflow-hidden rounded-xl shadow-sm">
+                <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                    <h2 className="text-lg font-semibold">Detalles del grupo</h2>
+                </div>
+                <div className="p-6">
+                    <dl className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
+                        <div>
+                            <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">Período</dt>
+                            <dd className="text-base tabular-nums">{g.periodo_texto || '—'}</dd>
+                        </div>
+                        <div>
+                            <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">Modalidad</dt>
+                            <dd className="text-base">
+                                {g.modalidad_label}
+                                {g.aula ? ` · ${g.aula}` : ''}
+                            </dd>
+                        </div>
+                        <div className="sm:col-span-2">
+                            <dt className="mb-2 text-sm font-medium text-[var(--color-texto-suave)]">Horarios</dt>
+                            <dd>
+                                {horarios.length === 0 ? (
+                                    <p className="text-sm text-[var(--color-texto-suave)]">Sin horarios registrados.</p>
+                                ) : (
+                                    <TablaDatos
+                                        caption="Horarios semanales del grupo"
+                                        columnas={[{ etiqueta: 'Día' }, { etiqueta: 'Horario' }]}
+                                    >
+                                        {horarios.map((h, i) => (
+                                            <tr key={i}>
+                                                <td className="px-6 py-3 text-sm font-medium">{h.dia_label}</td>
+                                                <td className="px-6 py-3 text-sm text-[var(--color-texto-suave)] tabular-nums">
+                                                    {h.hora_inicio} – {h.hora_fin}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </TablaDatos>
+                                )}
+                            </dd>
+                        </div>
+                        {g.enlace_videoconferencia && (
+                            <div className="sm:col-span-2">
+                                <dt className="mb-1 text-sm font-medium text-[var(--color-texto-suave)]">
+                                    Enlace de la clase
+                                </dt>
+                                <dd className="text-base break-all">
+                                    <a
+                                        href={g.enlace_videoconferencia}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-[var(--color-acento)] hover:underline"
+                                    >
+                                        <Icono nombre="video" className="h-4 w-4" />
+                                        {g.enlace_videoconferencia}
+                                    </a>
+                                </dd>
+                            </div>
                         )}
-                        {datos.estudiantes.map((e) => (
-                            <tr key={e.id} className="border-b border-[var(--color-borde)]">
-                                <td className="p-3">{e.nombre ?? '—'}</td>
-                                <td className="p-3">{e.email ?? '—'}</td>
-                                <td className="p-3">{e.estado_matricula ?? '—'}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                    </dl>
+                </div>
             </div>
+
+            <div className="mb-6 flex items-center gap-3">
+                <h2 className="text-2xl font-bold">Estudiantes inscritos</h2>
+                <span className="inline-flex items-center justify-center rounded-full bg-[var(--color-superficie-2)] px-2.5 py-0.5 text-sm font-medium text-[var(--color-texto-suave)]">
+                    {datos.estudiantes.length}
+                </span>
+            </div>
+
+            <TablaDatos
+                caption="Estudiantes inscritos en el grupo"
+                columnas={[
+                    { etiqueta: 'Estudiante' },
+                    { etiqueta: 'Correo institucional' },
+                    { etiqueta: 'Estado de matrícula', alinear: 'derecha' },
+                ]}
+                vacio={datos.estudiantes.length === 0}
+                vacioIcono="usuarios"
+                vacioTitulo="No hay estudiantes inscritos"
+                vacioDescripcion="Aparecerán aquí cuando la administración los inscriba."
+            >
+                {datos.estudiantes.map((e) => (
+                    <tr key={e.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <td className="px-6 py-4 text-sm font-medium">{e.nombre ?? '—'}</td>
+                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)]">
+                            {e.correo_institucional || e.email || '—'}
+                        </td>
+                        <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <Insignia tono={tonoEstado(e.estado_matricula)}>
+                                {e.estado_matricula_label ?? e.estado_matricula ?? '—'}
+                            </Insignia>
+                        </td>
+                    </tr>
+                ))}
+            </TablaDatos>
         </section>
     );
 }

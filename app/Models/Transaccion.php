@@ -22,6 +22,13 @@ class Transaccion extends Model
         'referencia',
         'fecha_proceso',
         'registrada_por',
+        'proveedor',
+        'moneda',
+        'stripe_payment_intent_id',
+        'stripe_charge_id',
+        'motivo_rechazo',
+        'fecha_vencimiento',
+        'metadata',
     ];
 
     protected function casts(): array
@@ -31,6 +38,8 @@ class Transaccion extends Model
             'numero_cuota' => 'integer',
             'total_cuotas' => 'integer',
             'fecha_proceso' => 'datetime',
+            'fecha_vencimiento' => 'date',
+            'metadata' => 'array',
         ];
     }
 

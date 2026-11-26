@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Panel;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginPanelRequest;
 use App\Http\Resources\UsuarioResource;
 use App\Models\User;
 use App\Services\BitacoraService;
+use App\Services\MenuService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,25 +16,20 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Autenticación de la SPA. Usa la sesión (Sanctum stateful), no tokens:
- * la cookie va en HttpOnly y el token nunca pasa por JavaScript.
- */
 class AuthController extends Controller
 {
     private const INTENTOS_MAXIMOS = 5;
 
     private const BLOQUEO_SEGUNDOS = 60;
 
-    public function __construct(private readonly BitacoraService $bitacora) {}
+    public function __construct(
+        private readonly BitacoraService $bitacora,
+        private readonly MenuService $menu,
+    ) {}
 
-    public function login(Request $request): JsonResponse
+    public function login(LoginPanelRequest $request): JsonResponse
     {
-        $datos = $request->validate([
-            'usuario' => ['required', 'string'],
-            'password' => ['required', 'string'],
-        ], [], ['usuario' => 'correo', 'password' => 'contraseña']);
-
+        $datos = $request->validated();
         $clave = Str::lower($datos['usuario']).'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($clave, self::INTENTOS_MAXIMOS)) {
@@ -70,7 +67,11 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $this->bitacora->loginExitoso($request, $usuario->id);
 
-        return response()->json(['usuario' => new UsuarioResource($usuario)]);
+        return response()->json([
+            'usuario' => new UsuarioResource($usuario),
+            'menu' => $this->menu->paraSpa($usuario),
+            'permisos' => $this->menu->permisosDe($usuario),
+        ]);
     }
 
     public function logout(Request $request): JsonResponse
@@ -83,9 +84,14 @@ class AuthController extends Controller
         return response()->json(['mensaje' => 'Sesión cerrada.']);
     }
 
-    /** Quién está autenticado. La SPA lo llama al arrancar para restaurar la sesión. */
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['usuario' => new UsuarioResource($request->user())]);
+        $usuario = $request->user();
+
+        return response()->json([
+            'usuario' => new UsuarioResource($usuario),
+            'menu' => $this->menu->paraSpa($usuario),
+            'permisos' => $this->menu->permisosDe($usuario),
+        ]);
     }
 }

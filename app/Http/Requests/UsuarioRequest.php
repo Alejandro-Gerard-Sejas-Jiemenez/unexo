@@ -39,7 +39,8 @@ class UsuarioRequest extends FormRequest
             'correo_institucional' => ['nullable', 'email', 'max:'.config('limites.usuarios.correo_institucional'), Rule::unique('users', 'correo_institucional')->ignore($usuario)],
             'telefono' => ['nullable', 'string', 'max:'.config('limites.usuarios.telefono')],
             'password' => [$usuario ? 'nullable' : 'required', 'string', 'min:8', 'max:'.config('limites.usuarios.password')],
-            'foto_perfil_url' => ['nullable', 'url', 'max:255'],
+            'foto_perfil_url' => ['nullable', 'string', 'max:255'],
+            'foto_perfil' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
         ];
     }
 
@@ -55,15 +56,13 @@ class UsuarioRequest extends FormRequest
             'telefono' => 'teléfono',
             'password' => 'contraseña',
             'foto_perfil_url' => 'foto de perfil',
+            'foto_perfil' => 'foto de perfil',
         ];
     }
 
-    /**
-     * Datos listos para guardar: en una edición sin contraseña nueva, no se toca la actual.
-     */
     public function datosParaGuardar(): array
     {
-        $datos = $this->validated();
+        $datos = $this->safe()->except('foto_perfil');
 
         if ($this->usuarioEditado() && empty($datos['password'])) {
             unset($datos['password']);

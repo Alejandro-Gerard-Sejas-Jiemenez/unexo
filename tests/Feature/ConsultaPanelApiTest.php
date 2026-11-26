@@ -280,4 +280,40 @@ class ConsultaPanelApiTest extends TestCase
 
         $this->assertDatabaseMissing('api_clientes', ['id' => $cliente->id]);
     }
+
+    public function test_el_estudiante_ve_su_curso_pero_no_su_enlace_si_esta_pendiente(): void
+    {
+        $estudiante = $this->estudiante();
+        $modulo = Modulo::create(['codigo' => 'CUR-01', 'nombre' => 'Curso Virtual']);
+        $grupo = Grupo::create([
+            'modulo_id' => $modulo->id,
+            'docente_id' => $this->docente()->id,
+            'nombre' => 'Grupo A',
+            'modalidad' => 'virtual',
+            'estado' => EstadoPlanificacion::EnCurso,
+            'enlace_videoconferencia' => 'https://meet.example.com/privado',
+            'fecha_inicio' => today()->subDay(),
+            'fecha_fin' => today()->addMonth(),
+        ]);
+
+        $matricula = \App\Models\Matricula::create([
+            'estudiante_id' => $estudiante->id,
+            'estado' => \App\Enums\EstadoMatricula::Pendiente,
+            'fecha_matricula' => today(),
+        ]);
+        \App\Models\InscripcionGrupo::create(['matricula_id' => $matricula->id, 'grupo_id' => $grupo->id]);
+
+        $this->actingAs($estudiante)
+            ->getJson("/api/panel/mis-cursos/{$grupo->id}")
+            ->assertOk()
+            ->assertJsonPath('matricula_estado', 'pendiente')
+            ->assertJsonPath('grupo.enlace_videoconferencia', null);
+
+        $matricula->update(['estado' => \App\Enums\EstadoMatricula::Activo]);
+
+        $this->actingAs($estudiante)
+            ->getJson("/api/panel/mis-cursos/{$grupo->id}")
+            ->assertOk()
+            ->assertJsonPath('grupo.enlace_videoconferencia', 'https://meet.example.com/privado');
+    }
 }

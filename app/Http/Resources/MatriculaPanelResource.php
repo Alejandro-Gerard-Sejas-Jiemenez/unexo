@@ -23,6 +23,7 @@ class MatriculaPanelResource extends JsonResource
                 'id' => $this->estudiante->id,
                 'nombre' => $this->estudiante->nombre_completo,
                 'email' => $this->estudiante->email,
+                'correo_institucional' => $this->estudiante->correo_institucional,
             ]),
             'cohorte_id' => $this->cohorte_id,
             'cohorte' => $this->whenLoaded('cohorte', fn () => $this->cohorte ? [
@@ -31,11 +32,14 @@ class MatriculaPanelResource extends JsonResource
                 'programa' => $this->cohorte->relationLoaded('programa')
                     ? $this->cohorte->programa?->nombre
                     : null,
+                'precio' => $this->cohorte->relationLoaded('programa') && $this->cohorte->programa?->precio !== null
+                    ? (float) $this->cohorte->programa->precio
+                    : null,
             ] : null),
             'estado' => $this->estado->value,
             'estado_label' => $this->estado->label(),
             'origen' => $this->origen->value,
-            'origen_label' => $this->origen === \App\Enums\OrigenMatricula::Crm ? 'Desde el CRM' : 'Carga manual',
+            'origen_label' => $this->origen->label(),
             'id_externo_crm' => $this->id_externo_crm,
             'fecha_matricula' => $this->fecha_matricula?->format('Y-m-d'),
             'fecha_retiro' => $this->fecha_retiro?->format('Y-m-d'),
@@ -44,6 +48,7 @@ class MatriculaPanelResource extends JsonResource
                 'id' => $i->id,
                 'grupo_id' => $i->grupo_id,
                 'grupo' => $i->relationLoaded('grupo') ? $i->grupo?->nombre : null,
+                'periodo_texto' => $i->relationLoaded('grupo') ? $i->grupo?->periodo_texto : null,
                 'modulo' => $i->relationLoaded('grupo') && $i->grupo?->relationLoaded('modulo')
                     ? $i->grupo->modulo?->nombre
                     : null,
@@ -53,7 +58,9 @@ class MatriculaPanelResource extends JsonResource
             ])->values()),
             'comprobantes' => $this->whenLoaded('comprobantes', fn () => $this->comprobantes->map(fn ($c) => [
                 'id' => $c->id,
-                'estado' => $c->estado,
+                'estado' => $c->estado->value,
+                'estado_label' => $c->estado->label(),
+                'url_archivo' => url('/api/panel/comprobantes/'.$c->id),
                 'subido_por' => $c->relationLoaded('subidoPor') ? $c->subidoPor?->nombre_completo : null,
                 'fecha_verificacion' => $c->fecha_verificacion?->format('d/m/Y H:i'),
                 'creado' => $c->created_at?->format('d/m/Y H:i'),

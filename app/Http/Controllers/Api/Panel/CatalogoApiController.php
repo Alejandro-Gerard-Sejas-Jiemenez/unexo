@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Panel;
 
 use App\Enums\Certificado;
 use App\Enums\EstadoComercial;
+use App\Enums\Rol;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreModuloRequest;
 use App\Http\Requests\StoreProgramaRequest;
@@ -18,33 +19,35 @@ use App\Services\OrdenModulosService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
-/**
- * CU3: catálogo académico y oferta comercial.
- * Usa las mismas Form Requests que el panel Blade, así que las reglas de
- * validación no se escriben dos veces.
- */
 class CatalogoApiController extends Controller
 {
     public function __construct(private readonly CatalogoConsultaService $catalogo) {}
 
-    // --------------------------------------------------------------- programas
-
     public function programas(Request $request): AnonymousResourceCollection
     {
+        $soloVisibles = $request->user()?->rol !== Rol::Administrador;
+
         return ProgramaPanelResource::collection(
-            $this->catalogo->programas($request->only(['estado', 'atencion', 'q'])),
+            $this->catalogo->programas($request->only(['estado', 'atencion', 'q']), $soloVisibles),
         );
     }
 
-    public function programa(Programa $programa): ProgramaPanelResource
+    public function programa(Request $request, Programa $programa): ProgramaPanelResource
     {
+        if ($request->user()?->rol !== Rol::Administrador) {
+            abort_unless($programa->estado_comercial === EstadoComercial::Abierto, 404);
+        }
+
         return new ProgramaPanelResource($programa->load('modulos'));
     }
 
     public function guardarPrograma(StoreProgramaRequest $request): JsonResponse
     {
-        $programa = Programa::create($request->safe()->except('imagen_portada_url'));
+        $programa = Programa::create($this->datosConPortada($request));
 
         return response()->json([
             'programa' => new ProgramaPanelResource($programa),
@@ -54,15 +57,13 @@ class CatalogoApiController extends Controller
 
     public function actualizarPrograma(UpdateProgramaRequest $request, Programa $programa): JsonResponse
     {
-        $programa->update($request->safe()->except('imagen_portada_url'));
+        $programa->update($this->datosConPortada($request, $programa));
 
         return response()->json([
             'programa' => new ProgramaPanelResource($programa->fresh()),
             'mensaje' => 'Programa actualizado.',
         ]);
     }
-
-    // ------------------------------------------------------- plan de estudio
 
     public function agregarModulo(Request $request, Programa $programa, OrdenModulosService $orden): JsonResponse
     {
@@ -72,7 +73,11 @@ class CatalogoApiController extends Controller
             ['modulo_id' => 'módulo'],
         );
 
-        $orden->agregar($programa, $datos['modulo_id']);
+        if (! $orden->agregar($programa, $datos['modulo_id'])) {
+            throw ValidationException::withMessages([
+                'modulo_id' => 'Ese módulo ya pertenece al plan de estudio del programa.',
+            ]);
+        }
 
         return response()->json([
             'programa' => new ProgramaPanelResource($programa->fresh()->load('modulos')),
@@ -92,7 +97,6 @@ class CatalogoApiController extends Controller
 
     public function moverModulo(Request $request, Programa $programa, Modulo $modulo, OrdenModulosService $orden): JsonResponse
     {
-        // Mismo vocabulario que el panel Blade y que OrdenModulosService.
         $datos = $request->validate(['direccion' => ['required', 'in:subir,bajar']]);
 
         $orden->mover($programa, $modulo, $datos['direccion']);
@@ -103,23 +107,26 @@ class CatalogoApiController extends Controller
         ]);
     }
 
-    // ----------------------------------------------------------------- módulos
-
     public function modulos(Request $request): AnonymousResourceCollection
     {
+        $soloVisibles = $request->user()?->rol !== Rol::Administrador;
+
         return ModuloPanelResource::collection(
-            $this->catalogo->modulos($request->only(['estado', 'q'])),
+            $this->catalogo->modulos($request->only(['estado', 'q']), $soloVisibles),
         );
     }
 
-    public function modulo(Modulo $modulo): ModuloPanelResource
+    public function modulo(Request $request, Modulo $modulo): ModuloPanelResource
     {
+        if ($request->user()?->rol !== Rol::Administrador) {
+            abort_unless($modulo->estado_comercial === EstadoComercial::Abierto, 404);
+        }
+
         return new ModuloPanelResource($modulo);
     }
 
     public function guardarModulo(StoreModuloRequest $request): JsonResponse
     {
-        // El temario del módulo es una URL, no una subida: va tal cual.
         $modulo = Modulo::create($request->validated());
 
         return response()->json([
@@ -138,10 +145,20 @@ class CatalogoApiController extends Controller
         ]);
     }
 
-    /** Opciones de los selects y módulos libres para armar el plan de estudio. */
     public function opciones(Request $request): JsonResponse
     {
         $programaId = $request->query('programa');
+        $programaValido = is_string($programaId) && Str::isUuid($programaId) ? $programaId : null;
+
+        $disponibles = collect();
+        $totalDisponibles = 0;
+
+        if ($programaValido) {
+            $consulta = Modulo::whereDoesntHave('programas', fn ($q) => $q->where('programas.id', $programaValido))
+                ->orderBy('nombre');
+            $totalDisponibles = $consulta->count();
+            $disponibles = $consulta->limit(config('limites.opciones_select'))->get();
+        }
 
         return response()->json([
             'estados' => array_map(
@@ -155,15 +172,25 @@ class CatalogoApiController extends Controller
             'limites' => [
                 'programas' => config('limites.programas'),
                 'modulos' => config('limites.modulos'),
+                'opciones_select' => config('limites.opciones_select'),
             ],
-            'modulos_disponibles' => $programaId
-                ? ModuloPanelResource::collection(
-                    Modulo::whereDoesntHave('programas', fn ($q) => $q->where('programas.id', $programaId))
-                        ->orderBy('nombre')
-                        ->limit(config('limites.opciones_select'))
-                        ->get(),
-                )
-                : [],
+            'modulos_disponibles' => ModuloPanelResource::collection($disponibles),
+            'modulos_disponibles_total' => $totalDisponibles,
         ]);
+    }
+
+    private function datosConPortada(Request $request, ?Programa $actual = null): array
+    {
+        $data = $request->safe()->except('imagen_portada_url');
+
+        if ($request->hasFile('imagen_portada_url')) {
+            if ($actual?->imagen_portada_url && str_starts_with($actual->imagen_portada_url, '/storage/programas/')) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $actual->imagen_portada_url));
+            }
+            $path = $request->file('imagen_portada_url')->store('programas', 'public');
+            $data['imagen_portada_url'] = '/storage/'.$path;
+        }
+
+        return $data;
     }
 }

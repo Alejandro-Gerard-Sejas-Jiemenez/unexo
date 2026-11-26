@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoMatricula;
 use App\Enums\EstadoPlanificacion;
 use App\Enums\Modalidad;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -154,7 +156,15 @@ class Grupo extends Model
     protected function quorum(): Attribute
     {
         return Attribute::get(function (): array {
-            $inscritos = $this->inscripciones_count ?? $this->inscripciones()->count();
+            $inscritos = $this->inscritos_count
+                ?? $this->inscripciones_count
+                ?? $this->inscripciones()->whereHas(
+                    'matricula',
+                    fn ($q) => $q->whereIn('estado', array_map(
+                        fn (EstadoMatricula $e) => $e->value,
+                        EstadoMatricula::queCuentanComoInscritos(),
+                    )),
+                )->count();
             $minimo = (int) ($this->cupo_minimo ?? 0);
             $tieneLimite = $minimo > 0;
             $alcanzado = $tieneLimite ? ($inscritos >= $minimo) : true;
@@ -179,13 +189,13 @@ class Grupo extends Model
         return $query->whereNotNull('cohorte_id');
     }
 
-    /** Subconsulta del período efectivo: la edición manda; el grupo suelto usa su propia columna. */
     private static function expresionPeriodo(string $columna): string
     {
-        return "date(COALESCE((SELECT c.$columna FROM cohortes c WHERE c.id = grupos.cohorte_id), grupos.$columna))";
+        $coale = "COALESCE((SELECT c.$columna FROM cohortes c WHERE c.id = grupos.cohorte_id), grupos.$columna)";
+
+        return DB::connection()->getDriverName() === 'pgsql' ? $coale : "date($coale)";
     }
 
-    /** Orden por inicio del período efectivo (009 D4); sin JOIN para no alterar las columnas seleccionadas. */
     public function scopeOrdenadoPorPeriodo($query, string $direccion = 'asc')
     {
         $direccion = strtolower($direccion) === 'desc' ? 'desc' : 'asc';
@@ -193,15 +203,16 @@ class Grupo extends Model
         return $query->orderByRaw(self::expresionPeriodo('fecha_inicio').' '.$direccion);
     }
 
-    /** Grupos cuyo período efectivo toca el rango [$desde, $hasta], extremos incluidos. */
     public function scopeQueSolapaCon($query, ?string $desde, ?string $hasta)
     {
+        $param = DB::connection()->getDriverName() === 'pgsql' ? 'CAST(? AS date)' : 'date(?)';
+
         if ($hasta !== null) {
-            $query->whereRaw(self::expresionPeriodo('fecha_inicio').' <= date(?)', [$hasta]);
+            $query->whereRaw(self::expresionPeriodo('fecha_inicio')." <= {$param}", [$hasta]);
         }
 
         if ($desde !== null) {
-            $query->whereRaw(self::expresionPeriodo('fecha_fin').' >= date(?)', [$desde]);
+            $query->whereRaw(self::expresionPeriodo('fecha_fin')." >= {$param}", [$desde]);
         }
 
         return $query;

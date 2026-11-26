@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Panel;
 use App\Enums\EstadoMatricula;
 use App\Enums\Rol;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EstadoMatriculaRequest;
+use App\Http\Requests\MatriculaStoreApiRequest;
 use App\Http\Resources\MatriculaPanelResource;
 use App\Models\Cohorte;
 use App\Models\Grupo;
@@ -15,13 +17,8 @@ use App\Services\MatriculaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-/**
- * CU6 (recepción y matriculación flexible) y CU7 (estado de la matrícula)
- * por la API del panel.
- */
 class MatriculaPanelApiController extends Controller
 {
     public function __construct(
@@ -43,27 +40,14 @@ class MatriculaPanelApiController extends Controller
             'cohorte.programa',
             'inscripciones.grupo.modulo',
             'inscripciones.grupo.docente',
+            'inscripciones.grupo.cohorte',
             'comprobantes.subidoPor',
         ]));
     }
 
-    /**
-     * Matriculación flexible: a una edición completa o a un grupo suelto.
-     * La transacción y la generación de inscripciones viven en MatriculaService.
-     */
-    public function store(Request $request): JsonResponse
+    public function store(MatriculaStoreApiRequest $request): JsonResponse
     {
-        $datos = $request->validate([
-            'estudiante_id' => ['required', 'uuid', Rule::exists('users', 'id')->where('rol', Rol::Estudiante->value)],
-            'tipo' => ['required', 'in:cohorte,suelto'],
-            'cohorte_id' => ['required_if:tipo,cohorte', 'nullable', 'uuid', Rule::exists('cohortes', 'id')],
-            'grupo_id' => ['required_if:tipo,suelto', 'nullable', 'uuid', Rule::exists('grupos', 'id')->whereNull('cohorte_id')],
-        ], [], [
-            'estudiante_id' => 'estudiante',
-            'cohorte_id' => 'edición',
-            'grupo_id' => 'grupo',
-        ]);
-
+        $datos = $request->validated();
         $estudiante = User::findOrFail($datos['estudiante_id']);
 
         if ($datos['tipo'] === 'cohorte') {
@@ -89,32 +73,31 @@ class MatriculaPanelApiController extends Controller
         }
 
         return response()->json([
-            'matricula' => new MatriculaPanelResource($matricula->load('estudiante')),
+            'matricula' => new MatriculaPanelResource($matricula->load(['estudiante', 'cohorte.programa'])),
             'mensaje' => 'Matrícula registrada. Queda pendiente de pago.',
         ], 201);
     }
 
-    public function cambiarEstado(Request $request, Matricula $matricula): JsonResponse
+    public function cambiarEstado(EstadoMatriculaRequest $request, Matricula $matricula): JsonResponse
     {
-        $datos = $request->validate(['estado' => ['required', Rule::enum(EstadoMatricula::class)]]);
-
-        $nuevo = EstadoMatricula::from($datos['estado']);
+        $nuevo = EstadoMatricula::from($request->validated('estado'));
         $this->matriculas->cambiarEstado($matricula, $nuevo);
 
         return response()->json([
-            'matricula' => new MatriculaPanelResource($matricula->fresh()->load('estudiante')),
+            'matricula' => new MatriculaPanelResource($matricula->fresh()->load(['estudiante', 'cohorte.programa'])),
             'mensaje' => 'Estado de la matrícula actualizado a '.$nuevo->label().'.',
         ]);
     }
 
-    /** Catálogos para el formulario de matriculación. */
     public function opciones(): JsonResponse
     {
+        $limite = (int) config('limites.opciones_select');
+
         return response()->json([
             'estudiantes' => User::where('rol', Rol::Estudiante->value)
                 ->where('estado', 'activo')
                 ->orderBy('apellidos')
-                ->limit(config('limites.opciones_select'))
+                ->limit($limite)
                 ->get(['id', 'nombres', 'apellidos', 'email'])
                 ->map(fn (User $e) => [
                     'id' => $e->id,
@@ -124,7 +107,7 @@ class MatriculaPanelApiController extends Controller
             'cohortes' => Cohorte::with('programa')
                 ->withCount('grupos')
                 ->orderByDesc('fecha_inicio')
-                ->limit(config('limites.opciones_select'))
+                ->limit($limite)
                 ->get()
                 ->map(fn (Cohorte $c) => [
                     'id' => $c->id,
@@ -135,7 +118,7 @@ class MatriculaPanelApiController extends Controller
             'grupos_sueltos' => Grupo::whereNull('cohorte_id')
                 ->with('modulo')
                 ->orderBy('fecha_inicio')
-                ->limit(config('limites.opciones_select'))
+                ->limit($limite)
                 ->get()
                 ->map(fn (Grupo $g) => [
                     'id' => $g->id,

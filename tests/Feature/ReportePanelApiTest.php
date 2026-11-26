@@ -91,4 +91,20 @@ class ReportePanelApiTest extends TestCase
 
         $this->actingAs($docente)->getJson('/api/panel/reportes/matriculas')->assertForbidden();
     }
+
+    public function test_descargas_pdf_y_excel_responden_desde_la_api_del_panel(): void
+    {
+        $this->conDatos();
+        $admin = $this->administrador();
+
+        foreach (['matriculas', 'ocupacion', 'catalogo'] as $tipo) {
+            $pdf = $this->actingAs($admin)->get("/api/panel/reportes/{$tipo}/pdf");
+            $pdf->assertOk();
+            $this->assertStringContainsString('application/pdf', (string) $pdf->headers->get('Content-Type'));
+
+            $excel = $this->actingAs($admin)->get("/api/panel/reportes/{$tipo}/excel");
+            $excel->assertOk();
+            $this->assertStringContainsString('spreadsheetml', (string) $excel->headers->get('Content-Type'));
+        }
+    }
 }

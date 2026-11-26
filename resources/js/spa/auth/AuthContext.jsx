@@ -6,26 +6,24 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
     const [usuario, setUsuario] = useState(null);
     const [menu, setMenu] = useState([]);
+    const [permisos, setPermisos] = useState([]);
     const [cargando, setCargando] = useState(true);
 
-    /** El menú lo arma el servidor con los permisos del rol: nunca se calcula aquí. */
-    const cargarMenu = useCallback(async () => {
-        const { data } = await cliente.get('/menu');
-        setMenu(data.menu);
+    const aplicarSesion = useCallback((data) => {
+        setUsuario(data.usuario ?? null);
+        setMenu(data.menu ?? []);
+        setPermisos(data.permisos ?? []);
     }, []);
 
-    // Al arrancar restauramos la sesión desde la cookie, si todavía es válida.
     useEffect(() => {
         let vigente = true;
 
         (async () => {
             try {
                 const { data } = await cliente.get('/me');
-                if (!vigente) return;
-                setUsuario(data.usuario);
-                await cargarMenu();
+                if (vigente) aplicarSesion(data);
             } catch {
-                if (vigente) setUsuario(null);
+                if (vigente) aplicarSesion({});
             } finally {
                 if (vigente) setCargando(false);
             }
@@ -34,39 +32,45 @@ export function AuthProvider({ children }) {
         return () => {
             vigente = false;
         };
-    }, [cargarMenu]);
+    }, [aplicarSesion]);
 
-    // Si el servidor responde 401 en cualquier petición, salimos de la sesión.
     useEffect(() => {
-        const alCaducar = () => {
-            setUsuario(null);
-            setMenu([]);
-        };
+        const alCaducar = () => aplicarSesion({});
         window.addEventListener(SESION_CADUCADA, alCaducar);
         return () => window.removeEventListener(SESION_CADUCADA, alCaducar);
-    }, []);
+    }, [aplicarSesion]);
 
     const entrar = useCallback(
         async (credenciales) => {
             await prepararCsrf();
             const { data } = await cliente.post('/login', credenciales);
-            setUsuario(data.usuario);
-            await cargarMenu();
+            aplicarSesion(data);
         },
-        [cargarMenu],
+        [aplicarSesion],
     );
 
     const salir = useCallback(async () => {
         try {
             await cliente.post('/logout');
         } finally {
-            setUsuario(null);
-            setMenu([]);
+            aplicarSesion({});
         }
-    }, []);
+    }, [aplicarSesion]);
+
+    const recargarUsuario = useCallback(async () => {
+        const { data } = await cliente.get('/me');
+        aplicarSesion(data);
+    }, [aplicarSesion]);
+
+    const tienePermiso = useCallback(
+        (clave) => permisos.includes(clave),
+        [permisos],
+    );
 
     return (
-        <AuthContext.Provider value={{ usuario, menu, cargando, entrar, salir }}>
+        <AuthContext.Provider
+            value={{ usuario, menu, permisos, cargando, entrar, salir, recargarUsuario, tienePermiso }}
+        >
             {children}
         </AuthContext.Provider>
     );

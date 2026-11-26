@@ -1,110 +1,126 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import useListado from '../../hooks/useListado';
-import Paginacion from '../../componentes/Paginacion';
-import { claseControl } from '../../componentes/Campo';
 import { useAuth } from '../../auth/AuthContext';
+import BarraHerramientas from '../../componentes/BarraHerramientas';
+import BotonAccion from '../../componentes/BotonAccion';
+import Cargador from '../../componentes/Cargador';
+import EncabezadoPagina from '../../componentes/EncabezadoPagina';
+import Icono from '../../componentes/Icono';
+import Paginacion from '../../componentes/Paginacion';
+import TablaDatos from '../../componentes/TablaDatos';
+import useListado from '../../hooks/useListado';
 
 export default function ModulosLista() {
     const { usuario } = useAuth();
     const esAdmin = usuario?.rol === 'administrador';
-    const { filas, meta, cargando, aviso, valorDe, filtrar, irAPagina } =
+    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina } =
         useListado('/catalogo/modulos');
+
+    const [busqueda, setBusqueda] = useState(valorDe('q'));
+
+    useEffect(() => {
+        setBusqueda(valorDe('q'));
+    }, [valorDe]);
+
+    const pildoras = [
+        { valor: '', etiqueta: 'Todos' },
+        { valor: 'borrador', etiqueta: 'Borrador' },
+        { valor: 'abierto', etiqueta: 'Abierto' },
+        { valor: 'cerrado', etiqueta: 'Cerrado' },
+    ];
+
+    const columnas = [
+        { etiqueta: 'Código' },
+        { etiqueta: 'Nombre' },
+        { etiqueta: 'Horas' },
+        { etiqueta: 'En programas' },
+        { etiqueta: 'Estado comercial' },
+        ...(esAdmin ? [{ etiqueta: 'Acciones', srOnly: true, alinear: 'derecha' }] : []),
+    ];
 
     return (
         <section>
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl font-semibold">Módulos</h1>
-                {esAdmin && (
-                    <Link
-                        to="/app/modulos/nuevo"
-                        className="rounded-lg bg-[var(--color-acento)] px-4 py-2 text-sm font-medium text-[var(--color-acento-texto)] no-underline"
-                    >
-                        Nuevo módulo
-                    </Link>
-                )}
-            </div>
+            <EncabezadoPagina
+                titulo="Módulos"
+                acciones={
+                    esAdmin && (
+                        <Link to="/modulos/nuevo" className="btn btn-primario">
+                            <Icono nombre="mas" className="h-5 w-5" />
+                            Nuevo módulo
+                        </Link>
+                    )
+                }
+            />
 
-            <div className="mb-4 flex flex-wrap gap-3">
-                <label className="flex-1">
-                    <span className="sr-only">Buscar módulo</span>
-                    <input
-                        type="search"
-                        placeholder="Buscar por nombre o código"
-                        className={claseControl}
-                        defaultValue={valorDe('q')}
-                        onChange={(e) => filtrar('q', e.target.value)}
-                    />
-                </label>
-
-                <label>
-                    <span className="sr-only">Filtrar por estado comercial</span>
-                    <select
-                        className={claseControl}
-                        value={valorDe('estado')}
-                        onChange={(e) => filtrar('estado', e.target.value)}
-                    >
-                        <option value="">Todos los estados</option>
-                        <option value="borrador">Borrador</option>
-                        <option value="abierto">Abierto</option>
-                        <option value="cerrado">Cerrado</option>
-                    </select>
-                </label>
-            </div>
+            <BarraHerramientas
+                pildoras={pildoras}
+                pildoraActiva={valorDe('estado')}
+                alSeleccionarPildora={(val) => filtrar('estado', val)}
+                busqueda={busqueda}
+                placeholder="Buscar por código o nombre…"
+                alCambiarBusqueda={(val) => {
+                    setBusqueda(val);
+                    filtrarConRetraso('q', val);
+                }}
+                alBuscar={(val) => filtrar('q', val)}
+                alLimpiarBusqueda={() => {
+                    setBusqueda('');
+                    limpiarFiltros();
+                }}
+            />
 
             {aviso && (
-                <p role="alert" className="mb-4 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
                     {aviso}
                 </p>
             )}
 
-            <div className="superficie overflow-hidden" aria-live="polite">
-                <table className="w-full border-collapse text-sm">
-                    <caption className="sr-only">Módulos del catálogo académico</caption>
-                    <thead>
-                        <tr className="border-b border-[var(--color-borde)] text-left">
-                            <th scope="col" className="p-3">Código</th>
-                            <th scope="col" className="p-3">Nombre</th>
-                            <th scope="col" className="p-3">Horas</th>
-                            <th scope="col" className="p-3">Programas</th>
-                            <th scope="col" className="p-3">Estado</th>
-                            {esAdmin && <th scope="col" className="p-3">Acciones</th>}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {cargando && (
-                            <tr>
-                                <td colSpan={6} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    Cargando módulos…
-                                </td>
-                            </tr>
-                        )}
+            {cargando && <Cargador texto="Cargando" />}
 
-                        {!cargando && filas.length === 0 && (
-                            <tr>
-                                <td colSpan={6} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    No hay módulos que coincidan con la búsqueda.
-                                </td>
-                            </tr>
+            <TablaDatos
+                caption="Módulos del catálogo académico"
+                columnas={columnas}
+                vacio={!cargando && filas.length === 0}
+                vacioIcono="modulos"
+                vacioTitulo="No se encontraron módulos"
+                vacioDescripcion="Intenta cambiar los filtros de búsqueda."
+            >
+                {filas.map((m) => (
+                    <tr key={m.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <td className="px-6 py-4 text-sm font-medium text-[var(--color-texto-suave)] whitespace-nowrap">
+                            {m.codigo}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">{m.nombre}</td>
+                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                            {m.duracion_horas ?? '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center justify-center rounded-full bg-[var(--color-superficie-2)] px-2.5 py-1 text-xs font-bold">
+                                {m.programas_count ?? 0}
+                            </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                                className={
+                                    'inline-flex rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ' +
+                                    (m.estado_comercial === 'abierto'
+                                        ? 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
+                                        : 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)] ring-[var(--color-borde)]')
+                                }
+                            >
+                                {m.estado_label}
+                            </span>
+                        </td>
+                        {esAdmin && (
+                            <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                <BotonAccion to={`/modulos/${m.id}`} icono="editar">
+                                    Editar
+                                </BotonAccion>
+                            </td>
                         )}
-
-                        {!cargando &&
-                            filas.map((m) => (
-                                <tr key={m.id} className="border-b border-[var(--color-borde)]">
-                                    <td className="p-3 tabular-nums">{m.codigo}</td>
-                                    <td className="p-3">{m.nombre}</td>
-                                    <td className="p-3 tabular-nums">{m.duracion_horas ?? '—'}</td>
-                                    <td className="p-3 tabular-nums">{m.programas_count ?? 0}</td>
-                                    <td className="p-3">{m.estado_label}</td>
-                                    {esAdmin && (
-                                        <td className="p-3">
-                                            <Link to={`/app/modulos/${m.id}`}>Editar</Link>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                    </tbody>
-                </table>
-            </div>
+                    </tr>
+                ))}
+            </TablaDatos>
 
             <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="módulos" />
         </section>

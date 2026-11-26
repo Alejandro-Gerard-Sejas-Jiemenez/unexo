@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\Panel;
 
 use App\Enums\DiaSemana;
+use App\Enums\EstadoMatricula;
 use App\Enums\EstadoPlanificacion;
 use App\Enums\Modalidad;
 use App\Enums\Rol;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AperturarGruposRequest;
 use App\Http\Requests\CohorteRequest;
 use App\Http\Requests\StoreGrupoRequest;
 use App\Http\Requests\UpdateGrupoRequest;
@@ -27,18 +29,12 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
 
-/**
- * CU4 (planificar ediciones y aperturar grupos) y CU5 (configuración logística
- * de las clases) por la API del panel.
- */
 class PlanificacionApiController extends Controller
 {
     public function __construct(
         private readonly PlanificacionConsultaService $consulta,
         private readonly GrupoService $grupos,
     ) {}
-
-    // ------------------------------------------------- CU4: ediciones
 
     public function cohortes(Request $request): AnonymousResourceCollection
     {
@@ -49,16 +45,27 @@ class PlanificacionApiController extends Controller
 
     public function cohorte(Cohorte $cohorte): JsonResponse
     {
-        $cohorte->load([
+        $estadosInscritos = array_map(fn (EstadoMatricula $e) => $e->value, EstadoMatricula::queCuentanComoInscritos());
+
+        $cohorte->loadCount('matriculas')->load([
             'programa.modulos',
-            'grupos' => fn ($q) => $q->with(['modulo', 'docente', 'aula', 'horarios'])->withCount('inscripciones'),
+            'grupos' => fn ($q) => $q->with(['modulo', 'docente', 'aula', 'horarios', 'cohorte.programa'])
+                ->withCount(['inscripciones as inscritos_count' => fn ($c) => $c->whereHas(
+                    'matricula',
+                    fn ($m) => $m->whereIn('estado', $estadosInscritos),
+                )]),
         ]);
+
+        $ordenModulos = $cohorte->programa->modulos->pluck('pivot.orden', 'id');
+        $gruposOrdenados = $cohorte->grupos
+            ->sortBy(fn (Grupo $g) => [$ordenModulos[$g->modulo_id] ?? PHP_INT_MAX, $g->numero ?? PHP_INT_MAX, $g->nombre])
+            ->values();
+        $cohorte->setRelation('grupos', $gruposOrdenados);
 
         $conGrupo = $cohorte->grupos->pluck('modulo_id')->all();
 
         return response()->json([
             'data' => new CohortePanelResource($cohorte),
-            // Módulos del plan que todavía no tienen grupo en esta edición.
             'modulos_pendientes' => ModuloPanelResource::collection(
                 $cohorte->programa->modulos->reject(fn ($m) => in_array($m->id, $conGrupo, true))->values(),
             ),
@@ -71,7 +78,7 @@ class PlanificacionApiController extends Controller
 
         return response()->json([
             'cohorte' => new CohortePanelResource($cohorte->load('programa')),
-            'mensaje' => 'Edición creada. Ahora podés aperturar sus grupos operativos.',
+            'mensaje' => 'Edición creada. Ahora puedes aperturar sus grupos operativos.',
         ], 201);
     }
 
@@ -85,17 +92,12 @@ class PlanificacionApiController extends Controller
         ]);
     }
 
-    /** Genera un grupo por cada módulo del plan que todavía no lo tenga. */
     public function aperturarGrupos(
-        Request $request,
+        AperturarGruposRequest $request,
         Cohorte $cohorte,
         PlanificacionCohorteService $planificacion,
     ): JsonResponse {
-        $datos = $request->validate([
-            'docente_id' => ['nullable', 'uuid', Rule::exists('users', 'id')->where('rol', Rol::Docente->value)],
-            'modalidad' => ['nullable', Rule::enum(Modalidad::class)],
-            'cupo_minimo' => ['nullable', 'integer', 'min:0', 'max:500'],
-        ], [], ['docente_id' => 'docente', 'cupo_minimo' => 'cupo mínimo']);
+        $datos = $request->validated();
 
         $creados = $planificacion->generarGruposParaCohorte(
             $cohorte,
@@ -131,8 +133,6 @@ class PlanificacionApiController extends Controller
         ]);
     }
 
-    // ------------------------------------------------- CU5: grupos
-
     public function gruposIndex(Request $request): AnonymousResourceCollection
     {
         return GrupoPanelResource::collection(
@@ -142,9 +142,22 @@ class PlanificacionApiController extends Controller
 
     public function grupo(Grupo $grupo): GrupoPanelResource
     {
+        $estadosInscritos = array_map(fn (EstadoMatricula $e) => $e->value, EstadoMatricula::queCuentanComoInscritos());
+
         return new GrupoPanelResource(
-            $grupo->load(['modulo', 'docente', 'aula', 'cohorte.programa', 'horarios'])
-                ->loadCount('inscripciones'),
+            $grupo->load([
+                'modulo',
+                'docente',
+                'aula',
+                'cohorte.programa',
+                'horarios',
+                'inscripciones.matricula.estudiante',
+            ])->loadCount([
+                'inscripciones as inscritos_count' => fn ($q) => $q->whereHas(
+                    'matricula',
+                    fn ($m) => $m->whereIn('estado', $estadosInscritos),
+                ),
+            ]),
         );
     }
 
@@ -153,7 +166,7 @@ class PlanificacionApiController extends Controller
         $grupo = $this->grupos->crear($request->validated());
 
         return response()->json([
-            'grupo' => new GrupoPanelResource($grupo->load(['modulo', 'docente', 'aula', 'horarios'])),
+            'grupo' => new GrupoPanelResource($grupo->load(['modulo', 'docente', 'aula', 'cohorte.programa', 'horarios'])),
             'mensaje' => 'Grupo creado correctamente.',
         ], 201);
     }
@@ -163,34 +176,50 @@ class PlanificacionApiController extends Controller
         $actualizado = $this->grupos->actualizar($grupo, $request->validated());
 
         return response()->json([
-            'grupo' => new GrupoPanelResource($actualizado->load(['modulo', 'docente', 'aula', 'horarios'])),
+            'grupo' => new GrupoPanelResource($actualizado->load(['modulo', 'docente', 'aula', 'cohorte.programa', 'horarios'])),
             'mensaje' => 'Grupo actualizado correctamente.',
         ]);
     }
 
-    /** Catálogos para los selects de los formularios de planificación. */
     public function opciones(): JsonResponse
     {
+        $limite = (int) config('limites.opciones_select');
+        $activos = [EstadoPlanificacion::Programado->value, EstadoPlanificacion::EnCurso->value];
+
         return response()->json([
-            'programas' => Programa::orderBy('nombre')->get(['id', 'nombre', 'version']),
+            'programas' => Programa::orderBy('nombre')->limit($limite)->get(['id', 'nombre', 'version']),
             'modulos' => ModuloPanelResource::collection(
-                Modulo::orderBy('nombre')->limit(config('limites.opciones_select'))->get(),
+                Modulo::orderBy('nombre')->limit($limite)->get(),
             ),
             'docentes' => User::where('rol', Rol::Docente->value)
                 ->where('estado', 'activo')
+                ->withCount(['gruposComoDocente as grupos_activos_count' => fn ($q) => $q->whereIn('estado', $activos)])
                 ->orderBy('apellidos')
+                ->limit($limite)
                 ->get(['id', 'nombres', 'apellidos'])
-                ->map(fn (User $d) => ['id' => $d->id, 'nombre' => $d->nombre_completo]),
-            'aulas' => Aula::orderBy('nombre')->get(['id', 'nombre', 'capacidad']),
-            'cohortes' => Cohorte::orderByDesc('fecha_inicio')
-                ->limit(config('limites.opciones_select'))
-                ->get(['id', 'nombre']),
+                ->map(fn (User $d) => [
+                    'id' => $d->id,
+                    'nombre' => $d->nombre_completo,
+                    'grupos_activos_count' => (int) $d->grupos_activos_count,
+                ]),
+            'aulas' => Aula::orderBy('nombre')->limit($limite)->get(['id', 'nombre', 'capacidad']),
+            'cohortes' => Cohorte::with(['programa:id,nombre', 'programa.modulos:modulos.id'])
+                ->orderByDesc('fecha_inicio')
+                ->limit($limite)
+                ->get(['id', 'nombre', 'programa_id'])
+                ->map(fn (Cohorte $c) => [
+                    'id' => $c->id,
+                    'nombre' => $c->nombre,
+                    'programa_id' => $c->programa_id,
+                    'programa' => $c->programa?->nombre,
+                    'modulo_ids' => $c->programa?->modulos?->pluck('id')->values()->all() ?? [],
+                ]),
             'estados' => array_map(
                 fn (EstadoPlanificacion $e) => ['valor' => $e->value, 'etiqueta' => $e->label()],
                 EstadoPlanificacion::cases(),
             ),
             'modalidades' => array_map(
-                fn (Modalidad $m) => ['valor' => $m->value, 'etiqueta' => ucfirst($m->value)],
+                fn (Modalidad $m) => ['valor' => $m->value, 'etiqueta' => $m->label()],
                 Modalidad::cases(),
             ),
             'dias' => array_map(

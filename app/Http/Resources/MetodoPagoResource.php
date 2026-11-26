@@ -16,6 +16,8 @@ class MetodoPagoResource extends JsonResource
         return [
             'id' => $this->id,
             'tipo' => $this->tipo,
+            'proveedor' => $this->proveedor ?? 'simulado',
+            'marca' => $this->marca,
             'descripcion' => $this->descripcion(),
             'titular' => $this->titular,
             'ultimos_digitos' => $this->ultimos_digitos,

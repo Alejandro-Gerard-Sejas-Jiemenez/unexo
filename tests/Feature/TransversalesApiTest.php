@@ -317,4 +317,94 @@ class TransversalesApiTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('errors.monto.0', 'El monto debe ser mayor que cero.');
     }
+
+    public function test_registrar_visita_desde_la_spa_incrementa_contador(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->postJson('/api/panel/visitas', ['ruta' => '/catalogo'])
+            ->assertOk()
+            ->assertJsonPath('pagina', 1)
+            ->assertJsonPath('ruta', '/catalogo');
+
+        $this->actingAs($admin)->postJson('/api/panel/visitas', ['ruta' => '/catalogo'])
+            ->assertOk()
+            ->assertJsonPath('pagina', 2);
+
+        $this->assertSame(2, VisitaPagina::where('ruta', '/catalogo')->value('contador'));
+    }
+
+    public function test_la_busqueda_encuentra_grupos_sin_fallar_al_formatear_modalidad(): void
+    {
+        $docente = User::factory()->create(['rol' => Rol::Docente, 'estado' => 'activo']);
+        $modulo = \App\Models\Modulo::create(['codigo' => 'BUS-01', 'nombre' => 'Analítica Avanzada']);
+        \App\Models\Grupo::create([
+            'modulo_id' => $modulo->id,
+            'docente_id' => $docente->id,
+            'nombre' => 'Grupo Buscable',
+            'modalidad' => 'virtual',
+            'estado' => \App\Enums\EstadoPlanificacion::Programado,
+        ]);
+
+        $respuesta = $this->actingAs($this->admin())->getJson('/api/panel/buscar?q=Buscable')->assertOk();
+
+        $titulos = collect($respuesta->json('resultados'))
+            ->flatMap(fn ($b) => collect($b['items'])->pluck('titulo'))
+            ->all();
+
+        $this->assertContains('Grupo Buscable', $titulos);
+    }
+
+    public function test_las_estadisticas_excluyen_retirados_en_ocupacion_e_incluyen_kpi_financiero(): void
+    {
+        $admin = $this->admin();
+        $docente = User::factory()->create(['rol' => Rol::Docente, 'estado' => 'activo']);
+        $estudiante = $this->estudiante();
+        $modulo = \App\Models\Modulo::create(['codigo' => 'EST-01', 'nombre' => 'Módulo Estadística']);
+        $grupo = \App\Models\Grupo::create([
+            'modulo_id' => $modulo->id,
+            'docente_id' => $docente->id,
+            'nombre' => 'Grupo Cupo',
+            'modalidad' => 'virtual',
+            'estado' => \App\Enums\EstadoPlanificacion::EnCurso,
+            'cupo_minimo' => 10,
+        ]);
+
+        $retirada = Matricula::create([
+            'estudiante_id' => $estudiante->id,
+            'estado' => EstadoMatricula::Retirado,
+            'fecha_matricula' => today(),
+        ]);
+        \App\Models\InscripcionGrupo::create(['matricula_id' => $retirada->id, 'grupo_id' => $grupo->id]);
+
+        \Illuminate\Support\Facades\Cache::forget('panel.estadisticas.resumen');
+
+        $res = $this->actingAs($admin)->getJson('/api/panel/estadisticas')->assertOk();
+
+        $claves = collect($res->json('negocio.tarjetas'))->pluck('clave')->all();
+        $this->assertContains('recaudado', $claves);
+        $this->assertSame(0, $res->json('negocio.ocupacion_grupos.0.valor'));
+    }
+
+    public function test_la_busqueda_tolera_tildes_y_errores_de_tipeo(): void
+    {
+        \App\Models\Modulo::create(['codigo' => 'FUZ-01', 'nombre' => 'Analítica Empresarial']);
+
+        $resModulo = $this->actingAs($this->admin())
+            ->getJson('/api/panel/buscar?q=analitca')
+            ->assertOk();
+
+        $titulos = collect($resModulo->json('resultados'))
+            ->flatMap(fn ($b) => collect($b['items'])->pluck('titulo'))
+            ->all();
+
+        $this->assertContains('Analítica Empresarial', $titulos);
+
+        $resSeccion = $this->actingAs($this->admin())
+            ->getJson('/api/panel/buscar?q=estadistca')
+            ->assertOk();
+
+        $etiquetas = collect($resSeccion->json('secciones'))->pluck('etiqueta')->all();
+        $this->assertContains('Estadísticas', $etiquetas);
+    }
 }

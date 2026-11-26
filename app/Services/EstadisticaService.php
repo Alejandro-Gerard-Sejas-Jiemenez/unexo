@@ -2,29 +2,28 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoMatricula;
 use App\Models\Bitacora;
 use App\Models\Cohorte;
 use App\Models\Grupo;
 use App\Models\Matricula;
 use App\Models\Modulo;
 use App\Models\Programa;
+use App\Models\Transaccion;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Métricas del panel analítico: las del negocio y las de acceso al sitio.
- * Todas son consultas agregadas; ninguna trae filas al PHP para contarlas.
- */
 class EstadisticaService
 {
     public function __construct(private readonly VisitaService $visitas) {}
 
     public function resumen(): array
     {
-        return [
+        return Cache::remember('panel.estadisticas.resumen', 60, fn () => [
             'negocio' => $this->negocio(),
             'acceso' => $this->acceso(),
-        ];
+        ]);
     }
 
     private function negocio(): array
@@ -49,14 +48,21 @@ class EstadisticaService
             ->groupBy('estado_comercial')
             ->pluck('total', 'estado_comercial');
 
+        $pagos = Transaccion::query()
+            ->selectRaw("COALESCE(SUM(CASE WHEN estado = 'aprobada' THEN monto ELSE 0 END), 0) as recaudado")
+            ->selectRaw("COALESCE(SUM(CASE WHEN estado = 'pendiente' THEN monto ELSE 0 END), 0) as pendiente")
+            ->first();
+
         return [
             'tarjetas' => [
-                ['clave' => 'programas', 'etiqueta' => 'Programas', 'valor' => Programa::count()],
+                ['clave' => 'programas', 'etiqueta' => 'Programas', 'valor' => (int) $catalogoPorEstado->sum()],
                 ['clave' => 'modulos', 'etiqueta' => 'Módulos', 'valor' => Modulo::count()],
                 ['clave' => 'ediciones', 'etiqueta' => 'Ediciones', 'valor' => Cohorte::count()],
-                ['clave' => 'grupos', 'etiqueta' => 'Grupos', 'valor' => Grupo::count()],
-                ['clave' => 'matriculas', 'etiqueta' => 'Matrículas', 'valor' => Matricula::count()],
+                ['clave' => 'grupos', 'etiqueta' => 'Grupos', 'valor' => (int) $porModalidad->sum()],
+                ['clave' => 'matriculas', 'etiqueta' => 'Matrículas', 'valor' => (int) $porEstado->sum()],
                 ['clave' => 'estudiantes', 'etiqueta' => 'Estudiantes', 'valor' => User::where('rol', 'estudiante')->count()],
+                ['clave' => 'recaudado', 'etiqueta' => 'Recaudado (Bs)', 'valor' => round((float) ($pagos->recaudado ?? 0), 2)],
+                ['clave' => 'saldo_pendiente', 'etiqueta' => 'Por cobrar (Bs)', 'valor' => round((float) ($pagos->pendiente ?? 0), 2)],
             ],
             'matriculas_por_estado' => $this->serie($porEstado, [
                 'pendiente' => 'Pendiente de pago',
@@ -84,11 +90,14 @@ class EstadisticaService
     private function acceso(): array
     {
         $desde = now()->subDays(29)->startOfDay();
+        $exprDia = DB::connection()->getDriverName() === 'pgsql'
+            ? 'CAST(created_at AS DATE)'
+            : 'date(created_at)';
 
         $porDia = Bitacora::query()
             ->where('evento', 'login_exitoso')
             ->where('created_at', '>=', $desde)
-            ->select(DB::raw('date(created_at) as dia'), DB::raw('count(*) as total'))
+            ->selectRaw("{$exprDia} as dia, count(*) as total")
             ->groupBy('dia')
             ->orderBy('dia')
             ->get()
@@ -106,6 +115,12 @@ class EstadisticaService
             ->map(fn ($f) => ['etiqueta' => $f->recurso, 'valor' => (int) $f->total])
             ->all();
 
+        $resumenBitacora = Bitacora::query()
+            ->selectRaw("SUM(CASE WHEN evento = 'login_exitoso' THEN 1 ELSE 0 END) as logins")
+            ->selectRaw("SUM(CASE WHEN evento = 'login_fallido' THEN 1 ELSE 0 END) as fallidos")
+            ->selectRaw('COUNT(DISTINCT ip) as ips')
+            ->first();
+
         return [
             'tarjetas' => [
                 [
@@ -116,17 +131,17 @@ class EstadisticaService
                 [
                     'clave' => 'logins',
                     'etiqueta' => 'Inicios de sesión',
-                    'valor' => Bitacora::where('evento', 'login_exitoso')->count(),
+                    'valor' => (int) ($resumenBitacora->logins ?? 0),
                 ],
                 [
                     'clave' => 'fallidos',
                     'etiqueta' => 'Intentos fallidos',
-                    'valor' => Bitacora::where('evento', 'login_fallido')->count(),
+                    'valor' => (int) ($resumenBitacora->fallidos ?? 0),
                 ],
                 [
                     'clave' => 'ips',
                     'etiqueta' => 'Direcciones IP distintas',
-                    'valor' => Bitacora::distinct()->count('ip'),
+                    'valor' => (int) ($resumenBitacora->ips ?? 0),
                 ],
             ],
             'logins_por_dia' => $porDia,
@@ -138,27 +153,36 @@ class EstadisticaService
         ];
     }
 
-    /** Inscritos frente al cupo mínimo, por grupo. */
     private function ocupacion(): array
     {
+        $estados = array_map(fn (EstadoMatricula $e) => $e->value, EstadoMatricula::queCuentanComoInscritos());
+
         return Grupo::query()
-            ->withCount('inscripciones')
+            ->with(['modulo:id,nombre', 'cohorte:id,nombre'])
+            ->withCount(['inscripciones as inscritos_count' => fn ($q) => $q->whereHas(
+                'matricula',
+                fn ($m) => $m->whereIn('estado', $estados),
+            )])
             ->whereNotNull('cupo_minimo')
-            ->orderByDesc('inscripciones_count')
+            ->orderByDesc('inscritos_count')
             ->limit(10)
             ->get()
-            ->map(fn (Grupo $g) => [
-                'etiqueta' => $g->nombre,
-                'valor' => $g->inscripciones_count,
-                'meta' => $g->cupo_minimo,
-            ])
+            ->map(function (Grupo $g): array {
+                $contexto = $g->modulo?->nombre ?? 'Módulo';
+                if ($g->cohorte) {
+                    $contexto .= ' · '.$g->cohorte->nombre;
+                }
+
+                return [
+                    'id' => $g->id,
+                    'etiqueta' => "{$contexto} ({$g->nombre})",
+                    'valor' => (int) $g->inscritos_count,
+                    'meta' => (int) $g->cupo_minimo,
+                ];
+            })
             ->all();
     }
 
-    /**
-     * Normaliza un conteo por clave a una serie con etiquetas legibles,
-     * incluyendo en cero las categorías que todavía no tienen filas.
-     */
     private function serie(mixed $conteo, array $etiquetas): array
     {
         $salida = [];

@@ -6,16 +6,13 @@ use App\Enums\EstadoMatricula;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GrupoPanelResource;
 use App\Models\Grupo;
+use App\Models\InscripcionGrupo;
 use App\Models\Matricula;
 use App\Services\CalendarioService;
 use App\Services\MisClasesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-/**
- * Vistas de consulta del docente y del estudiante: sus grupos, sus cursos y
- * la agenda. Reutilizan MisClasesService y CalendarioService.
- */
 class MisClasesApiController extends Controller
 {
     public function __construct(
@@ -23,7 +20,6 @@ class MisClasesApiController extends Controller
         private readonly CalendarioService $calendario,
     ) {}
 
-    /** Grupos a cargo del docente, filtrables por fase y texto. */
     public function misGrupos(Request $request): JsonResponse
     {
         $usuario = $request->user();
@@ -44,7 +40,6 @@ class MisClasesApiController extends Controller
         ]);
     }
 
-    /** Detalle de un grupo del docente, con sus estudiantes inscritos. */
     public function miGrupo(Request $request, Grupo $grupo): JsonResponse
     {
         abort_unless(
@@ -60,13 +55,14 @@ class MisClasesApiController extends Controller
             'estudiantes' => $this->clases->estudiantesDelGrupo($grupo)->map(fn ($i) => [
                 'id' => $i->id,
                 'nombre' => $i->matricula?->estudiante?->nombre_completo,
+                'correo_institucional' => $i->matricula?->estudiante?->correo_institucional,
                 'email' => $i->matricula?->estudiante?->email,
-                'estado_matricula' => $i->matricula?->estado?->label(),
+                'estado_matricula' => $i->matricula?->estado?->value,
+                'estado_matricula_label' => $i->matricula?->estado?->label(),
             ])->values(),
         ]);
     }
 
-    /** Cursos del estudiante y sus matrículas pendientes de pago. */
     public function misCursos(Request $request): JsonResponse
     {
         $usuario = $request->user();
@@ -79,14 +75,18 @@ class MisClasesApiController extends Controller
 
         $pendientes = Matricula::where('estudiante_id', $usuario->id)
             ->where('estado', EstadoMatricula::Pendiente->value)
-            ->with(['cohorte.programa', 'comprobantes'])
+            ->with(['cohorte.programa', 'comprobantes' => fn ($q) => $q->latest()->limit(1)])
+            ->withCount('comprobantes')
             ->get();
 
         return response()->json([
             'data' => $this->clases->filtrar($todas, $grupoDe, $fase, $busqueda)
-                ->map(fn ($i) => [
+                ->map(fn (InscripcionGrupo $i) => [
                     'id' => $i->id,
-                    'grupo' => new GrupoPanelResource($i->grupo),
+                    'matricula_id' => $i->matricula_id,
+                    'matricula_estado' => $i->matricula->estado->value,
+                    'matricula_estado_label' => $i->matricula->estado->label(),
+                    'grupo' => $this->recursoGrupoParaEstudiante($i),
                 ])
                 ->values(),
             'conteo' => $this->clases->conteoPorFase($segunBusqueda, $grupoDe),
@@ -97,12 +97,40 @@ class MisClasesApiController extends Controller
                 'edicion' => $m->cohorte?->nombre ?? 'Módulo suelto',
                 'programa' => $m->cohorte?->programa?->nombre,
                 'fecha_matricula' => $m->fecha_matricula?->format('Y-m-d'),
-                'comprobantes' => $m->comprobantes->count(),
+                'comprobantes' => $m->comprobantes_count,
+                'ultimo_comprobante' => $m->comprobantes->first() ? [
+                    'estado' => $m->comprobantes->first()->estado->value,
+                    'estado_label' => $m->comprobantes->first()->estado->label(),
+                    'creado' => $m->comprobantes->first()->created_at?->format('d/m/Y H:i'),
+                ] : null,
             ])->values(),
         ]);
     }
 
-    /** Agenda mensual: la misma matriz de semanas que arma la pantalla Blade. */
+    public function miCurso(Request $request, Grupo $grupo): JsonResponse
+    {
+        $usuario = $request->user();
+
+        $inscripcion = InscripcionGrupo::query()
+            ->where('grupo_id', $grupo->id)
+            ->whereHas('matricula', fn ($q) => $q->where('estudiante_id', $usuario->id))
+            ->with(['matricula', 'grupo.modulo', 'grupo.docente', 'grupo.aula', 'grupo.cohorte.programa', 'grupo.horarios'])
+            ->first();
+
+        abort_unless(
+            $inscripcion !== null && $inscripcion->matricula->estado !== EstadoMatricula::Retirado,
+            403,
+            'No tienes acceso a este curso.',
+        );
+
+        return response()->json([
+            'matricula_id' => $inscripcion->matricula_id,
+            'matricula_estado' => $inscripcion->matricula->estado->value,
+            'matricula_estado_label' => $inscripcion->matricula->estado->label(),
+            'grupo' => $this->recursoGrupoParaEstudiante($inscripcion),
+        ]);
+    }
+
     public function calendario(Request $request): JsonResponse
     {
         $grupos = $this->calendario->gruposDe($request->user());
@@ -131,6 +159,16 @@ class MisClasesApiController extends Controller
                 'tipo' => $e['tipo'],
                 'texto' => $e['texto'],
             ])->values(),
+        ]);
+    }
+
+    private function recursoGrupoParaEstudiante(InscripcionGrupo $inscripcion): GrupoPanelResource
+    {
+        $puedeVerEnlace = $inscripcion->matricula->estado === EstadoMatricula::Activo
+            && in_array($inscripcion->grupo->fase, ['por-iniciar', 'en-curso'], true);
+
+        return (new GrupoPanelResource($inscripcion->grupo))->additional([
+            'ocultar_videoconferencia' => ! $puedeVerEnlace,
         ]);
     }
 }

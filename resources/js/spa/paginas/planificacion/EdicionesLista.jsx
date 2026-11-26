@@ -1,109 +1,157 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import useListado from '../../hooks/useListado';
+import BarraHerramientas from '../../componentes/BarraHerramientas';
+import BotonAccion from '../../componentes/BotonAccion';
+import Cargador from '../../componentes/Cargador';
+import EncabezadoPagina from '../../componentes/EncabezadoPagina';
+import Icono from '../../componentes/Icono';
 import Paginacion from '../../componentes/Paginacion';
-import { claseControl } from '../../componentes/Campo';
+import TablaDatos from '../../componentes/TablaDatos';
+import useListado from '../../hooks/useListado';
+import { formatoFecha } from '../../lib/fechas';
+
+const ESTADOS = [
+    { valor: '', etiqueta: 'Todas' },
+    { valor: 'programado', etiqueta: 'Programado' },
+    { valor: 'en_curso', etiqueta: 'En curso' },
+    { valor: 'finalizado', etiqueta: 'Finalizado' },
+    { valor: 'cancelado', etiqueta: 'Cancelado' },
+];
+
+function claseEstado(estado) {
+    switch (estado) {
+        case 'en_curso':
+            return 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]';
+        case 'programado':
+            return 'bg-[var(--color-aviso-fondo)] text-[var(--color-aviso)] ring-[color-mix(in_srgb,var(--color-aviso)_30%,transparent)]';
+        case 'finalizado':
+            return 'bg-[var(--color-acento-suave)] text-[var(--color-acento)] ring-[color-mix(in_srgb,var(--color-acento)_25%,transparent)]';
+        default:
+            return 'bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)] ring-[var(--color-borde)]';
+    }
+}
 
 export default function EdicionesLista() {
-    const { filas, meta, cargando, aviso, valorDe, filtrar, irAPagina } = useListado('/cohortes');
+    const { filas, meta, cargando, aviso, valorDe, filtrar, filtrarConRetraso, limpiarFiltros, irAPagina } =
+        useListado('/cohortes');
+
+    const [busqueda, setBusqueda] = useState(valorDe('q'));
+
+    useEffect(() => {
+        setBusqueda(valorDe('q'));
+    }, [valorDe]);
+
+    const columnas = [
+        { etiqueta: 'Programa' },
+        { etiqueta: 'Edición' },
+        { etiqueta: 'Inicio' },
+        { etiqueta: 'Fin' },
+        { etiqueta: 'Grupos' },
+        { etiqueta: 'Alumnos' },
+        { etiqueta: 'Estado' },
+        { etiqueta: 'Acciones', srOnly: true, alinear: 'derecha' },
+    ];
 
     return (
         <section>
-            <div className="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold">Ediciones</h1>
-                    <p className="text-sm text-[var(--color-texto-suave)]">
-                        Cada edición es una ejecución del programa en el tiempo.
-                    </p>
-                </div>
-                <Link
-                    to="/app/cohortes/nueva"
-                    className="rounded-lg bg-[var(--color-acento)] px-4 py-2 text-sm font-medium text-[var(--color-acento-texto)] no-underline"
-                >
-                    Nueva edición
-                </Link>
-            </div>
+            <EncabezadoPagina
+                titulo="Ediciones (Cohortes)"
+                subtitulo="Aperturas de un programa académico en una fecha concreta."
+                acciones={
+                    <Link to="/cohortes/nueva" className="btn btn-primario">
+                        <Icono nombre="mas" className="h-5 w-5" />
+                        Nueva edición
+                    </Link>
+                }
+            />
 
-            <div className="mb-4 flex flex-wrap gap-3">
-                <label className="flex-1">
-                    <span className="sr-only">Buscar edición</span>
-                    <input
-                        type="search"
-                        placeholder="Buscar por edición o programa"
-                        className={claseControl}
-                        defaultValue={valorDe('q')}
-                        onChange={(e) => filtrar('q', e.target.value)}
-                    />
-                </label>
-                <label>
-                    <span className="sr-only">Filtrar por estado</span>
-                    <select
-                        className={claseControl}
-                        value={valorDe('estado')}
-                        onChange={(e) => filtrar('estado', e.target.value)}
-                    >
-                        <option value="">Todos los estados</option>
-                        <option value="programado">Programado</option>
-                        <option value="en_curso">En curso</option>
-                        <option value="finalizado">Finalizado</option>
-                        <option value="cancelado">Cancelado</option>
-                    </select>
-                </label>
-            </div>
+            <BarraHerramientas
+                pildoras={ESTADOS}
+                pildoraActiva={valorDe('estado')}
+                alSeleccionarPildora={(val) => filtrar('estado', val)}
+                busqueda={busqueda}
+                placeholder="Buscar edición o programa…"
+                alCambiarBusqueda={(val) => {
+                    setBusqueda(val);
+                    filtrarConRetraso('q', val);
+                }}
+                alBuscar={(val) => filtrar('q', val)}
+                alLimpiarBusqueda={() => {
+                    setBusqueda('');
+                    limpiarFiltros();
+                }}
+            />
 
             {aviso && (
-                <p role="alert" className="mb-4 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
                     {aviso}
                 </p>
             )}
 
-            <div className="superficie overflow-hidden" aria-live="polite">
-                <table className="w-full border-collapse text-sm">
-                    <caption className="sr-only">Ediciones programadas</caption>
-                    <thead>
-                        <tr className="border-b border-[var(--color-borde)] text-left">
-                            <th scope="col" className="p-3">Edición</th>
-                            <th scope="col" className="p-3">Programa</th>
-                            <th scope="col" className="p-3">Periodo</th>
-                            <th scope="col" className="p-3">Grupos</th>
-                            <th scope="col" className="p-3">Matrículas</th>
-                            <th scope="col" className="p-3">Estado</th>
-                            <th scope="col" className="p-3">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {cargando && (
-                            <tr>
-                                <td colSpan={7} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    Cargando ediciones…
-                                </td>
-                            </tr>
-                        )}
-                        {!cargando && filas.length === 0 && (
-                            <tr>
-                                <td colSpan={7} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    No hay ediciones que coincidan con la búsqueda.
-                                </td>
-                            </tr>
-                        )}
-                        {!cargando &&
-                            filas.map((c) => (
-                                <tr key={c.id} className="border-b border-[var(--color-borde)]">
-                                    <td className="p-3">{c.nombre}</td>
-                                    <td className="p-3">{c.programa?.nombre ?? '—'}</td>
-                                    <td className="p-3 whitespace-nowrap tabular-nums">
-                                        {c.fecha_inicio} → {c.fecha_fin}
-                                    </td>
-                                    <td className="p-3 tabular-nums">{c.grupos_count ?? 0}</td>
-                                    <td className="p-3 tabular-nums">{c.matriculas_count ?? 0}</td>
-                                    <td className="p-3">{c.estado_label}</td>
-                                    <td className="p-3">
-                                        <Link to={`/app/cohortes/${c.id}`}>Abrir</Link>
-                                    </td>
-                                </tr>
-                            ))}
-                    </tbody>
-                </table>
-            </div>
+            {cargando && <Cargador texto="Cargando" />}
+
+            <TablaDatos
+                caption="Listado de ediciones"
+                columnas={columnas}
+                compacto
+                vacio={!cargando && filas.length === 0}
+                vacioIcono="calendario"
+                vacioTitulo="No hay ediciones registradas"
+                vacioDescripcion="Crea una nueva edición para aperturar módulos de un programa."
+            >
+                {filas.map((c) => (
+                    <tr key={c.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <td className="px-4 py-3.5">
+                            <div className="text-sm font-semibold">{c.programa?.nombre ?? '—'}</div>
+                            {(c.programa?.version || c.programa?.codigo) && (
+                                <div className="font-mono text-xs text-[var(--color-texto-suave)]">
+                                    v{c.programa?.version}
+                                    {c.programa?.codigo ? ` · ${c.programa.codigo}` : ''}
+                                </div>
+                            )}
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                            <Link
+                                to={`/cohortes/${c.id}`}
+                                className="text-sm font-bold text-[var(--color-acento)] no-underline hover:underline"
+                            >
+                                {c.nombre}
+                            </Link>
+                        </td>
+                        <td className="px-4 py-3.5 text-sm text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                            {formatoFecha(c.fecha_inicio)}
+                        </td>
+                        <td className="px-4 py-3.5 text-sm text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                            {formatoFecha(c.fecha_fin)}
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                            <span className="inline-flex items-center rounded-md border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-[var(--color-acento-suave)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-acento)] tabular-nums">
+                                {c.grupos_count ?? 0}
+                            </span>
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                            <span className="inline-flex items-center rounded-md border border-[color-mix(in_srgb,var(--color-exito)_25%,transparent)] bg-[var(--color-exito-fondo)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-exito)] tabular-nums">
+                                {c.matriculas_count ?? 0}
+                            </span>
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                            <span className={`inline-flex rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${claseEstado(c.estado)}`}>
+                                {c.estado_label}
+                            </span>
+                        </td>
+                        <td className="px-4 py-3.5 text-right text-sm font-medium whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1.5">
+                                <BotonAccion to={`/cohortes/${c.id}`} icono="modulos">
+                                    Planificar
+                                </BotonAccion>
+                                <BotonAccion to={`/cohortes/${c.id}?editar=1`} icono="editar">
+                                    Editar
+                                </BotonAccion>
+                            </div>
+                        </td>
+                    </tr>
+                ))}
+            </TablaDatos>
 
             <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="ediciones" />
         </section>

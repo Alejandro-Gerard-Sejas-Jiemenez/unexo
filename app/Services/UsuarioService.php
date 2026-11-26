@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\Rol;
 use App\Models\User;
+use App\Support\ConsultaTexto;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -24,11 +25,12 @@ class UsuarioService
         return User::query()
             ->when($rol, fn ($q, $r) => $q->where('rol', $r->value))
             ->when($soloInactivos, fn ($q) => $q->where('estado', 'inactivo'))
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('nombres', 'like', "%{$busqueda}%")
-                ->orWhere('apellidos', 'like', "%{$busqueda}%")
-                ->orWhere('email', 'like', "%{$busqueda}%")
-                ->orWhere('correo_institucional', 'like', "%{$busqueda}%")))
+            ->when($busqueda !== '', fn ($q) => $q->where(function ($b) use ($busqueda) {
+                ConsultaTexto::dondeContiene($b, 'nombres', $busqueda);
+                ConsultaTexto::dondeContiene($b, 'apellidos', $busqueda, true);
+                ConsultaTexto::dondeContiene($b, 'email', $busqueda, true);
+                ConsultaTexto::dondeContiene($b, 'correo_institucional', $busqueda, true);
+            }))
             ->orderBy('apellidos')
             ->orderBy('nombres')
             ->paginate(config('limites.por_pagina'));

@@ -1,70 +1,67 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import cliente, { ErrorDeValidacion } from '../../api/cliente';
+import BotonAccion from '../../componentes/BotonAccion';
 import Campo, { claseControl } from '../../componentes/Campo';
+import Cargador from '../../componentes/Cargador';
+import EncabezadoPagina from '../../componentes/EncabezadoPagina';
+import Icono from '../../componentes/Icono';
+import Insignia, { tonoEstado } from '../../componentes/Insignia';
+import TablaDatos from '../../componentes/TablaDatos';
+import { useToast } from '../../componentes/ToastContext';
+import { formatoFecha, semanasEntre } from '../../lib/fechas';
 
-const VACIO = {
-    programa_id: '',
-    nombre: '',
-    fecha_inicio: '',
-    fecha_fin: '',
-    estado: 'programado',
-};
+const VACIO = { programa_id: '', nombre: '', fecha_inicio: '', fecha_fin: '', estado: 'programado' };
 
-/**
- * Alta y detalle de una edición. En el detalle se aperturan los grupos del plan
- * y se cambia el estado, opcionalmente propagándolo a los grupos.
- */
 export default function EdicionDetalle() {
     const { id } = useParams();
+    const [busqueda, setBusqueda] = useSearchParams();
     const navegar = useNavigate();
+    const { mostrar } = useToast();
     const editando = Boolean(id);
+    const modoFormulario = !editando || busqueda.get('editar') === '1';
 
-    const [datos, setDatos] = useState(VACIO);
-    const [edicion, setEdicion] = useState(null);
+    const [datos, setDatos] = useState(() => ({
+        ...VACIO,
+        programa_id: busqueda.get('programa_id') ?? '',
+    }));
+    const [cohorte, setCohorte] = useState(null);
     const [pendientes, setPendientes] = useState([]);
     const [opciones, setOpciones] = useState({ programas: [], docentes: [], estados: [], modalidades: [] });
-    const [apertura, setApertura] = useState({ docente_id: '', modalidad: 'virtual', cupo_minimo: '' });
-    const [propagar, setPropagar] = useState(false);
+    const [apertura, setApertura] = useState({ docente_id: '', cupo_minimo: '', modalidad: 'virtual' });
     const [errores, setErrores] = useState({});
     const [aviso, setAviso] = useState(null);
-    const [exito, setExito] = useState(null);
     const [cargando, setCargando] = useState(true);
     const [enviando, setEnviando] = useState(false);
 
-    const cargarDetalle = useCallback(async () => {
-        const { data } = await cliente.get(`/cohortes/${id}`);
-        setEdicion(data.data);
-        setPendientes(data.modulos_pendientes ?? []);
-        setDatos({
-            programa_id: data.data.programa_id,
-            nombre: data.data.nombre,
-            fecha_inicio: data.data.fecha_inicio ?? '',
-            fecha_fin: data.data.fecha_fin ?? '',
-            estado: data.data.estado,
-        });
-    }, [id]);
+    const cargar = useCallback(async () => {
+        try {
+            const { data: op } = await cliente.get('/planificacion/opciones');
+            setOpciones(op);
+
+            if (editando) {
+                const { data } = await cliente.get(`/cohortes/${id}`);
+                const c = data.data;
+                setCohorte(c);
+                setPendientes(data.modulos_pendientes ?? []);
+                setDatos({
+                    programa_id: c.programa_id ?? '',
+                    nombre: c.nombre ?? '',
+                    fecha_inicio: c.fecha_inicio ?? '',
+                    fecha_fin: c.fecha_fin ?? '',
+                    estado: c.estado ?? 'programado',
+                });
+            }
+        } catch (error) {
+            setAviso(error.message);
+        } finally {
+            setCargando(false);
+        }
+    }, [editando, id]);
 
     useEffect(() => {
-        let vigente = true;
-
-        (async () => {
-            try {
-                const { data } = await cliente.get('/planificacion/opciones');
-                if (!vigente) return;
-                setOpciones(data);
-                if (editando) await cargarDetalle();
-            } catch (error) {
-                if (vigente) setAviso(error.message);
-            } finally {
-                if (vigente) setCargando(false);
-            }
-        })();
-
-        return () => {
-            vigente = false;
-        };
-    }, [cargarDetalle, editando]);
+        cargar();
+    }, [cargar]);
 
     const cambiar = (campo) => (e) => setDatos((p) => ({ ...p, [campo]: e.target.value }));
 
@@ -72,24 +69,22 @@ export default function EdicionDetalle() {
         e.preventDefault();
         setErrores({});
         setAviso(null);
-        setExito(null);
         setEnviando(true);
 
         try {
             if (editando) {
                 const { data } = await cliente.put(`/cohortes/${id}`, datos);
-                setExito(data.mensaje);
-                await cargarDetalle();
+                mostrar(data.mensaje);
+                setBusqueda({});
+                await cargar();
             } else {
                 const { data } = await cliente.post('/cohortes', datos);
-                navegar(`/app/cohortes/${data.cohorte.id}`);
+                mostrar(data.mensaje);
+                navegar(`/cohortes/${data.cohorte.id}`, { replace: true });
             }
         } catch (error) {
             if (error instanceof ErrorDeValidacion) {
-                setErrores(
-                    Object.fromEntries(Object.entries(error.errores).map(([c, l]) => [c, l[0]])),
-                );
-                setAviso('Revisá los campos marcados.');
+                setErrores(Object.fromEntries(Object.entries(error.errores).map(([c, l]) => [c, l[0]])));
             } else {
                 setAviso(error.message);
             }
@@ -98,223 +93,455 @@ export default function EdicionDetalle() {
         }
     }
 
-    async function aperturar() {
+    async function aperturar(e) {
+        e.preventDefault();
+        setErrores({});
         setAviso(null);
-        setExito(null);
+        setEnviando(true);
+
         try {
             const { data } = await cliente.post(`/cohortes/${id}/aperturar-grupos`, apertura);
-            setExito(data.mensaje);
-            await cargarDetalle();
+            mostrar(data.mensaje);
+            await cargar();
         } catch (error) {
-            setAviso(error.errores ? Object.values(error.errores)[0][0] : error.message);
+            if (error instanceof ErrorDeValidacion) {
+                const mapeados = Object.fromEntries(Object.entries(error.errores).map(([c, l]) => [c, l[0]]));
+                setErrores(mapeados);
+                setAviso(mapeados.cohorte ?? mapeados.docente ?? error.message);
+            } else {
+                setAviso(error.message);
+            }
+        } finally {
+            setEnviando(false);
         }
     }
 
     async function cambiarEstado(estado) {
         setAviso(null);
-        setExito(null);
         try {
             const { data } = await cliente.patch(`/cohortes/${id}/estado`, {
                 estado,
-                propagar_a_grupos: propagar,
+                propagar_a_grupos: true,
             });
-            setExito(data.mensaje);
-            await cargarDetalle();
+            mostrar(data.mensaje);
+            await cargar();
         } catch (error) {
             setAviso(error.message);
         }
     }
 
-    if (cargando) return <p className="text-[var(--color-texto-suave)]">Cargando…</p>;
+    if (cargando) return <Cargador texto="Cargando" />;
 
-    return (
-        <div className="max-w-4xl space-y-8">
+    if (modoFormulario) {
+        return (
             <section>
-                <h1 className="mb-6 text-2xl font-semibold">
-                    {editando ? edicion?.nombre : 'Nueva edición'}
-                </h1>
+                <EncabezadoPagina
+                    volverA={editando ? `/cohortes/${id}` : '/cohortes'}
+                    volverTexto={editando ? `Volver a ${cohorte?.nombre ?? 'la edición'}` : 'Volver a ediciones'}
+                    titulo={editando ? 'Editar edición' : 'Nueva edición'}
+                />
 
                 {aviso && (
-                    <p role="alert" className="mb-4 text-sm text-[var(--color-error)]">{aviso}</p>
+                    <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                        {aviso}
+                    </p>
                 )}
-                {exito && (
-                    <p role="status" className="mb-4 text-sm text-[var(--color-exito)]">{exito}</p>
-                )}
 
-                <form onSubmit={guardar} noValidate className="superficie p-4">
-                    <Campo id="programa_id" etiqueta="Programa" error={errores.programa_id} requerido>
-                        {(p) => (
-                            <select {...p} className={claseControl} value={datos.programa_id}
-                                onChange={cambiar('programa_id')}>
-                                <option value="">Elegí un programa…</option>
-                                {opciones.programas.map((pr) => (
-                                    <option key={pr.id} value={pr.id}>
-                                        {pr.nombre} (v{pr.version})
-                                    </option>
-                                ))}
-                            </select>
+                <div className="superficie max-w-3xl overflow-hidden rounded-xl shadow-sm">
+                    <form onSubmit={guardar} noValidate className="p-6 sm:p-8">
+                        {!editando && (
+                            <div className="mb-6 flex items-start gap-3 rounded-xl border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-4">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-acento-suave)] text-[var(--color-acento)]">
+                                    <Icono nombre="info" className="h-4 w-4" />
+                                </span>
+                                <p className="text-xs leading-relaxed text-[var(--color-texto-suave)] sm:text-sm">
+                                    El nombre se generará automáticamente de forma correlativa (<b>Edición 1</b>,{' '}
+                                    <b>Edición 2</b>…) según el programa seleccionado. Luego podrás planificar o aperturar
+                                    todos sus grupos en un clic.
+                                </p>
+                            </div>
                         )}
-                    </Campo>
 
-                    <Campo id="nombre" etiqueta="Nombre de la edición" error={errores.nombre}
-                        requerido={editando}
-                        ayuda={editando ? undefined : 'Si lo dejás vacío, el sistema lo genera.'}>
-                        {(p) => (
-                            <input {...p} type="text" className={claseControl}
-                                value={datos.nombre} onChange={cambiar('nombre')} />
-                        )}
-                    </Campo>
-
-                    <div className="grid grid-cols-3 gap-4">
-                        <Campo id="fecha_inicio" etiqueta="Inicio" error={errores.fecha_inicio} requerido>
+                        <Campo id="programa_id" etiqueta="Programa" error={errores.programa_id} requerido esSelect>
                             {(p) => (
-                                <input {...p} type="date" className={claseControl}
-                                    value={datos.fecha_inicio} onChange={cambiar('fecha_inicio')} />
+                                <select
+                                    {...p}
+                                    className={claseControl}
+                                    disabled={editando}
+                                    value={datos.programa_id}
+                                    onChange={cambiar('programa_id')}
+                                >
+                                    <option value="">Selecciona un programa</option>
+                                    {opciones.programas.map((pr) => (
+                                        <option key={pr.id} value={pr.id}>
+                                            {pr.nombre} (v{pr.version})
+                                        </option>
+                                    ))}
+                                </select>
                             )}
                         </Campo>
-                        <Campo id="fecha_fin" etiqueta="Fin" error={errores.fecha_fin} requerido>
+
+                        {editando && (
+                            <Campo
+                                id="nombre"
+                                etiqueta="Nombre de la edición"
+                                error={errores.nombre}
+                                requerido
+                            >
+                                {(p) => (
+                                    <input
+                                        {...p}
+                                        type="text"
+                                        maxLength={150}
+                                        className={claseControl}
+                                        value={datos.nombre}
+                                        onChange={cambiar('nombre')}
+                                    />
+                                )}
+                            </Campo>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+                            <Campo id="fecha_inicio" etiqueta="Fecha de inicio" error={errores.fecha_inicio} requerido>
+                                {(p) => (
+                                    <input
+                                        {...p}
+                                        type="date"
+                                        className={claseControl}
+                                        value={datos.fecha_inicio}
+                                        onChange={cambiar('fecha_inicio')}
+                                    />
+                                )}
+                            </Campo>
+
+                            <Campo id="fecha_fin" etiqueta="Fecha de fin" error={errores.fecha_fin} requerido>
+                                {(p) => (
+                                    <input
+                                        {...p}
+                                        type="date"
+                                        className={claseControl}
+                                        value={datos.fecha_fin}
+                                        onChange={cambiar('fecha_fin')}
+                                    />
+                                )}
+                            </Campo>
+                        </div>
+
+                        <Campo id="estado" etiqueta="Estado" error={errores.estado} esSelect requerido>
                             {(p) => (
-                                <input {...p} type="date" className={claseControl}
-                                    value={datos.fecha_fin} onChange={cambiar('fecha_fin')} />
-                            )}
-                        </Campo>
-                        <Campo id="estado" etiqueta="Estado" error={errores.estado} requerido>
-                            {(p) => (
-                                <select {...p} className={claseControl} value={datos.estado}
-                                    onChange={cambiar('estado')}>
+                                <select {...p} className={claseControl} value={datos.estado} onChange={cambiar('estado')}>
                                     {opciones.estados.map((e) => (
-                                        <option key={e.valor} value={e.valor}>{e.etiqueta}</option>
+                                        <option key={e.valor} value={e.valor}>
+                                            {e.etiqueta}
+                                        </option>
                                     ))}
                                 </select>
                             )}
                         </Campo>
-                    </div>
 
-                    <div className="mt-4 flex gap-3">
-                        <button type="submit" disabled={enviando}
-                            className="rounded-lg bg-[var(--color-acento)] px-4 py-2 text-sm font-medium text-[var(--color-acento-texto)] disabled:opacity-60">
-                            {enviando ? 'Guardando…' : 'Guardar'}
-                        </button>
-                        <button type="button" onClick={() => navegar('/app/cohortes')}
-                            className="superficie px-4 py-2 text-sm">
-                            Volver
-                        </button>
-                    </div>
-                </form>
-            </section>
-
-            {editando && (
-                <>
-                    <section>
-                        <h2 className="mb-1 text-xl font-semibold">Apertura de grupos</h2>
-                        <p className="mb-4 text-sm text-[var(--color-texto-suave)]">
-                            Genera un grupo por cada módulo del plan que todavía no lo tenga.
-                            {pendientes.length > 0
-                                ? ` Faltan ${pendientes.length}: ${pendientes.map((m) => m.nombre).join(', ')}.`
-                                : ' Todos los módulos del plan ya tienen grupo.'}
-                        </p>
-
-                        <div className="superficie flex flex-wrap items-end gap-3 p-4">
-                            <label className="flex-1">
-                                <span className="mb-1 block text-sm font-medium">Docente por defecto</span>
-                                <select className={claseControl} value={apertura.docente_id}
-                                    onChange={(e) => setApertura((p) => ({ ...p, docente_id: e.target.value }))}>
-                                    <option value="">El sistema elige uno</option>
-                                    {opciones.docentes.map((d) => (
-                                        <option key={d.id} value={d.id}>{d.nombre}</option>
-                                    ))}
-                                </select>
-                            </label>
-                            <label>
-                                <span className="mb-1 block text-sm font-medium">Modalidad</span>
-                                <select className={claseControl} value={apertura.modalidad}
-                                    onChange={(e) => setApertura((p) => ({ ...p, modalidad: e.target.value }))}>
-                                    {opciones.modalidades.map((m) => (
-                                        <option key={m.valor} value={m.valor}>{m.etiqueta}</option>
-                                    ))}
-                                </select>
-                            </label>
-                            <label>
-                                <span className="mb-1 block text-sm font-medium">Cupo mínimo</span>
-                                <input type="number" min="0" className={claseControl}
-                                    value={apertura.cupo_minimo}
-                                    onChange={(e) => setApertura((p) => ({ ...p, cupo_minimo: e.target.value }))} />
-                            </label>
-                            <button type="button" onClick={aperturar} disabled={pendientes.length === 0}
-                                className="rounded-lg bg-[var(--color-acento)] px-4 py-2 text-sm font-medium text-[var(--color-acento-texto)] disabled:opacity-60">
-                                Aperturar grupos
+                        <div className="form-acciones">
+                            <button
+                                type="button"
+                                onClick={() => (editando ? setBusqueda({}) : navegar('/cohortes'))}
+                                className="btn btn-secundario"
+                            >
+                                Cancelar
+                            </button>
+                            <button type="submit" disabled={enviando} className="btn btn-primario">
+                                <Icono nombre="guardar" />
+                                {enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear edición'}
                             </button>
                         </div>
-                    </section>
+                    </form>
+                </div>
+            </section>
+        );
+    }
 
-                    <section>
-                        <h2 className="mb-4 text-xl font-semibold">
-                            Grupos de la edición ({edicion?.grupos?.length ?? 0})
-                        </h2>
+    if (!cohorte) return null;
 
-                        <div className="superficie overflow-hidden">
-                            <table className="w-full border-collapse text-sm">
-                                <caption className="sr-only">Grupos operativos de esta edición</caption>
-                                <thead>
-                                    <tr className="border-b border-[var(--color-borde)] text-left">
-                                        <th scope="col" className="p-3">Grupo</th>
-                                        <th scope="col" className="p-3">Módulo</th>
-                                        <th scope="col" className="p-3">Docente</th>
-                                        <th scope="col" className="p-3">Modalidad</th>
-                                        <th scope="col" className="p-3">Inscritos</th>
-                                        <th scope="col" className="p-3">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {(edicion?.grupos ?? []).length === 0 && (
-                                        <tr>
-                                            <td colSpan={6} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                                Todavía no se aperturaron grupos.
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {(edicion?.grupos ?? []).map((g) => (
-                                        <tr key={g.id} className="border-b border-[var(--color-borde)]">
-                                            <td className="p-3">{g.nombre}</td>
-                                            <td className="p-3">{g.modulo?.nombre ?? '—'}</td>
-                                            <td className="p-3">{g.docente ?? '—'}</td>
-                                            <td className="p-3">{g.modalidad_label}</td>
-                                            <td className="p-3 tabular-nums">
-                                                {g.inscripciones_count ?? 0}
-                                                {g.cupo_minimo ? ` / ${g.cupo_minimo}` : ''}
-                                            </td>
-                                            <td className="p-3">
-                                                <Link to={`/app/grupos/${g.id}`}>Configurar</Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+    const semanas = semanasEntre(cohorte.fecha_inicio, cohorte.fecha_fin);
+    const grupos = cohorte.grupos ?? [];
+    const modulosCubiertos = new Set(grupos.map((g) => g.modulo_id)).size;
+    const totalModulos = new Set([...grupos.map((g) => g.modulo_id), ...pendientes.map((m) => m.id)]).size;
+    const totalInscritos = grupos.reduce((acc, g) => acc + (g.inscripciones_count ?? 0), 0);
+
+    return (
+        <section>
+            <div className="mb-4">
+                <Link
+                    to="/cohortes"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-texto-suave)] no-underline transition-colors hover:text-[var(--color-acento)]"
+                >
+                    <Icono nombre="volver" className="h-4 w-4" />
+                    Volver a ediciones
+                </Link>
+            </div>
+
+            {aviso && (
+                <p role="alert" className="superficie mb-6 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                    {aviso}
+                </p>
+            )}
+
+            <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+                <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h1 className="text-3xl font-bold tracking-tight">{cohorte.nombre}</h1>
+                        <Insignia tono={tonoEstado(cohorte.estado)}>{cohorte.estado_label}</Insignia>
+                    </div>
+                    <p className="mt-1 text-sm text-[var(--color-texto-suave)]">
+                        Programa: <span className="font-semibold text-[var(--color-texto)]">{cohorte.programa?.nombre}</span>{' '}
+                        (v{cohorte.programa?.version})
+                        {cohorte.programa?.codigo && (
+                            <>
+                                {' '}
+                                · Código:{' '}
+                                <code className="rounded bg-[var(--color-acento-suave)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-acento)]">
+                                    {cohorte.programa.codigo}
+                                </code>
+                            </>
+                        )}
+                    </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-xs font-medium text-[var(--color-texto-suave)]">
+                        Estado:
+                        <select
+                            value={cohorte.estado}
+                            onChange={(e) => cambiarEstado(e.target.value)}
+                            className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie)] py-1.5 pr-8 pl-3 text-xs font-semibold shadow-sm focus:border-[var(--color-acento)] focus:outline-none"
+                        >
+                            {opciones.estados.map((est) => (
+                                <option key={est.valor} value={est.valor}>
+                                    {est.etiqueta}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+
+                    <BotonAccion
+                        to={`/cohortes/${id}?editar=1`}
+                        icono="editar"
+                        className="!rounded-lg !px-3.5 !py-2"
+                    >
+                        Editar edición
+                    </BotonAccion>
+                </div>
+            </div>
+
+            <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="superficie rounded-xl p-5 shadow-sm">
+                    <div className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                        Fechas Globales
+                    </div>
+                    <div className="text-base font-bold tabular-nums">
+                        {formatoFecha(cohorte.fecha_inicio)} – {formatoFecha(cohorte.fecha_fin)}
+                    </div>
+                    {semanas && (
+                        <div className="mt-1 text-xs text-[var(--color-texto-suave)]">
+                            {semanas} semanas de duración
                         </div>
-                    </section>
+                    )}
+                </div>
 
-                    <section>
-                        <h2 className="mb-4 text-xl font-semibold">Cambiar estado</h2>
-                        <div className="superficie p-4">
-                            <label className="mb-3 flex items-center gap-2 text-sm">
-                                <input type="checkbox" checked={propagar}
-                                    onChange={(e) => setPropagar(e.target.checked)} />
-                                Aplicar el mismo estado a todos los grupos de la edición
-                            </label>
-                            <div className="flex flex-wrap gap-2">
-                                {opciones.estados.map((e) => (
-                                    <button key={e.valor} type="button"
-                                        disabled={edicion?.estado === e.valor}
-                                        onClick={() => cambiarEstado(e.valor)}
-                                        className="superficie px-3 py-1.5 text-sm disabled:opacity-40">
-                                        {e.etiqueta}
-                                    </button>
+                <div className="superficie rounded-xl p-5 shadow-sm">
+                    <div className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                        Módulos del Programa
+                    </div>
+                    <div className="text-2xl font-bold text-[var(--color-acento)] tabular-nums">
+                        {modulosCubiertos} / {totalModulos}
+                    </div>
+                    <div className="mt-1 text-xs">
+                        {pendientes.length === 0 ? (
+                            <span className="inline-flex items-center gap-1 font-medium text-[var(--color-exito)]">
+                                <Icono nombre="check" className="h-3.5 w-3.5" />
+                                Planificación completa
+                            </span>
+                        ) : (
+                            <span className="font-medium text-[var(--color-aviso)]">
+                                Faltan {pendientes.length} por aperturar
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                <div className="superficie rounded-xl p-5 shadow-sm">
+                    <div className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                        Grupos Aperturados
+                    </div>
+                    <div className="text-2xl font-bold tabular-nums">{grupos.length}</div>
+                    <div className="mt-1 text-xs text-[var(--color-texto-suave)]">Grupos operativos activos</div>
+                </div>
+
+                <div className="superficie rounded-xl p-5 shadow-sm">
+                    <div className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                        Alumnos Matriculados
+                    </div>
+                    <div className="text-2xl font-bold text-[var(--color-exito)] tabular-nums">
+                        {cohorte.matriculas_count ?? totalInscritos}
+                    </div>
+                    <div className="mt-1 text-xs text-[var(--color-texto-suave)]">Estudiantes en la edición</div>
+                </div>
+            </div>
+
+            {pendientes.length > 0 && (
+                <form
+                    onSubmit={aperturar}
+                    className="mb-8 rounded-xl border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-[var(--color-acento-suave)]/70 p-6 shadow-sm"
+                >
+                    <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+                        <div className="max-w-2xl">
+                            <div className="mb-1 flex items-center gap-2 text-base font-bold text-[var(--color-acento)]">
+                                <Icono nombre="modulos" className="h-5 w-5" />
+                                <span>Apertura Asistida de Grupos Operativos</span>
+                            </div>
+                            <p className="text-xs text-[var(--color-texto-suave)] sm:text-sm">
+                                Esta edición tiene{' '}
+                                <span className="font-bold text-[var(--color-acento)]">
+                                    {pendientes.length} módulo(s) pendiente(s)
+                                </span>{' '}
+                                de apertura. El generador creará un grupo por módulo con el período de esta edición.
+                            </p>
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                {pendientes.map((pend) => (
+                                    <span
+                                        key={pend.id}
+                                        className="inline-flex items-center rounded border border-[color-mix(in_srgb,var(--color-acento)_25%,transparent)] bg-[var(--color-superficie)] px-2 py-0.5 font-mono text-[11px] font-medium"
+                                    >
+                                        {pend.codigo}: {pend.nombre.slice(0, 26)}
+                                    </span>
                                 ))}
                             </div>
                         </div>
-                    </section>
-                </>
+
+                        <div className="flex flex-wrap items-end gap-2.5">
+                            <label className="text-xs font-medium">
+                                <span className="mb-1 block text-[var(--color-texto-suave)]">Docente inicial</span>
+                                <select
+                                    className={`${claseControl} !min-h-9 text-xs`}
+                                    value={apertura.docente_id}
+                                    onChange={(e) => setApertura((a) => ({ ...a, docente_id: e.target.value }))}
+                                >
+                                    <option value="">Por asignar</option>
+                                    {opciones.docentes.map((d) => (
+                                        <option key={d.id} value={d.id}>
+                                            {d.nombre} ({d.grupos_activos_count ?? 0})
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+
+                            <label className="text-xs font-medium">
+                                <span className="mb-1 block text-[var(--color-texto-suave)]">Modalidad</span>
+                                <select
+                                    className={`${claseControl} !min-h-9 text-xs`}
+                                    value={apertura.modalidad}
+                                    onChange={(e) => setApertura((a) => ({ ...a, modalidad: e.target.value }))}
+                                >
+                                    {opciones.modalidades.map((m) => (
+                                        <option key={m.valor} value={m.valor}>
+                                            {m.etiqueta}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+
+                            <button type="submit" disabled={enviando} className="btn btn-primario !min-h-9 text-xs">
+                                <Icono nombre="mas" className="h-4 w-4" />
+                                Aperturar {pendientes.length} Grupos
+                            </button>
+                        </div>
+                    </div>
+                </form>
             )}
-        </div>
+
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 className="text-xl font-bold">Grupos de la edición</h2>
+                    <p className="text-xs text-[var(--color-texto-suave)]">
+                        Puedes gestionar docentes, modalidades y horarios o agregar grupos paralelos.
+                    </p>
+                </div>
+                <BotonAccion
+                    to={`/grupos/nuevo?cohorte_id=${id}`}
+                    icono="mas"
+                    className="!rounded-lg !px-3.5 !py-2"
+                >
+                    Añadir grupo paralelo
+                </BotonAccion>
+            </div>
+
+            <TablaDatos
+                caption="Grupos operativos de la edición"
+                columnas={[
+                    { etiqueta: 'Módulo' },
+                    { etiqueta: 'Grupo' },
+                    { etiqueta: 'Período' },
+                    { etiqueta: 'Fase / Estado' },
+                    { etiqueta: 'Inscritos' },
+                    { etiqueta: 'Acciones', srOnly: true, alinear: 'derecha' },
+                ]}
+                vacio={grupos.length === 0}
+                vacioIcono="modulos"
+                vacioTitulo="Todavía no hay grupos aperturados en esta edición"
+                vacioDescripcion="Usa la apertura asistida arriba o añade un grupo manualmente."
+            >
+                {grupos.map((g) => {
+                    const cubierto = g.cupo_minimo > 0 && (g.inscripciones_count ?? 0) >= g.cupo_minimo;
+
+                    return (
+                        <tr key={g.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                            <td className="px-6 py-4">
+                                <div className="text-sm font-semibold">{g.modulo?.nombre}</div>
+                                <div className="font-mono text-xs text-[var(--color-texto-suave)]">
+                                    {g.modulo?.codigo}
+                                    {g.modulo?.duracion_horas ? ` · ${g.modulo.duracion_horas}h` : ''}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                <div className="text-sm font-semibold text-[var(--color-acento)]">{g.nombre}</div>
+                                <div className="text-xs text-[var(--color-texto-suave)]">
+                                    {g.modalidad_label} · {g.docente ?? 'Sin asignar'}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-[var(--color-texto-suave)] whitespace-nowrap tabular-nums">
+                                {g.periodo_texto || '—'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                                <Insignia tono={tonoEstado(g.fase ?? g.estado)}>
+                                    {g.fase_etiqueta ?? g.estado_label}
+                                </Insignia>
+                            </td>
+                            <td className="px-6 py-4 text-sm whitespace-nowrap tabular-nums">
+                                <span className="font-semibold">{g.inscripciones_count ?? 0}</span>
+                                {g.cupo_minimo ? (
+                                    <span className="ml-1 text-xs text-[var(--color-texto-suave)]">
+                                        (mín. {g.cupo_minimo})
+                                    </span>
+                                ) : null}
+                                {cubierto && (
+                                    <span className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-[var(--color-exito-fondo)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-exito)]">
+                                        <Icono nombre="check" className="h-3 w-3" />
+                                        Cubierto
+                                    </span>
+                                )}
+                            </td>
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                                <div className="inline-flex items-center gap-2">
+                                    <BotonAccion to={`/grupos/${g.id}/ver`} icono="usuarios">
+                                        Ver
+                                    </BotonAccion>
+                                    <BotonAccion to={`/grupos/${g.id}`} icono="editar">
+                                        Editar
+                                    </BotonAccion>
+                                </div>
+                            </td>
+                        </tr>
+                    );
+                })}
+            </TablaDatos>
+        </section>
     );
 }

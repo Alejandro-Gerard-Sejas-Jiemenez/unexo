@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\EstadoMatricula;
 use App\Models\Matricula;
+use App\Support\ConsultaTexto;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -24,10 +25,11 @@ class MatriculaConsultaService
             ->withCount('inscripciones')
             ->when($estado, fn ($q, $e) => $q->where('estado', $e->value))
             ->when(in_array($origen, ['manual', 'crm'], true), fn ($q) => $q->where('origen', $origen))
-            ->when($busqueda !== '', fn ($q) => $q->whereHas('estudiante', fn ($u) => $u
-                ->where('nombres', 'like', "%{$busqueda}%")
-                ->orWhere('apellidos', 'like', "%{$busqueda}%")
-                ->orWhere('email', 'like', "%{$busqueda}%")))
+            ->when($busqueda !== '', fn ($q) => $q->whereHas('estudiante', function ($u) use ($busqueda) {
+                ConsultaTexto::dondeContiene($u, 'nombres', $busqueda);
+                ConsultaTexto::dondeContiene($u, 'apellidos', $busqueda, true);
+                ConsultaTexto::dondeContiene($u, 'email', $busqueda, true);
+            }))
             ->orderByDesc('fecha_matricula')
             ->paginate(config('limites.por_pagina'));
     }

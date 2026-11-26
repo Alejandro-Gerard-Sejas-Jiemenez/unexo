@@ -1,36 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import cliente, { ErrorDeValidacion } from '../api/cliente';
+import BotonAccion from '../componentes/BotonAccion';
 import Campo, { claseControl } from '../componentes/Campo';
+import Cargador from '../componentes/Cargador';
+import EncabezadoPagina from '../componentes/EncabezadoPagina';
+import Icono from '../componentes/Icono';
+import Paginacion from '../componentes/Paginacion';
+import TablaDatos from '../componentes/TablaDatos';
+import { useToast } from '../componentes/ToastContext';
+import useListado from '../hooks/useListado';
 
-const VACIO = { nombre: '', capacidad: '' };
-
-/** Aulas físicas que se asignan a los grupos presenciales o mixtos. */
 export default function Aulas() {
-    const [aulas, setAulas] = useState([]);
-    const [limites, setLimites] = useState({});
-    const [datos, setDatos] = useState(VACIO);
+    const { mostrar } = useToast();
+    const { filas: aulas, meta, cargando, aviso, setAviso, irAPagina, refrescar } = useListado('/aulas');
+
     const [editando, setEditando] = useState(null);
+    const [datos, setDatos] = useState({ nombre: '', capacidad: '' });
     const [errores, setErrores] = useState({});
-    const [aviso, setAviso] = useState(null);
-    const [exito, setExito] = useState(null);
-    const [cargando, setCargando] = useState(true);
     const [enviando, setEnviando] = useState(false);
-
-    const cargar = useCallback(async () => {
-        try {
-            const { data } = await cliente.get('/aulas');
-            setAulas(data.data);
-            setLimites(data.limites ?? {});
-        } catch (error) {
-            setAviso(error.message);
-        } finally {
-            setCargando(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        cargar();
-    }, [cargar]);
 
     function editar(aula) {
         setEditando(aula.id);
@@ -40,7 +27,7 @@ export default function Aulas() {
 
     function cancelar() {
         setEditando(null);
-        setDatos(VACIO);
+        setDatos({ nombre: '', capacidad: '' });
         setErrores({});
     }
 
@@ -48,21 +35,22 @@ export default function Aulas() {
         e.preventDefault();
         setErrores({});
         setAviso(null);
-        setExito(null);
         setEnviando(true);
 
         try {
-            const { data } = editando
-                ? await cliente.put(`/aulas/${editando}`, datos)
-                : await cliente.post('/aulas', datos);
-            setExito(data.mensaje);
+            if (editando) {
+                const { data } = await cliente.put(`/aulas/${editando}`, datos);
+                mostrar(data.mensaje);
+            } else {
+                const { data } = await cliente.post('/aulas', datos);
+                mostrar(data.mensaje);
+            }
             cancelar();
-            await cargar();
+            await refrescar();
         } catch (error) {
             if (error instanceof ErrorDeValidacion) {
-                setErrores(
-                    Object.fromEntries(Object.entries(error.errores).map(([c, l]) => [c, l[0]])),
-                );
+                setErrores(Object.fromEntries(Object.entries(error.errores).map(([c, l]) => [c, l[0]])));
+                setAviso('Revisa los campos marcados.');
             } else {
                 setAviso(error.message);
             }
@@ -72,93 +60,108 @@ export default function Aulas() {
     }
 
     return (
-        <section className="max-w-3xl">
-            <h1 className="mb-1 text-2xl font-semibold">Aulas</h1>
-            <p className="mb-6 text-sm text-[var(--color-texto-suave)]">
-                Espacios físicos para los grupos presenciales o mixtos. La capacidad se
-                compara con los inscritos al asignar el aula.
-            </p>
+        <section>
+            <EncabezadoPagina
+                grande
+                titulo="Aulas"
+                subtitulo="Espacios físicos que se asignan a los grupos presenciales."
+            />
 
-            {aviso && <p role="alert" className="mb-4 text-sm text-[var(--color-error)]">{aviso}</p>}
-            {exito && <p role="status" className="mb-4 text-sm text-[var(--color-exito)]">{exito}</p>}
+            {aviso && (
+                <p role="alert" className="superficie mb-6 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
+                    {aviso}
+                </p>
+            )}
 
-            <div className="superficie mb-6 overflow-hidden">
-                <table className="w-full border-collapse text-sm">
-                    <caption className="sr-only">Aulas registradas</caption>
-                    <thead>
-                        <tr className="border-b border-[var(--color-borde)] text-left">
-                            <th scope="col" className="p-3">Aula</th>
-                            <th scope="col" className="p-3">Capacidad</th>
-                            <th scope="col" className="p-3">Grupos</th>
-                            <th scope="col" className="p-3">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {cargando && (
-                            <tr>
-                                <td colSpan={4} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    Cargando…
-                                </td>
-                            </tr>
+            <div className="superficie mb-10 max-w-3xl overflow-hidden rounded-xl shadow-sm">
+                <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                    <h2 className="text-lg font-semibold">
+                        {editando ? 'Editar aula' : 'Registrar un aula'}
+                    </h2>
+                </div>
+
+                <form onSubmit={enviar} noValidate className="p-6">
+                    <div className="mb-2 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+                        <Campo id="nombre" etiqueta="Nombre" error={errores.nombre} requerido>
+                            {(p) => (
+                                <input
+                                    {...p}
+                                    type="text"
+                                    maxLength={80}
+                                    placeholder="Ej. Aula 101"
+                                    className={claseControl}
+                                    value={datos.nombre}
+                                    onChange={(e) => setDatos((d) => ({ ...d, nombre: e.target.value }))}
+                                />
+                            )}
+                        </Campo>
+
+                        <Campo id="capacidad" etiqueta="Capacidad" error={errores.capacidad} ayuda="Opcional">
+                            {(p) => (
+                                <input
+                                    {...p}
+                                    type="number"
+                                    step="1"
+                                    min="1"
+                                    max="1000"
+                                    className={claseControl}
+                                    value={datos.capacidad}
+                                    onChange={(e) => setDatos((d) => ({ ...d, capacidad: e.target.value }))}
+                                />
+                            )}
+                        </Campo>
+                    </div>
+
+                    <div className="mt-4 flex justify-end gap-3 border-t border-[var(--color-borde)] pt-4">
+                        {editando && (
+                            <button type="button" onClick={cancelar} className="btn btn-secundario">
+                                Cancelar
+                            </button>
                         )}
-                        {!cargando && aulas.length === 0 && (
-                            <tr>
-                                <td colSpan={4} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    Todavía no hay aulas registradas.
-                                </td>
-                            </tr>
-                        )}
-                        {aulas.map((a) => (
-                            <tr key={a.id} className="border-b border-[var(--color-borde)]">
-                                <td className="p-3">{a.nombre}</td>
-                                <td className="p-3 tabular-nums">{a.capacidad ?? '—'}</td>
-                                <td className="p-3 tabular-nums">{a.grupos_count}</td>
-                                <td className="p-3">
-                                    <button type="button" onClick={() => editar(a)}
-                                        className="border-0 bg-transparent p-0 underline">
-                                        Editar
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        <button type="submit" disabled={enviando} className="btn btn-primario">
+                            <Icono nombre={editando ? 'guardar' : 'mas'} className="h-4 w-4" />
+                            {enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Registrar aula'}
+                        </button>
+                    </div>
+                </form>
             </div>
 
-            <form onSubmit={enviar} noValidate className="superficie p-4">
-                <h2 className="mb-4 text-lg font-semibold">
-                    {editando ? 'Editar aula' : 'Registrar un aula'}
-                </h2>
+            {cargando && <Cargador texto="Cargando" />}
 
-                <div className="grid grid-cols-2 gap-4">
-                    <Campo id="nombre" etiqueta="Nombre" error={errores.nombre} requerido>
-                        {(p) => (
-                            <input {...p} type="text" maxLength={limites.nombre} className={claseControl}
-                                value={datos.nombre}
-                                onChange={(e) => setDatos((d) => ({ ...d, nombre: e.target.value }))} />
-                        )}
-                    </Campo>
-                    <Campo id="capacidad" etiqueta="Capacidad" error={errores.capacidad}>
-                        {(p) => (
-                            <input {...p} type="number" min="1" max={limites.capacidad}
-                                className={claseControl} value={datos.capacidad}
-                                onChange={(e) => setDatos((d) => ({ ...d, capacidad: e.target.value }))} />
-                        )}
-                    </Campo>
-                </div>
+            <TablaDatos
+                caption="Aulas registradas"
+                columnas={[
+                    { etiqueta: 'Nombre' },
+                    { etiqueta: 'Capacidad' },
+                    { etiqueta: 'Grupos' },
+                    { etiqueta: 'Acciones', alinear: 'derecha' },
+                ]}
+                vacio={!cargando && aulas.length === 0}
+                vacioIcono="catalogo"
+                vacioTitulo="No hay aulas registradas"
+                vacioDescripcion="Comienza registrando la primera aula usando el formulario de arriba."
+            >
+                {aulas.map((a) => (
+                    <tr key={a.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <td className="px-6 py-4 text-sm font-medium">{a.nombre}</td>
+                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] tabular-nums">
+                            {a.capacidad ?? '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center rounded-full bg-[var(--color-superficie-2)] px-2.5 py-0.5 text-xs font-medium">
+                                {a.grupos_count ?? 0} grupos
+                            </span>
+                        </td>
+                        <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <BotonAccion onClick={() => editar(a)} icono="editar">
+                                Editar
+                            </BotonAccion>
+                        </td>
+                    </tr>
+                ))}
+            </TablaDatos>
 
-                <div className="flex gap-3">
-                    <button type="submit" disabled={enviando}
-                        className="rounded-lg bg-[var(--color-acento)] px-4 py-2 text-sm font-medium text-[var(--color-acento-texto)] disabled:opacity-60">
-                        {enviando ? 'Guardando…' : 'Guardar'}
-                    </button>
-                    {editando && (
-                        <button type="button" onClick={cancelar} className="superficie px-4 py-2 text-sm">
-                            Cancelar
-                        </button>
-                    )}
-                </div>
-            </form>
+            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="aulas" />
         </section>
     );
 }

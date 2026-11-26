@@ -3,82 +3,81 @@
 namespace App\Http\Controllers\Api\Panel;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AulaRequest;
+use App\Http\Requests\ClienteApiRequest;
 use App\Models\Aula;
 use App\Models\ClienteApi;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
-/**
- * Configuración del administrador: aulas y clientes de la API (CU28).
- */
 class ConfiguracionApiController extends Controller
 {
-    // ------------------------------------------------------------- aulas
-
     public function aulas(): JsonResponse
     {
+        $pagina = Aula::withCount('grupos')
+            ->orderBy('nombre')
+            ->paginate(config('limites.por_pagina'));
+
         return response()->json([
-            'data' => Aula::withCount('grupos')->orderBy('nombre')->get()->map(fn (Aula $a) => [
+            'data' => $pagina->getCollection()->map(fn (Aula $a) => [
                 'id' => $a->id,
                 'nombre' => $a->nombre,
                 'capacidad' => $a->capacidad,
                 'grupos_count' => $a->grupos_count,
             ]),
+            'meta' => [
+                'current_page' => $pagina->currentPage(),
+                'last_page' => $pagina->lastPage(),
+                'per_page' => $pagina->perPage(),
+                'total' => $pagina->total(),
+            ],
             'limites' => config('limites.aulas'),
         ]);
     }
 
-    public function guardarAula(Request $request): JsonResponse
+    public function guardarAula(AulaRequest $request): JsonResponse
     {
-        $aula = Aula::create($this->validarAula($request, null));
+        $aula = Aula::create($request->validated());
 
         return response()->json(['aula' => $aula, 'mensaje' => 'Aula registrada correctamente.'], 201);
     }
 
-    public function actualizarAula(Request $request, Aula $aula): JsonResponse
+    public function actualizarAula(AulaRequest $request, Aula $aula): JsonResponse
     {
-        $aula->update($this->validarAula($request, $aula));
+        $aula->update($request->validated());
 
         return response()->json(['aula' => $aula->fresh(), 'mensaje' => 'Aula actualizada correctamente.']);
     }
 
-    private function validarAula(Request $request, ?Aula $aula): array
-    {
-        return $request->validate([
-            'nombre' => ['required', 'string', 'max:'.config('limites.aulas.nombre'), Rule::unique('aulas', 'nombre')->ignore($aula)],
-            'capacidad' => ['nullable', 'integer', 'min:1', 'max:'.config('limites.aulas.capacidad')],
-        ], [], ['nombre' => 'nombre del aula']);
-    }
-
-    // ------------------------------------------------- clientes de la API
-
     public function clientesApi(): JsonResponse
     {
+        $pagina = ClienteApi::withCount('tokens')
+            ->orderBy('nombre')
+            ->paginate(config('limites.por_pagina'));
+
         return response()->json([
-            'data' => ClienteApi::withCount('tokens')->orderBy('nombre')->get()
-                ->map(fn (ClienteApi $c) => [
-                    'id' => $c->id,
-                    'nombre' => $c->nombre,
-                    'tokens_count' => $c->tokens_count,
-                    'creado' => $c->created_at?->format('d/m/Y'),
-                ]),
+            'data' => $pagina->getCollection()->map(fn (ClienteApi $c) => [
+                'id' => $c->id,
+                'nombre' => $c->nombre,
+                'tokens_count' => $c->tokens_count,
+                'creado' => $c->created_at?->format('d/m/Y H:i'),
+            ]),
+            'meta' => [
+                'current_page' => $pagina->currentPage(),
+                'last_page' => $pagina->lastPage(),
+                'per_page' => $pagina->perPage(),
+                'total' => $pagina->total(),
+            ],
         ]);
     }
 
-    public function crearClienteApi(Request $request): JsonResponse
+    public function crearClienteApi(ClienteApiRequest $request): JsonResponse
     {
-        $datos = $request->validate([
-            'nombre' => ['required', 'string', 'max:80', 'unique:api_clientes,nombre'],
-        ], [], ['nombre' => 'nombre del cliente']);
-
-        $cliente = ClienteApi::create($datos);
+        $cliente = ClienteApi::create($request->validated());
 
         return response()->json([
             'cliente' => ['id' => $cliente->id, 'nombre' => $cliente->nombre],
-            // El token se muestra una sola vez: en la base queda solo su hash.
             'token' => $cliente->createToken('crm')->plainTextToken,
-            'mensaje' => "Cliente «{$cliente->nombre}» creado. Copiá el token ahora: no se vuelve a mostrar.",
+            'mensaje' => "Cliente «{$cliente->nombre}» creado. Copia el token ahora: no se vuelve a mostrar.",
         ], 201);
     }
 

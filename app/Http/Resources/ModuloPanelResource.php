@@ -20,7 +20,6 @@ class ModuloPanelResource extends JsonResource
             'descripcion' => $this->descripcion,
             'prerrequisito' => $this->prerrequisito,
             'duracion_horas' => $this->duracion_horas,
-            'es_independiente' => (bool) $this->es_independiente,
             'estado_comercial' => $this->estado_comercial->value,
             'estado_label' => $this->estado_comercial->label(),
             'pdf_temario_url' => $this->pdf_temario_url,

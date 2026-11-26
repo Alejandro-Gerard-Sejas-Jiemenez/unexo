@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use DateTimeInterface;
+use Illuminate\Container\Container;
 use Illuminate\Support\Carbon;
 
 /**
@@ -32,11 +33,16 @@ class Reporte
         public readonly array $secciones,
         public readonly bool $sinDatos,
         public readonly bool $horizontal = false,
-    ) {}
+    ) {
+    }
 
     public static function ahora(): Carbon
     {
-        return Carbon::now(self::ZONA_HORARIA);
+        $zona = Container::getInstance()?->bound('config')
+            ? (string) config('app.timezone', self::ZONA_HORARIA)
+            : self::ZONA_HORARIA;
+
+        return Carbon::now($zona);
     }
 
     public static function porcentaje(int $cantidad, int $total): float
@@ -52,7 +58,7 @@ class Reporte
         }
 
         return match ($tipo) {
-            'porcentaje' => number_format((float) $valor, 1, ',', '').' %',
+            'porcentaje' => number_format((float) $valor, 1, ',', '') . ' %',
             'fecha' => $valor instanceof DateTimeInterface ? $valor->format('d/m/Y') : (string) $valor,
             default => (string) $valor,
         };

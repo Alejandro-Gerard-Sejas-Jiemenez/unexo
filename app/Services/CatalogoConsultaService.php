@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\EstadoComercial;
 use App\Models\Modulo;
 use App\Models\Programa;
+use App\Support\ConsultaTexto;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -16,18 +17,20 @@ class CatalogoConsultaService
     /**
      * @param  array{estado?: ?string, atencion?: ?string, q?: ?string}  $filtros
      */
-    public function programas(array $filtros): LengthAwarePaginator
+    public function programas(array $filtros, bool $soloVisibles = false): LengthAwarePaginator
     {
         $estado = EstadoComercial::tryFrom((string) ($filtros['estado'] ?? ''));
         $sinModulosAbiertos = ($filtros['atencion'] ?? null) === 'sin-modulos-abiertos';
         $busqueda = trim((string) ($filtros['q'] ?? ''));
 
         return Programa::withCount('modulos')
-            ->when($estado, fn ($q, $e) => $q->where('estado_comercial', $e->value))
-            ->when($sinModulosAbiertos, fn ($q) => $q->abiertoSinModulosAbiertos())
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('nombre', 'like', "%{$busqueda}%")))
+            ->when($soloVisibles, fn ($q) => $q->visibleParaCrm())
+            ->when(! $soloVisibles && $estado !== null, fn ($q) => $q->where('estado_comercial', $estado->value))
+            ->when(! $soloVisibles && $sinModulosAbiertos, fn ($q) => $q->abiertoSinModulosAbiertos())
+            ->when($busqueda !== '', fn ($q) => $q->where(function ($b) use ($busqueda) {
+                ConsultaTexto::dondeContiene($b, 'codigo', $busqueda);
+                ConsultaTexto::dondeContiene($b, 'nombre', $busqueda, true);
+            }))
             ->orderBy('nombre')
             ->paginate(config('limites.por_pagina'));
     }
@@ -35,16 +38,18 @@ class CatalogoConsultaService
     /**
      * @param  array{estado?: ?string, q?: ?string}  $filtros
      */
-    public function modulos(array $filtros): LengthAwarePaginator
+    public function modulos(array $filtros, bool $soloVisibles = false): LengthAwarePaginator
     {
         $estado = EstadoComercial::tryFrom((string) ($filtros['estado'] ?? ''));
         $busqueda = trim((string) ($filtros['q'] ?? ''));
 
         return Modulo::withCount('programas')
-            ->when($estado, fn ($q, $e) => $q->where('estado_comercial', $e->value))
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('codigo', 'like', "%{$busqueda}%")
-                ->orWhere('nombre', 'like', "%{$busqueda}%")))
+            ->when($soloVisibles, fn ($q) => $q->visibleParaCrm())
+            ->when(! $soloVisibles && $estado !== null, fn ($q) => $q->where('estado_comercial', $estado->value))
+            ->when($busqueda !== '', fn ($q) => $q->where(function ($b) use ($busqueda) {
+                ConsultaTexto::dondeContiene($b, 'codigo', $busqueda);
+                ConsultaTexto::dondeContiene($b, 'nombre', $busqueda, true);
+            }))
             ->orderBy('nombre')
             ->paginate(config('limites.por_pagina'));
     }

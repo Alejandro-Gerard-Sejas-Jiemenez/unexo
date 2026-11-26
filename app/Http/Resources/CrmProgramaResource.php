@@ -25,7 +25,7 @@ class CrmProgramaResource extends JsonResource
             'version' => $this->version,
             'descripcion' => $this->descripcion,
             'precio' => $this->precio !== null ? (float) $this->precio : null,
-            'moneda' => 'BOB',
+            'moneda' => strtoupper((string) config('services.payments.currency', 'BOB')),
             'requisitos_ingreso' => $this->requisitos_ingreso,
             'certificado_otorga' => $certificado?->value ?? 'no_definido',
             'certificado_otorga_label' => $certificado?->label() ?? 'No definido',

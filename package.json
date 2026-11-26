@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "concurrently -k -c \"#38bdf8,#a855f7\" -n \"laravel,vite\" \"php artisan serve\" \"vite\"",
+        "vite": "vite"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

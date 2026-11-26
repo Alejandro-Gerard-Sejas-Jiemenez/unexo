@@ -14,17 +14,22 @@ class MetodoPagoRequest extends FormRequest
 
     public function rules(): array
     {
+        $usaStripe = config('services.payments.driver') === 'stripe';
+
         return [
             'tipo' => ['required', Rule::in(['tarjeta', 'qr', 'transferencia'])],
             'titular' => ['required', 'string', 'max:120'],
-            // Solo se usa para quedarnos con los últimos cuatro dígitos; no se guarda entero.
             'numero' => [
-                Rule::requiredIf(fn () => $this->input('tipo') === 'tarjeta'),
+                Rule::requiredIf(fn () => $this->input('tipo') === 'tarjeta' && ! $usaStripe && ! $this->filled('stripe_payment_method_id')),
                 'nullable', 'string', 'min:13', 'max:23',
             ],
             'vencimiento' => [
-                Rule::requiredIf(fn () => $this->input('tipo') === 'tarjeta'),
+                Rule::requiredIf(fn () => $this->input('tipo') === 'tarjeta' && ! $usaStripe && ! $this->filled('stripe_payment_method_id')),
                 'nullable', 'string', 'regex:/^(0[1-9]|1[0-2])\/\d{2}$/',
+            ],
+            'stripe_payment_method_id' => [
+                Rule::requiredIf(fn () => $this->input('tipo') === 'tarjeta' && $usaStripe),
+                'nullable', 'string', 'max:100',
             ],
             'etiqueta' => ['nullable', 'string', 'max:60'],
             'predeterminado' => ['boolean'],
@@ -38,6 +43,7 @@ class MetodoPagoRequest extends FormRequest
             'titular' => 'titular',
             'numero' => 'número de tarjeta',
             'vencimiento' => 'fecha de vencimiento',
+            'stripe_payment_method_id' => 'método de pago de Stripe',
             'etiqueta' => 'etiqueta',
         ];
     }

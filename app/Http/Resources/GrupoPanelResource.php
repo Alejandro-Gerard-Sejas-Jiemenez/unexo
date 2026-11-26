@@ -13,6 +13,10 @@ class GrupoPanelResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $mostrarEnlace = $this->additional['ocultar_videoconferencia'] ?? false
+            ? null
+            : $this->enlace_videoconferencia;
+
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
@@ -22,6 +26,7 @@ class GrupoPanelResource extends JsonResource
                 'id' => $this->modulo->id,
                 'nombre' => $this->modulo->nombre,
                 'codigo' => $this->modulo->codigo,
+                'duracion_horas' => $this->modulo->duracion_horas,
             ]),
             'cohorte_id' => $this->cohorte_id,
             'cohorte' => $this->whenLoaded('cohorte', fn () => $this->cohorte ? [
@@ -37,18 +42,33 @@ class GrupoPanelResource extends JsonResource
             'aula' => $this->whenLoaded('aula', fn () => $this->aula?->nombre),
             'fecha_inicio' => $this->fecha_inicio?->format('Y-m-d'),
             'fecha_fin' => $this->fecha_fin?->format('Y-m-d'),
+            'periodo_inicio' => $this->periodo_inicio?->format('Y-m-d'),
+            'periodo_fin' => $this->periodo_fin?->format('Y-m-d'),
+            'periodo_texto' => $this->periodo_texto,
+            'fase' => $this->fase,
+            'fase_etiqueta' => $this->fase_etiqueta,
             'modalidad' => $this->modalidad->value,
-            'modalidad_label' => ucfirst($this->modalidad->value),
-            'enlace_videoconferencia' => $this->enlace_videoconferencia,
+            'modalidad_label' => $this->modalidad->label(),
+            'enlace_videoconferencia' => $mostrarEnlace,
             'cupo_minimo' => $this->cupo_minimo,
             'estado' => $this->estado->value,
             'estado_label' => $this->estado->label(),
-            'inscripciones_count' => $this->whenCounted('inscripciones'),
+            'inscripciones_count' => $this->inscritos_count ?? $this->whenCounted('inscripciones'),
+            'quorum' => $this->quorum,
             'horarios' => $this->whenLoaded('horarios', fn () => $this->horarios->map(fn ($h) => [
                 'dia_semana' => $h->dia_semana instanceof \BackedEnum ? $h->dia_semana->value : $h->dia_semana,
                 'dia_label' => $h->dia_semana instanceof \BackedEnum ? $h->dia_semana->label() : null,
                 'hora_inicio' => substr((string) $h->hora_inicio, 0, 5),
                 'hora_fin' => substr((string) $h->hora_fin, 0, 5),
+            ])->values()),
+            'inscritos' => $this->whenLoaded('inscripciones', fn () => $this->inscripciones->map(fn ($i) => [
+                'id' => $i->id,
+                'matricula_id' => $i->matricula_id,
+                'nombre' => $i->matricula?->estudiante?->nombre_completo,
+                'correo_institucional' => $i->matricula?->estudiante?->correo_institucional,
+                'email' => $i->matricula?->estudiante?->email,
+                'estado_matricula' => $i->matricula?->estado?->value,
+                'estado_matricula_label' => $i->matricula?->estado?->label(),
             ])->values()),
         ];
     }

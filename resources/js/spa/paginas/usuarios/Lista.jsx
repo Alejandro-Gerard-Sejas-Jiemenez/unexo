@@ -1,202 +1,234 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import cliente from '../../api/cliente';
-import { claseControl } from '../../componentes/Campo';
+import { useAuth } from '../../auth/AuthContext';
+import { conBase } from '../../base';
+import BarraHerramientas from '../../componentes/BarraHerramientas';
+import BotonAccion from '../../componentes/BotonAccion';
+import Cargador from '../../componentes/Cargador';
+import DialogoConfirmacion from '../../componentes/DialogoConfirmacion';
+import EncabezadoPagina from '../../componentes/EncabezadoPagina';
+import Icono from '../../componentes/Icono';
+import Paginacion from '../../componentes/Paginacion';
+import TablaDatos from '../../componentes/TablaDatos';
+import { useToast } from '../../componentes/ToastContext';
+import useListado from '../../hooks/useListado';
 
-export default function UsuariosLista() {
-    const [parametros, setParametros] = useSearchParams();
-    const [pagina, setPagina] = useState(null);
-    const [cargando, setCargando] = useState(true);
-    const [aviso, setAviso] = useState(null);
-
-    const consulta = {
-        q: parametros.get('q') ?? '',
-        rol: parametros.get('rol') ?? '',
-        estado: parametros.get('estado') ?? '',
-        page: parametros.get('page') ?? '1',
-    };
-    const clave = parametros.toString();
-
-    const cargar = useCallback(async (query) => {
-        setCargando(true);
-        setAviso(null);
-        try {
-            const { data } = await cliente.get(`/usuarios?${query}`);
-            setPagina(data);
-        } catch (error) {
-            setAviso(error.message);
-        } finally {
-            setCargando(false);
-        }
-    }, []);
+function AvatarUsuario({ usuario }) {
+    const [error, setError] = useState(false);
 
     useEffect(() => {
-        cargar(clave);
-    }, [cargar, clave]);
+        setError(false);
+    }, [usuario.foto_perfil_url]);
 
-    /** Al cambiar un filtro volvemos a la primera página: si no, se ve vacío. */
-    function filtrar(campo, valor) {
-        const siguiente = new URLSearchParams(parametros);
-        valor ? siguiente.set(campo, valor) : siguiente.delete(campo);
-        siguiente.delete('page');
-        setParametros(siguiente);
+    if (usuario.foto_perfil_url && !error) {
+        return (
+            <img
+                src={conBase(usuario.foto_perfil_url)}
+                alt=""
+                onError={() => setError(true)}
+                className="h-7 w-7 rounded-full object-cover"
+            />
+        );
     }
 
-    function irAPagina(numero) {
-        const siguiente = new URLSearchParams(parametros);
-        siguiente.set('page', String(numero));
-        setParametros(siguiente);
-    }
+    return (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-superficie-2)] text-xs font-bold text-[var(--color-texto-suave)]">
+            {usuario.nombres?.[0]?.toUpperCase()}
+            {usuario.apellidos?.[0]?.toUpperCase()}
+        </span>
+    );
+}
 
-    async function alternarEstado(usuario) {
+export default function UsuariosLista() {
+    const { usuario: actual } = useAuth();
+    const { mostrar } = useToast();
+    const {
+        filas,
+        meta,
+        cargando,
+        aviso,
+        setAviso,
+        valorDe,
+        filtrarVarios,
+        filtrarConRetraso,
+        limpiarFiltros,
+        irAPagina,
+        refrescar,
+    } = useListado('/usuarios');
+
+    const [busqueda, setBusqueda] = useState(valorDe('q'));
+    const [confirmando, setConfirmando] = useState(null);
+
+    useEffect(() => {
+        setBusqueda(valorDe('q'));
+    }, [valorDe]);
+
+    async function confirmarCambioEstado() {
+        if (!confirmando) return;
+        const objetivo = confirmando;
+        setConfirmando(null);
         setAviso(null);
         try {
-            await cliente.patch(`/usuarios/${usuario.id}/estado`);
-            await cargar(clave);
+            const { data } = await cliente.patch(`/usuarios/${objetivo.id}/estado`);
+            mostrar(data.mensaje);
+            await refrescar();
         } catch (error) {
             setAviso(error.errores?.usuario?.[0] ?? error.message);
         }
     }
 
-    const meta = pagina?.meta;
+    const rolActual = valorDe('rol');
+    const estadoActual = valorDe('estado');
+
+    const pildoras = [
+        {
+            etiqueta: 'Todos',
+            activo: !rolActual && !estadoActual,
+            onClick: () => filtrarVarios({ estado: '', rol: '' }),
+        },
+        {
+            etiqueta: 'Administradores',
+            activo: rolActual === 'administrador' && !estadoActual,
+            onClick: () => filtrarVarios({ estado: '', rol: 'administrador' }),
+        },
+        {
+            etiqueta: 'Docentes',
+            activo: rolActual === 'docente' && !estadoActual,
+            onClick: () => filtrarVarios({ estado: '', rol: 'docente' }),
+        },
+        {
+            etiqueta: 'Estudiantes',
+            activo: rolActual === 'estudiante' && !estadoActual,
+            onClick: () => filtrarVarios({ estado: '', rol: 'estudiante' }),
+        },
+        {
+            etiqueta: 'Inactivos',
+            activo: estadoActual === 'inactivo',
+            onClick: () => filtrarVarios({ rol: '', estado: 'inactivo' }),
+        },
+    ];
+
+    const columnas = [
+        { etiqueta: 'Nombre' },
+        { etiqueta: 'Rol' },
+        { etiqueta: 'Correo institucional' },
+        { etiqueta: 'Correo personal' },
+        { etiqueta: 'Estado' },
+        { etiqueta: 'Acciones', srOnly: true, alinear: 'derecha' },
+    ];
 
     return (
         <section>
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl font-semibold">Usuarios</h1>
-                <Link
-                    to="/app/usuarios/nuevo"
-                    className="rounded-lg bg-[var(--color-acento)] px-4 py-2 text-sm font-medium text-[var(--color-acento-texto)] no-underline"
-                >
-                    Nuevo usuario
-                </Link>
-            </div>
+            <EncabezadoPagina
+                titulo="Usuarios"
+                acciones={
+                    <Link to="/usuarios/nuevo" className="btn btn-primario">
+                        <Icono nombre="mas" className="h-5 w-5" />
+                        Nuevo usuario
+                    </Link>
+                }
+            />
 
-            <div className="mb-4 flex flex-wrap gap-3">
-                <label className="flex-1">
-                    <span className="sr-only">Buscar usuario</span>
-                    <input
-                        type="search"
-                        placeholder="Buscar por nombre o correo"
-                        className={claseControl}
-                        defaultValue={consulta.q}
-                        onChange={(e) => filtrar('q', e.target.value)}
-                    />
-                </label>
-
-                <label>
-                    <span className="sr-only">Filtrar por rol</span>
-                    <select
-                        className={claseControl}
-                        value={consulta.rol}
-                        onChange={(e) => filtrar('rol', e.target.value)}
-                    >
-                        <option value="">Todos los roles</option>
-                        <option value="administrador">Administrador</option>
-                        <option value="docente">Docente</option>
-                        <option value="estudiante">Estudiante</option>
-                    </select>
-                </label>
-
-                <label>
-                    <span className="sr-only">Filtrar por estado</span>
-                    <select
-                        className={claseControl}
-                        value={consulta.estado}
-                        onChange={(e) => filtrar('estado', e.target.value)}
-                    >
-                        <option value="">Todos los estados</option>
-                        <option value="inactivo">Solo inactivos</option>
-                    </select>
-                </label>
-            </div>
+            <BarraHerramientas
+                pildoras={pildoras}
+                busqueda={busqueda}
+                placeholder="Buscar por nombre o correo…"
+                alCambiarBusqueda={(val) => {
+                    setBusqueda(val);
+                    filtrarConRetraso('q', val);
+                }}
+                alBuscar={(val) => filtrar('q', val)}
+                alLimpiarBusqueda={() => {
+                    setBusqueda('');
+                    limpiarFiltros();
+                }}
+            />
 
             {aviso && (
-                <p role="alert" className="mb-4 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
                     {aviso}
                 </p>
             )}
 
-            <div
-                aria-live="polite"
-                className="overflow-hidden rounded-xl border border-[var(--color-borde)] bg-[var(--color-superficie)]"
+            {cargando && <Cargador texto="Cargando" />}
+
+            <TablaDatos
+                caption="Listado de usuarios del sistema"
+                columnas={columnas}
+                vacio={!cargando && filas.length === 0}
+                vacioIcono="usuarios"
+                vacioTitulo="No se encontraron usuarios"
+                vacioDescripcion="Intenta cambiar los filtros o la búsqueda."
             >
-                <table className="w-full border-collapse text-sm">
-                    <caption className="sr-only">Listado de usuarios del sistema</caption>
-                    <thead>
-                        <tr className="border-b border-[var(--color-borde)] text-left">
-                            <th scope="col" className="p-3">Nombre</th>
-                            <th scope="col" className="p-3">Rol</th>
-                            <th scope="col" className="p-3">Correo</th>
-                            <th scope="col" className="p-3">Estado</th>
-                            <th scope="col" className="p-3">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {cargando && (
-                            <tr>
-                                <td colSpan={5} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    Cargando usuarios…
-                                </td>
-                            </tr>
-                        )}
+                {filas.map((u) => (
+                    <tr key={u.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2.5">
+                                <AvatarUsuario usuario={u} />
+                                <span className="text-sm font-semibold">
+                                    {u.apellidos}, {u.nombres}
+                                </span>
+                            </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex rounded-md bg-[var(--color-superficie-2)] px-2.5 py-1 text-xs font-medium text-[var(--color-texto-suave)]">
+                                {u.rol_label}
+                            </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap">
+                            {u.correo_institucional || '—'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-[var(--color-texto-suave)] whitespace-nowrap">
+                            {u.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                                className={
+                                    'inline-flex rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ' +
+                                    (u.activo
+                                        ? 'bg-[var(--color-exito-fondo)] text-[var(--color-exito)] ring-[color-mix(in_srgb,var(--color-exito)_30%,transparent)]'
+                                        : 'bg-[var(--color-error-fondo)] text-[var(--color-error)] ring-[color-mix(in_srgb,var(--color-error)_30%,transparent)]')
+                                }
+                            >
+                                {u.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                            <div className="inline-flex items-center gap-2">
+                                <BotonAccion to={`/usuarios/${u.id}`} icono="editar">
+                                    Editar
+                                </BotonAccion>
+                                {actual?.id !== u.id && (
+                                    <BotonAccion
+                                        onClick={() => setConfirmando(u)}
+                                        icono={u.activo ? 'usuario-desactivar' : 'usuario-activar'}
+                                        variante={u.activo ? 'peligro' : 'exito'}
+                                    >
+                                        {u.activo ? 'Desactivar' : 'Activar'}
+                                    </BotonAccion>
+                                )}
+                            </div>
+                        </td>
+                    </tr>
+                ))}
+            </TablaDatos>
 
-                        {!cargando && pagina?.data.length === 0 && (
-                            <tr>
-                                <td colSpan={5} className="p-6 text-center text-[var(--color-texto-suave)]">
-                                    No hay usuarios que coincidan con la búsqueda.
-                                </td>
-                            </tr>
-                        )}
+            <Paginacion meta={meta} irAPagina={irAPagina} sustantivo="usuarios" />
 
-                        {!cargando &&
-                            pagina?.data.map((usuario) => (
-                                <tr key={usuario.id} className="border-b border-[var(--color-borde)]">
-                                    <td className="p-3">{usuario.nombre_completo}</td>
-                                    <td className="p-3">{usuario.rol_label}</td>
-                                    <td className="p-3">{usuario.email}</td>
-                                    <td className="p-3">{usuario.activo ? 'Activo' : 'Inactivo'}</td>
-                                    <td className="p-3">
-                                        <Link to={`/app/usuarios/${usuario.id}`} className="mr-3">
-                                            Editar
-                                        </Link>
-                                        <button
-                                            type="button"
-                                            onClick={() => alternarEstado(usuario)}
-                                            className="border-0 bg-transparent p-0 underline"
-                                        >
-                                            {usuario.activo ? 'Desactivar' : 'Activar'}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                    </tbody>
-                </table>
-            </div>
-
-            {meta && meta.last_page > 1 && (
-                <nav aria-label="Paginación" className="mt-4 flex items-center gap-3">
-                    <button
-                        type="button"
-                        disabled={meta.current_page <= 1}
-                        onClick={() => irAPagina(meta.current_page - 1)}
-                        className="rounded-lg border border-[var(--color-borde)] bg-transparent px-3 py-1.5 text-sm disabled:opacity-50"
-                    >
-                        Anterior
-                    </button>
-                    <span className="text-sm text-[var(--color-texto-suave)]">
-                        Página {meta.current_page} de {meta.last_page} · {meta.total} usuarios
-                    </span>
-                    <button
-                        type="button"
-                        disabled={meta.current_page >= meta.last_page}
-                        onClick={() => irAPagina(meta.current_page + 1)}
-                        className="rounded-lg border border-[var(--color-borde)] bg-transparent px-3 py-1.5 text-sm disabled:opacity-50"
-                    >
-                        Siguiente
-                    </button>
-                </nav>
-            )}
+            <DialogoConfirmacion
+                abierto={Boolean(confirmando)}
+                titulo={confirmando?.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                mensaje={
+                    confirmando?.activo
+                        ? `¿Deseas desactivar a ${confirmando?.nombre_completo}? No podrá ingresar al sistema.`
+                        : `¿Deseas reactivar el acceso de ${confirmando?.nombre_completo}?`
+                }
+                confirmarTexto={confirmando?.activo ? 'Sí, desactivar' : 'Sí, activar'}
+                peligro={Boolean(confirmando?.activo)}
+                alConfirmar={confirmarCambioEstado}
+                alCancelar={() => setConfirmando(null)}
+            />
         </section>
     );
 }

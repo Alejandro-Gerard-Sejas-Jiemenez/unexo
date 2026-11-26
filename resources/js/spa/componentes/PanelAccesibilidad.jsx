@@ -1,29 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { ESCALA_MAX, ESCALA_MIN, MODOS, TEMAS, useTema } from '../tema/TemaContext';
+import Icono from './Icono';
 
-/**
- * Selector de tema y herramientas de accesibilidad. Vive en el encabezado, así
- * que está disponible desde cualquier vista del sitio.
- */
 export default function PanelAccesibilidad() {
     const { tema, modo, modoEfectivo, escala, contraste, actualizar, restablecer } = useTema();
     const [abierto, setAbierto] = useState(false);
     const contenedor = useRef(null);
+    const botonDisparador = useRef(null);
+    const primerControl = useRef(null);
 
-    // Se cierra al hacer clic fuera o con Escape: lo que espera cualquier menú.
     useEffect(() => {
         if (!abierto) return undefined;
+        primerControl.current?.focus();
 
         const alClic = (e) => {
             if (!contenedor.current?.contains(e.target)) setAbierto(false);
         };
         const alTeclado = (e) => {
-            if (e.key === 'Escape') setAbierto(false);
+            if (e.key === 'Escape') {
+                setAbierto(false);
+                botonDisparador.current?.focus();
+            }
         };
 
         document.addEventListener('mousedown', alClic);
         document.addEventListener('keydown', alTeclado);
-
         return () => {
             document.removeEventListener('mousedown', alClic);
             document.removeEventListener('keydown', alTeclado);
@@ -31,42 +32,59 @@ export default function PanelAccesibilidad() {
     }, [abierto]);
 
     const porcentaje = Math.round(escala * 100);
+    const ajustarEscala = (delta) => {
+        const siguiente = Math.min(ESCALA_MAX, Math.max(ESCALA_MIN, Math.round((escala + delta) * 10) / 10));
+        actualizar({ escala: siguiente });
+    };
 
     return (
         <div ref={contenedor} className="relative">
             <button
+                ref={botonDisparador}
                 type="button"
                 onClick={() => setAbierto((v) => !v)}
                 aria-expanded={abierto}
                 aria-haspopup="dialog"
-                className="superficie px-3 py-1.5 text-sm"
+                className="btn btn-secundario !min-h-9 !px-2.5 sm:!px-3"
             >
-                Apariencia
+                <Icono nombre="sol" className="h-4 w-4 sm:hidden" />
+                <span className="hidden text-sm sm:inline">Apariencia</span>
             </button>
 
             {abierto && (
                 <div
                     role="dialog"
                     aria-label="Apariencia y accesibilidad"
-                    className="superficie absolute right-0 z-10 mt-2 w-80 p-4"
+                    className="superficie animate-fade-in fixed top-16 right-3 left-3 z-50 max-h-[80vh] overflow-y-auto p-4 sm:absolute sm:top-auto sm:right-0 sm:left-auto sm:mt-2 sm:w-80"
                 >
                     <fieldset className="mb-4 border-0 p-0">
-                        <legend className="mb-2 text-sm font-semibold">Tema</legend>
+                        <legend className="mb-2 text-sm font-semibold">Tema visual</legend>
                         <div className="flex gap-2">
-                            {TEMAS.map((t) => (
+                            {TEMAS.map((t, idx) => (
                                 <button
                                     key={t.valor}
+                                    ref={idx === 0 ? primerControl : undefined}
                                     type="button"
                                     aria-pressed={tema === t.valor}
                                     onClick={() => actualizar({ tema: t.valor })}
                                     className={
-                                        'flex-1 rounded-lg border px-2 py-1.5 text-sm ' +
+                                        'flex flex-1 flex-col items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium ' +
                                         (tema === t.valor
                                             ? 'border-[var(--color-acento)] bg-[var(--color-acento)] text-[var(--color-acento-texto)]'
                                             : 'border-[var(--color-borde)] bg-transparent')
                                     }
                                 >
-                                    {t.etiqueta}
+                                    <span className="flex gap-1" aria-hidden="true">
+                                        <span
+                                            className="h-3 w-3 rounded-full border border-white/60"
+                                            style={{ backgroundColor: t.muestra }}
+                                        />
+                                        <span
+                                            className="h-3 w-3 rounded-full border border-white/60"
+                                            style={{ backgroundColor: t.acento }}
+                                        />
+                                    </span>
+                                    <span>{t.etiqueta}</span>
                                 </button>
                             ))}
                         </div>
@@ -89,7 +107,7 @@ export default function PanelAccesibilidad() {
                                     aria-pressed={modo === m.valor}
                                     onClick={() => actualizar({ modo: m.valor })}
                                     className={
-                                        'flex-1 rounded-lg border px-2 py-1.5 text-sm ' +
+                                        'flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium ' +
                                         (modo === m.valor
                                             ? 'border-[var(--color-acento)] bg-[var(--color-acento)] text-[var(--color-acento-texto)]'
                                             : 'border-[var(--color-borde)] bg-transparent')
@@ -102,11 +120,41 @@ export default function PanelAccesibilidad() {
                     </fieldset>
 
                     <div className="mb-4">
-                        <label htmlFor="escala" className="mb-2 block text-sm font-semibold">
-                            Tamaño del texto: {porcentaje} %
-                        </label>
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                            <label htmlFor="escala-texto" className="text-sm font-semibold">
+                                Texto: {porcentaje} %
+                            </label>
+                            <div className="flex gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => ajustarEscala(-0.1)}
+                                    disabled={escala <= ESCALA_MIN}
+                                    aria-label="Reducir texto"
+                                    className="btn btn-secundario !min-h-7 !px-2 text-xs"
+                                >
+                                    A-
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => actualizar({ escala: 1 })}
+                                    aria-label="Restablecer tamaño normal"
+                                    className="btn btn-secundario !min-h-7 !px-2 text-xs"
+                                >
+                                    100%
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => ajustarEscala(0.1)}
+                                    disabled={escala >= ESCALA_MAX}
+                                    aria-label="Aumentar texto"
+                                    className="btn btn-secundario !min-h-7 !px-2 text-xs"
+                                >
+                                    A+
+                                </button>
+                            </div>
+                        </div>
                         <input
-                            id="escala"
+                            id="escala-texto"
                             type="range"
                             min={ESCALA_MIN}
                             max={ESCALA_MAX}
@@ -116,12 +164,9 @@ export default function PanelAccesibilidad() {
                             className="w-full"
                             aria-valuetext={`${porcentaje} por ciento`}
                         />
-                        <p className="mt-1 text-xs text-[var(--color-texto-suave)]">
-                            Hasta el 200 %, sin perder contenido ni funcionalidad.
-                        </p>
                     </div>
 
-                    <label className="mb-4 flex items-center gap-2 text-sm">
+                    <label className="campo-check mb-4 !py-2.5 text-sm">
                         <input
                             type="checkbox"
                             checked={contraste === 'alto'}
@@ -129,15 +174,15 @@ export default function PanelAccesibilidad() {
                                 actualizar({ contraste: e.target.checked ? 'alto' : 'normal' })
                             }
                         />
-                        Alto contraste
+                        <span>Alto contraste (WCAG AA+)</span>
                     </label>
 
                     <button
                         type="button"
                         onClick={restablecer}
-                        className="w-full rounded-lg border border-[var(--color-borde)] bg-transparent px-3 py-1.5 text-sm"
+                        className="btn btn-secundario w-full !min-h-9 text-xs"
                     >
-                        Restablecer
+                        Restablecer preferencias
                     </button>
                 </div>
             )}

@@ -3,13 +3,15 @@
 namespace App\Services;
 
 use App\Enums\Rol;
+use App\Models\MenuItem;
+use App\Models\RolModelo;
 use App\Models\User;
+use Database\Seeders\RbacMenuSeeder;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class MenuService
 {
-    /**
-     * Devuelve los elementos de navegación correspondientes al rol del usuario.
-     */
     public function paraUsuario(User $usuario): array
     {
         return match ($usuario->rol) {
@@ -19,41 +21,79 @@ class MenuService
         };
     }
 
-    /**
-     * El mismo menú, normalizado para la SPA: una sola definición sirve al panel
-     * Blade (que usa 'url') y a React (que usa 'ruta').
-     */
+    /** @return list<string> */
+    public function permisosDe(User $usuario): array
+    {
+        $clave = $usuario->rol->value;
+        $this->asegurarCatalogo();
+
+        return Cache::remember("rbac.permisos.{$clave}", 300, function () use ($clave): array {
+            $rol = RolModelo::with('permisos:id,clave')->where('clave', $clave)->first();
+
+            return $rol ? $rol->permisos->pluck('clave')->values()->all() : [];
+        });
+    }
+
     public function paraSpa(User $usuario): array
     {
-        return array_map(function (array $entrada): array {
-            if (($entrada['tipo'] ?? null) === 'submenu') {
-                return [
-                    'tipo' => 'submenu',
-                    'etiqueta' => $entrada['etiqueta'],
-                    'icono' => $entrada['icono'] ?? null,
-                    'items' => array_map(fn (array $item) => [
-                        'etiqueta' => $item[0],
-                        'ruta' => $this->rutaSpa($item[2]),
-                        'icono' => $item[3] ?? null,
-                    ], $entrada['items']),
+        $clave = $usuario->rol->value;
+        $permisos = $this->permisosDe($usuario);
+
+        return Cache::remember("rbac.menu.{$clave}", 300, function () use ($permisos): array {
+            $raices = MenuItem::query()
+                ->whereNull('parent_id')
+                ->where('activo', true)
+                ->with(['hijos' => fn ($q) => $q->where('activo', true)->orderBy('orden')])
+                ->orderBy('orden')
+                ->get();
+
+            $salida = [];
+
+            foreach ($raices as $item) {
+                if ($item->permiso_clave !== null && ! in_array($item->permiso_clave, $permisos, true)) {
+                    continue;
+                }
+
+                if ($item->hijos->isNotEmpty()) {
+                    $hijos = $item->hijos
+                        ->filter(fn (MenuItem $h) => $h->permiso_clave === null || in_array($h->permiso_clave, $permisos, true))
+                        ->map(fn (MenuItem $h) => [
+                            'etiqueta' => $h->etiqueta,
+                            'ruta' => $h->ruta,
+                            'icono' => $h->icono,
+                        ])
+                        ->values()
+                        ->all();
+
+                    if ($hijos !== []) {
+                        $salida[] = [
+                            'tipo' => 'submenu',
+                            'etiqueta' => $item->etiqueta,
+                            'icono' => $item->icono,
+                            'items' => $hijos,
+                        ];
+                    }
+
+                    continue;
+                }
+
+                $salida[] = [
+                    'tipo' => 'enlace',
+                    'etiqueta' => $item->etiqueta,
+                    'ruta' => $item->ruta,
+                    'icono' => $item->icono,
                 ];
             }
 
-            return [
-                'tipo' => 'enlace',
-                'etiqueta' => $entrada['etiqueta'],
-                'ruta' => $this->rutaSpa($entrada['patron']),
-                'icono' => $entrada['icono'] ?? null,
-            ];
-        }, $this->paraUsuario($usuario));
+            return $salida;
+        });
     }
 
-    /** Convierte el patrón de ruta del servidor en la ruta del router de React. */
-    private function rutaSpa(string $patron): string
+    private function asegurarCatalogo(): void
     {
-        $base = explode('.', $patron)[0];
-
-        return $base === 'panel' ? '/app' : '/app/'.$base;
+        if (Schema::hasTable('roles') && ! RolModelo::query()->exists()) {
+            (new RbacMenuSeeder())->run();
+        }
     }
 
     private function menuAdministrador(): array
@@ -88,7 +128,6 @@ class MenuService
                 'icono' => 'reportes',
             ],
             [
-                // Vive solo en la SPA, por eso la URL es la del cliente y no una ruta Blade.
                 'tipo' => 'enlace',
                 'etiqueta' => 'Estadísticas',
                 'url' => url('/app/estadisticas'),

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { conBase } from '../base';
+import { limpiarCache } from './cache';
 
 /**
  * Punto único de salida hacia la API. Todo lo que la SPA pida al servidor pasa
@@ -34,12 +35,28 @@ export class ErrorDeValidacion extends Error {
 export const SESION_CADUCADA = 'sesion-caducada';
 
 cliente.interceptors.response.use(
-    (respuesta) => respuesta,
-    (error) => {
+    (respuesta) => {
+        const metodo = respuesta.config?.method?.toLowerCase();
+        const url = String(respuesta.config?.url ?? '');
+        if (metodo && metodo !== 'get' && !url.endsWith('/visitas')) {
+            limpiarCache();
+        }
+        return respuesta;
+    },
+    async (error) => {
         const estado = error.response?.status;
+        let payload = error.response?.data;
+
+        if (payload instanceof Blob && payload.type?.includes('json')) {
+            try {
+                payload = JSON.parse(await payload.text());
+            } catch {
+                payload = null;
+            }
+        }
 
         if (estado === 422) {
-            const datos = error.response.data ?? {};
+            const datos = payload ?? {};
             return Promise.reject(
                 new ErrorDeValidacion(
                     datos.message ?? 'Revisa los datos del formulario.',
@@ -55,7 +72,7 @@ cliente.interceptors.response.use(
 
         if (estado === 403) {
             return Promise.reject(
-                new Error(error.response.data?.message ?? 'No tienes permiso para esta acción.'),
+                new Error(payload?.message ?? 'No tienes permiso para esta acción.'),
             );
         }
 
@@ -67,7 +84,7 @@ cliente.interceptors.response.use(
 
         return Promise.reject(
             new Error(
-                error.response?.data?.message ??
+                payload?.message ??
                     'No pudimos conectarnos con el servidor. Revisa tu conexión e inténtalo de nuevo.',
             ),
         );

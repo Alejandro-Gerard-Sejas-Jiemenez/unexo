@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
+import { claveCache, guardarCache, leerCache } from '../api/cache';
 import cliente from '../api/cliente';
-import Tarjeta from '../componentes/graficos/Tarjeta';
+import Cargador from '../componentes/Cargador';
+import EncabezadoPagina from '../componentes/EncabezadoPagina';
 import BarrasRanking from '../componentes/graficos/BarrasRanking';
 import SerieTemporal from '../componentes/graficos/SerieTemporal';
+import Tarjeta from '../componentes/graficos/Tarjeta';
 
-/** Panel analítico: métricas del negocio y del flujo de accesos al sitio. */
 export default function Dashboard() {
-    const [datos, setDatos] = useState(null);
+    const llave = claveCache('/estadisticas');
+    const [datos, setDatos] = useState(() => leerCache(llave));
     const [aviso, setAviso] = useState(null);
 
     useEffect(() => {
@@ -14,66 +17,61 @@ export default function Dashboard() {
 
         cliente
             .get('/estadisticas')
-            .then(({ data }) => vigente && setDatos(data))
-            .catch((e) => vigente && setAviso(e.message));
+            .then(({ data }) => {
+                guardarCache(llave, data);
+                if (vigente) setDatos(data);
+            })
+            .catch((e) => vigente && !leerCache(llave) && setAviso(e.message));
 
         return () => {
             vigente = false;
         };
-    }, []);
+    }, [llave]);
 
     if (aviso) {
         return (
-            <p role="alert" className="text-sm text-[var(--color-error)]">
+            <p role="alert" className="superficie border-[var(--color-error)] p-4 text-sm text-[var(--color-error)]">
                 {aviso}
             </p>
         );
     }
 
     if (!datos) {
-        return (
-            <p role="status" className="text-[var(--color-texto-suave)]">
-                Cargando estadísticas…
-            </p>
-        );
+        return <Cargador texto="Cargando" />;
     }
 
     const { negocio, acceso } = datos;
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-10">
             <section>
-                <h1 className="mb-4 text-2xl font-semibold">Estadísticas del negocio</h1>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+                <EncabezadoPagina
+                    grande
+                    titulo="Estadísticas del negocio"
+                    subtitulo="Resumen académico, matrículas, ocupación de grupos e ingresos registrados."
+                />
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {negocio.tarjetas.map((t) => (
-                        <Tarjeta key={t.clave} etiqueta={t.etiqueta} valor={t.valor} />
+                        <Tarjeta key={t.clave} etiqueta={t.etiqueta} valor={t.valor} detalle={t.detalle} />
                     ))}
                 </div>
 
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                    <BarrasRanking
-                        titulo="Matrículas por estado"
-                        datos={negocio.matriculas_por_estado}
-                    />
+                    <BarrasRanking titulo="Matrículas por estado" datos={negocio.matriculas_por_estado} />
                     <BarrasRanking
                         titulo="Matrículas por origen"
-                        descripcion="Cuántas entraron por el CRM y cuántas se cargaron a mano."
+                        descripcion="Cuántas entraron por el CRM y cuántas se registraron en caja."
                         datos={negocio.matriculas_por_origen}
                     />
-                    <BarrasRanking
-                        titulo="Grupos por modalidad"
-                        datos={negocio.grupos_por_modalidad}
-                    />
-                    <BarrasRanking
-                        titulo="Catálogo por estado comercial"
-                        datos={negocio.catalogo_por_estado}
-                    />
+                    <BarrasRanking titulo="Grupos por modalidad" datos={negocio.grupos_por_modalidad} />
+                    <BarrasRanking titulo="Catálogo por estado comercial" datos={negocio.catalogo_por_estado} />
                 </div>
 
                 <div className="mt-4">
                     <BarrasRanking
                         titulo="Ocupación de grupos"
-                        descripcion="Inscritos frente al cupo mínimo. La línea marca el cupo."
+                        descripcion="Inscritos activos frente al cupo mínimo. La línea marca el quórum."
                         datos={negocio.ocupacion_grupos}
                         meta
                     />
@@ -81,10 +79,16 @@ export default function Dashboard() {
             </section>
 
             <section>
-                <h2 className="mb-4 text-2xl font-semibold">Flujo de accesos al sitio</h2>
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="mb-4">
+                    <h2 className="text-2xl font-semibold">Flujo de accesos al sitio</h2>
+                    <p className="text-sm text-[var(--color-texto-suave)]">
+                        Métricas de tráfico, recursos consultados y auditoría de inicios de sesión.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {acceso.tarjetas.map((t) => (
-                        <Tarjeta key={t.clave} etiqueta={t.etiqueta} valor={t.valor} />
+                        <Tarjeta key={t.clave} etiqueta={t.etiqueta} valor={t.valor} detalle={t.detalle} />
                     ))}
                 </div>
 
@@ -97,14 +101,8 @@ export default function Dashboard() {
                 </div>
 
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                    <BarrasRanking
-                        titulo="Recursos con mayor índice de acceso"
-                        datos={acceso.recursos_mas_accedidos}
-                    />
-                    <BarrasRanking
-                        titulo="Páginas más visitadas"
-                        datos={acceso.paginas_mas_visitadas}
-                    />
+                    <BarrasRanking titulo="Recursos con mayor índice de acceso" datos={acceso.recursos_mas_accedidos} />
+                    <BarrasRanking titulo="Páginas más visitadas" datos={acceso.paginas_mas_visitadas} />
                 </div>
             </section>
         </div>

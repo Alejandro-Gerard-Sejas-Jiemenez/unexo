@@ -1,20 +1,13 @@
-/**
- * Barras horizontales rankeadas, un solo tono.
- *
- * Es la forma segura para comparar magnitudes: todas las barras arrancan de la
- * misma línea base, así que se comparan con más exactitud que los segmentos de
- * una torta, y al ser una sola serie no hace falta leyenda ni paleta categórica.
- *
- * Con `meta` por fila se convierte en meter list: cada barra contra su propio
- * límite (por ejemplo, inscritos frente al cupo mínimo del grupo).
- */
-export default function BarrasRanking({ titulo, descripcion, datos, meta: usaMeta = false }) {
+import { useId } from 'react';
+
+export default function BarrasRanking({ titulo, descripcion, datos = [], meta: usaMeta = false }) {
+    const idTitulo = useId();
     const filas = [...datos].sort((a, b) => b.valor - a.valor);
     const tope = Math.max(1, ...filas.map((f) => Math.max(f.valor, usaMeta ? (f.meta ?? 0) : 0)));
 
     return (
-        <section className="superficie p-4" aria-labelledby={`t-${titulo}`}>
-            <h3 id={`t-${titulo}`} className="text-sm font-semibold">
+        <section className="superficie p-5" aria-labelledby={idTitulo}>
+            <h3 id={idTitulo} className="text-sm font-semibold">
                 {titulo}
             </h3>
             {descripcion && (
@@ -32,7 +25,7 @@ export default function BarrasRanking({ titulo, descripcion, datos, meta: usaMet
                         const alcanzo = usaMeta && fila.meta != null && fila.valor >= fila.meta;
 
                         return (
-                            <li key={fila.etiqueta}>
+                            <li key={fila.id ?? fila.etiqueta}>
                                 <div className="mb-1 flex items-baseline justify-between gap-3">
                                     <span className="truncate text-sm" title={fila.etiqueta}>
                                         {fila.etiqueta}
@@ -48,7 +41,6 @@ export default function BarrasRanking({ titulo, descripcion, datos, meta: usaMet
                                     </span>
                                 </div>
 
-                                {/* La pista es el mismo tono al 12 %: sin hue nuevo. */}
                                 <div
                                     className="relative h-2.5 w-full overflow-hidden rounded-full"
                                     style={{ background: 'color-mix(in oklab, var(--color-acento) 12%, transparent)' }}
@@ -60,7 +52,7 @@ export default function BarrasRanking({ titulo, descripcion, datos, meta: usaMet
                                     }
                                 >
                                     <div
-                                        className="h-full rounded-full"
+                                        className="h-full rounded-full transition-[width] duration-300"
                                         style={{
                                             width: `${ancho}%`,
                                             background: 'var(--color-acento)',
@@ -68,7 +60,6 @@ export default function BarrasRanking({ titulo, descripcion, datos, meta: usaMet
                                         }}
                                     />
                                     {usaMeta && fila.meta != null && (
-                                        // Marca del límite: una línea fina, no otro color de dato.
                                         <span
                                             aria-hidden="true"
                                             className="absolute top-0 h-full w-0.5"

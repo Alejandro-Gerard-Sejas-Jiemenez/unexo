@@ -30,6 +30,7 @@ class User extends Authenticatable
         'id_externo_crm',
         'estado',
         'foto_perfil_url',
+        'stripe_customer_id',
     ];
 
     protected $hidden = [

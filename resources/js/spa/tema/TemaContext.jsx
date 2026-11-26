@@ -3,9 +3,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 const CLAVE = 'nexo-preferencias';
 
 export const TEMAS = [
-    { valor: 'ninos', etiqueta: 'Niños' },
-    { valor: 'jovenes', etiqueta: 'Jóvenes' },
-    { valor: 'adultos', etiqueta: 'Adultos' },
+    { valor: 'ninos', etiqueta: 'Niños', muestra: '#0a6ba8', acento: '#c41920' },
+    { valor: 'jovenes', etiqueta: 'Jóvenes', muestra: '#4b2fbd', acento: '#07b0b0' },
+    { valor: 'adultos', etiqueta: 'Adultos', muestra: '#082f4e', acento: '#07b0b0' },
 ];
 
 export const MODOS = [
@@ -15,24 +15,20 @@ export const MODOS = [
 ];
 
 export const ESCALA_MIN = 1;
-export const ESCALA_MAX = 2; // 200 %, el tope que pide la WCAG 2.1 AA.
+export const ESCALA_MAX = 2;
 
 const POR_DEFECTO = { tema: 'adultos', modo: 'auto', escala: 1, contraste: 'normal' };
 
-/** De noche entre las 19:00 y las 6:59, cuando el modo está en automático. */
-function modoSegunHora() {
+function modoAutomatico() {
     const hora = new Date().getHours();
-
     return hora >= 19 || hora < 7 ? 'noche' : 'dia';
 }
 
 function leerGuardadas() {
     try {
         const crudo = localStorage.getItem(CLAVE);
-
         return crudo ? { ...POR_DEFECTO, ...JSON.parse(crudo) } : POR_DEFECTO;
     } catch {
-        // Navegación privada o almacenamiento bloqueado: se usa lo predeterminado.
         return POR_DEFECTO;
     }
 }
@@ -42,9 +38,8 @@ const TemaContext = createContext(null);
 export function TemaProvider({ children }) {
     const [preferencias, setPreferencias] = useState(leerGuardadas);
 
-    const modoEfectivo = preferencias.modo === 'auto' ? modoSegunHora() : preferencias.modo;
+    const modoEfectivo = preferencias.modo === 'auto' ? modoAutomatico() : preferencias.modo;
 
-    // El tema se aplica en el <html>, de donde cuelgan todas las variables CSS.
     useEffect(() => {
         const raiz = document.documentElement;
         raiz.dataset.tema = preferencias.tema;
@@ -56,16 +51,13 @@ export function TemaProvider({ children }) {
         try {
             localStorage.setItem(CLAVE, JSON.stringify(preferencias));
         } catch {
-            // Si no se puede guardar, la preferencia vale solo para esta sesión.
+            // Navegación privada.
         }
     }, [preferencias, modoEfectivo]);
 
-    // En automático el cambio de franja horaria debe notarse sin recargar.
     useEffect(() => {
         if (preferencias.modo !== 'auto') return undefined;
-
         const id = setInterval(() => setPreferencias((p) => ({ ...p })), 60_000);
-
         return () => clearInterval(id);
     }, [preferencias.modo]);
 
@@ -74,14 +66,22 @@ export function TemaProvider({ children }) {
         [],
     );
 
+    const alternarModoRapido = useCallback(() => {
+        setPreferencias((previo) => {
+            const actual = previo.modo === 'auto' ? modoAutomatico() : previo.modo;
+            return { ...previo, modo: actual === 'noche' ? 'dia' : 'noche' };
+        });
+    }, []);
+
     const valor = useMemo(
         () => ({
             ...preferencias,
             modoEfectivo,
             actualizar,
+            alternarModoRapido,
             restablecer: () => setPreferencias(POR_DEFECTO),
         }),
-        [preferencias, modoEfectivo, actualizar],
+        [preferencias, modoEfectivo, actualizar, alternarModoRapido],
     );
 
     return <TemaContext.Provider value={valor}>{children}</TemaContext.Provider>;

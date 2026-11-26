@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Panel;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BitacoraFiltrosRequest;
+use App\Http\Requests\VisitaRequest;
 use App\Http\Resources\BitacoraResource;
 use App\Services\BitacoraService;
 use App\Services\EstadisticaService;
@@ -19,29 +21,46 @@ class AuditoriaApiController extends Controller
         private readonly VisitaService $visitas,
     ) {}
 
-    /** Bitácora de auditoría: solo el administrador. */
-    public function bitacora(Request $request): AnonymousResourceCollection
+    public function bitacora(BitacoraFiltrosRequest $request): AnonymousResourceCollection
     {
         return BitacoraResource::collection(
-            $this->bitacora->listar($request->only(['evento', 'q', 'desde', 'hasta'])),
+            $this->bitacora->listar($request->validated()),
         );
     }
 
-    /** Panel analítico: métricas del negocio y del flujo de accesos. */
     public function estadisticas(): JsonResponse
     {
         return response()->json($this->estadisticas->resumen());
     }
 
-    /**
-     * Contador de visitas para el pie de página. Lo puede ver cualquier usuario
-     * autenticado, porque se muestra en todas las vistas del sitio.
-     */
     public function visitas(Request $request): JsonResponse
     {
+        $ruta = $this->normalizarRuta((string) $request->query('ruta', '/'));
+
         return response()->json([
+            'ruta' => $ruta,
             'total' => $this->visitas->totalDelSitio(),
-            'pagina' => $this->visitas->deLaRuta((string) $request->query('ruta', '/')),
+            'pagina' => $this->visitas->deLaRuta($ruta),
         ]);
+    }
+
+    public function registrarVisita(VisitaRequest $request): JsonResponse
+    {
+        $ruta = $this->normalizarRuta((string) $request->validated('ruta'));
+        $this->visitas->registrar($ruta);
+
+        return response()->json([
+            'ruta' => $ruta,
+            'total' => $this->visitas->totalDelSitio(),
+            'pagina' => $this->visitas->deLaRuta($ruta),
+        ]);
+    }
+
+    private function normalizarRuta(string $ruta): string
+    {
+        $limpia = '/'.trim(explode('?', $ruta, 2)[0], '/');
+        $limpia = preg_replace('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', ':id', $limpia) ?? $limpia;
+
+        return $limpia === '' ? '/' : $limpia;
     }
 }

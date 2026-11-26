@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import cliente, { ErrorDeValidacion } from '../../api/cliente';
 import Campo, { claseControl } from '../../componentes/Campo';
+import Cargador from '../../componentes/Cargador';
+import EncabezadoPagina from '../../componentes/EncabezadoPagina';
+import Icono from '../../componentes/Icono';
+import { useToast } from '../../componentes/ToastContext';
 
 const VACIO = {
     codigo: '',
@@ -16,6 +20,7 @@ const VACIO = {
 export default function ModuloFormulario() {
     const { id } = useParams();
     const navegar = useNavigate();
+    const { mostrar } = useToast();
     const editando = Boolean(id);
 
     const [datos, setDatos] = useState(VACIO);
@@ -67,11 +72,13 @@ export default function ModuloFormulario() {
 
         try {
             if (editando) {
-                await cliente.put(`/catalogo/modulos/${id}`, datos);
+                const { data } = await cliente.put(`/catalogo/modulos/${id}`, datos);
+                mostrar(data.mensaje);
             } else {
-                await cliente.post('/catalogo/modulos', datos);
+                const { data } = await cliente.post('/catalogo/modulos', datos);
+                mostrar(data.mensaje);
             }
-            navegar('/app/modulos');
+            navegar('/modulos');
         } catch (error) {
             if (error instanceof ErrorDeValidacion) {
                 setErrores(
@@ -86,97 +93,158 @@ export default function ModuloFormulario() {
         }
     }
 
-    if (cargando) {
-        return <p className="text-[var(--color-texto-suave)]">Cargando…</p>;
-    }
+    if (cargando) return <Cargador texto="Cargando" />;
 
     const limites = opciones.limites?.modulos ?? {};
 
     return (
-        <section className="max-w-2xl">
-            <h1 className="mb-6 text-2xl font-semibold">
-                {editando ? 'Editar módulo' : 'Nuevo módulo'}
-            </h1>
+        <section>
+            <EncabezadoPagina
+                volverA="/modulos"
+                volverTexto="Volver a módulos"
+                titulo={editando ? 'Editar módulo' : 'Nuevo módulo'}
+            />
 
             {aviso && (
-                <p role="alert" className="mb-4 text-sm text-[var(--color-error)]">
+                <p role="alert" className="superficie mb-4 border-[var(--color-error)] p-3 text-sm text-[var(--color-error)]">
                     {aviso}
                 </p>
             )}
 
-            <form onSubmit={enviar} noValidate className="superficie p-4">
-                <div className="grid grid-cols-3 gap-4">
-                    <Campo id="codigo" etiqueta="Código" error={errores.codigo} requerido>
+            <div className="superficie max-w-3xl overflow-hidden rounded-xl shadow-sm">
+                <form onSubmit={enviar} noValidate className="p-6 sm:p-8">
+                    <div className="mb-2 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+                        <Campo id="codigo" etiqueta="Código" error={errores.codigo} icono="hash" requerido>
+                            {(p) => (
+                                <input
+                                    {...p}
+                                    type="text"
+                                    maxLength={limites.codigo}
+                                    className={claseControl}
+                                    value={datos.codigo}
+                                    onChange={cambiar('codigo')}
+                                />
+                            )}
+                        </Campo>
+
+                        <Campo id="duracion_horas" etiqueta="Duración (horas)" error={errores.duracion_horas}>
+                            {(p) => (
+                                <input
+                                    {...p}
+                                    type="number"
+                                    min="1"
+                                    max={limites.duracion_horas}
+                                    className={claseControl}
+                                    value={datos.duracion_horas}
+                                    onChange={cambiar('duracion_horas')}
+                                />
+                            )}
+                        </Campo>
+                    </div>
+
+                    <Campo id="nombre" etiqueta="Nombre" error={errores.nombre} icono="modulos" requerido>
                         {(p) => (
-                            <input {...p} type="text" maxLength={limites.codigo} className={claseControl}
-                                value={datos.codigo} onChange={cambiar('codigo')} />
+                            <input
+                                {...p}
+                                type="text"
+                                maxLength={limites.nombre}
+                                className={claseControl}
+                                value={datos.nombre}
+                                onChange={cambiar('nombre')}
+                            />
                         )}
                     </Campo>
 
-                    <Campo id="duracion_horas" etiqueta="Duración (horas)" error={errores.duracion_horas}>
+                    <Campo id="descripcion" etiqueta="Descripción" error={errores.descripcion}>
                         {(p) => (
-                            <input {...p} type="number" min="1" max={limites.duracion_horas}
-                                className={claseControl} value={datos.duracion_horas}
-                                onChange={cambiar('duracion_horas')} />
+                            <textarea
+                                {...p}
+                                rows={3}
+                                className={claseControl}
+                                value={datos.descripcion}
+                                onChange={cambiar('descripcion')}
+                            />
                         )}
                     </Campo>
 
-                    <Campo id="estado_comercial" etiqueta="Estado" error={errores.estado_comercial} requerido>
+                    <Campo
+                        id="prerrequisito"
+                        etiqueta="Prerrequisito (conocimientos previos)"
+                        error={errores.prerrequisito}
+                        ayuda="Opcional. Solo informativo: no impide la matrícula."
+                        conteo={datos.prerrequisito.length}
+                        maximo={limites.prerrequisito ?? 500}
+                    >
                         {(p) => (
-                            <select {...p} className={claseControl} value={datos.estado_comercial}
-                                onChange={cambiar('estado_comercial')}>
-                                {opciones.estados.map((e) => (
-                                    <option key={e.valor} value={e.valor}>{e.etiqueta}</option>
-                                ))}
-                            </select>
+                            <textarea
+                                {...p}
+                                rows={2}
+                                maxLength={limites.prerrequisito}
+                                className={claseControl}
+                                value={datos.prerrequisito}
+                                onChange={cambiar('prerrequisito')}
+                            />
                         )}
                     </Campo>
-                </div>
 
-                <Campo id="nombre" etiqueta="Nombre" error={errores.nombre} requerido>
-                    {(p) => (
-                        <input {...p} type="text" maxLength={limites.nombre} className={claseControl}
-                            value={datos.nombre} onChange={cambiar('nombre')} />
-                    )}
-                </Campo>
+                    <div className="mt-4 mb-2 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-[var(--color-borde)] pt-4 sm:grid-cols-2">
+                        <Campo
+                            id="pdf_temario_url"
+                            etiqueta="URL del PDF del Temario"
+                            error={errores.pdf_temario_url}
+                            icono="enlace"
+                        >
+                            {(p) => (
+                                <input
+                                    {...p}
+                                    type="url"
+                                    maxLength={255}
+                                    className={claseControl}
+                                    value={datos.pdf_temario_url}
+                                    onChange={cambiar('pdf_temario_url')}
+                                />
+                            )}
+                        </Campo>
 
-                <Campo id="descripcion" etiqueta="Descripción" error={errores.descripcion}>
-                    {(p) => (
-                        <textarea {...p} rows={3} className={claseControl}
-                            value={datos.descripcion} onChange={cambiar('descripcion')} />
-                    )}
-                </Campo>
+                        <Campo
+                            id="estado_comercial"
+                            etiqueta="Estado comercial"
+                            error={errores.estado_comercial}
+                            esSelect
+                            requerido
+                        >
+                            {(p) => (
+                                <select
+                                    {...p}
+                                    className={claseControl}
+                                    value={datos.estado_comercial}
+                                    onChange={cambiar('estado_comercial')}
+                                >
+                                    {opciones.estados.map((e) => (
+                                        <option key={e.valor} value={e.valor}>
+                                            {e.etiqueta}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </Campo>
+                    </div>
 
-                <Campo
-                    id="prerrequisito"
-                    etiqueta="Conocimientos recomendados"
-                    error={errores.prerrequisito}
-                    ayuda="Es informativo: no bloquea la inscripción."
-                >
-                    {(p) => (
-                        <textarea {...p} rows={2} maxLength={limites.prerrequisito} className={claseControl}
-                            value={datos.prerrequisito} onChange={cambiar('prerrequisito')} />
-                    )}
-                </Campo>
-
-                <Campo id="pdf_temario_url" etiqueta="Temario (URL)" error={errores.pdf_temario_url}>
-                    {(p) => (
-                        <input {...p} type="url" className={claseControl}
-                            value={datos.pdf_temario_url} onChange={cambiar('pdf_temario_url')} />
-                    )}
-                </Campo>
-
-                <div className="mt-4 flex gap-3">
-                    <button type="submit" disabled={enviando}
-                        className="rounded-lg bg-[var(--color-acento)] px-4 py-2 text-sm font-medium text-[var(--color-acento-texto)] disabled:opacity-60">
-                        {enviando ? 'Guardando…' : 'Guardar'}
-                    </button>
-                    <button type="button" onClick={() => navegar('/app/modulos')}
-                        className="superficie px-4 py-2 text-sm">
-                        Cancelar
-                    </button>
-                </div>
-            </form>
+                    <div className="form-acciones">
+                        <button
+                            type="button"
+                            onClick={() => navegar('/modulos')}
+                            className="btn btn-secundario"
+                        >
+                            Cancelar
+                        </button>
+                        <button type="submit" disabled={enviando} className="btn btn-primario">
+                            <Icono nombre="guardar" />
+                            {enviando ? 'Guardando…' : 'Guardar'}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </section>
     );
 }

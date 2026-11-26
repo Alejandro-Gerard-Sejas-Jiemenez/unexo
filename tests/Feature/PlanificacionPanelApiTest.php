@@ -287,4 +287,34 @@ class PlanificacionPanelApiTest extends TestCase
         $this->actingAs($docente)->getJson('/api/panel/cohortes')->assertForbidden();
         $this->actingAs($docente)->getJson('/api/panel/grupos')->assertForbidden();
     }
+
+    public function test_el_detalle_del_grupo_incluye_periodo_y_lista_de_inscritos(): void
+    {
+        $admin = $this->admin();
+        $estudiante = User::factory()->create(['rol' => Rol::Estudiante, 'estado' => 'activo']);
+        $modulo = Modulo::create(['codigo' => 'MOD-DET', 'nombre' => 'Módulo Detalle']);
+        $grupo = Grupo::create([
+            'modulo_id' => $modulo->id,
+            'docente_id' => $this->docente()->id,
+            'nombre' => 'Grupo Detalle',
+            'modalidad' => 'virtual',
+            'estado' => EstadoPlanificacion::EnCurso,
+            'cupo_minimo' => 5,
+            'fecha_inicio' => today(),
+            'fecha_fin' => today()->addMonth(),
+        ]);
+
+        $matricula = \App\Models\Matricula::create([
+            'estudiante_id' => $estudiante->id,
+            'estado' => \App\Enums\EstadoMatricula::Activo,
+            'fecha_matricula' => today(),
+        ]);
+        \App\Models\InscripcionGrupo::create(['matricula_id' => $matricula->id, 'grupo_id' => $grupo->id]);
+
+        $this->actingAs($admin)->getJson("/api/panel/grupos/{$grupo->id}")
+            ->assertOk()
+            ->assertJsonPath('data.nombre', 'Grupo Detalle')
+            ->assertJsonPath('data.inscripciones_count', 1)
+            ->assertJsonCount(1, 'data.inscritos');
+    }
 }

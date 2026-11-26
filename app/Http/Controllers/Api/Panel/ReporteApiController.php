@@ -7,18 +7,17 @@ use App\Http\Requests\FiltrosReporteMatriculasRequest;
 use App\Http\Requests\FiltrosReporteOcupacionRequest;
 use App\Http\Requests\ReporteCatalogoRequest;
 use App\Services\ReporteCatalogoService;
+use App\Services\ReporteExcelService;
 use App\Services\ReporteMatriculasService;
 use App\Services\ReporteOcupacionService;
+use App\Services\ReportePdfService;
 use App\Support\Reporte;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
 
-/**
- * CU8: los tres reportes, servidos en JSON a la SPA.
- *
- * Usa los mismos Services y Form Requests que la pantalla Blade y las
- * descargas, así que los datos y el orden de las filas coinciden en los cuatro
- * destinos por construcción.
- */
 class ReporteApiController extends Controller
 {
     public function matriculas(
@@ -31,6 +30,22 @@ class ReporteApiController extends Controller
         );
     }
 
+    public function matriculasPdf(
+        FiltrosReporteMatriculasRequest $request,
+        ReporteMatriculasService $servicio,
+        ReportePdfService $pdf,
+    ): Response|JsonResponse {
+        return $this->descargarPdf($servicio->generar($request->filtros()), $pdf);
+    }
+
+    public function matriculasExcel(
+        FiltrosReporteMatriculasRequest $request,
+        ReporteMatriculasService $servicio,
+        ReporteExcelService $excel,
+    ): BinaryFileResponse|JsonResponse {
+        return $this->descargarExcel($servicio->generar($request->filtros()), $excel);
+    }
+
     public function ocupacion(
         FiltrosReporteOcupacionRequest $request,
         ReporteOcupacionService $servicio,
@@ -41,6 +56,22 @@ class ReporteApiController extends Controller
         );
     }
 
+    public function ocupacionPdf(
+        FiltrosReporteOcupacionRequest $request,
+        ReporteOcupacionService $servicio,
+        ReportePdfService $pdf,
+    ): Response|JsonResponse {
+        return $this->descargarPdf($servicio->generar($request->filtros()), $pdf);
+    }
+
+    public function ocupacionExcel(
+        FiltrosReporteOcupacionRequest $request,
+        ReporteOcupacionService $servicio,
+        ReporteExcelService $excel,
+    ): BinaryFileResponse|JsonResponse {
+        return $this->descargarExcel($servicio->generar($request->filtros()), $excel);
+    }
+
     public function catalogo(
         ReporteCatalogoRequest $request,
         ReporteCatalogoService $servicio,
@@ -48,10 +79,49 @@ class ReporteApiController extends Controller
         return $this->responder($servicio->generar(), $request->datosFormulario());
     }
 
-    /**
-     * Serializa el reporte. Las celdas van ya formateadas con las mismas reglas
-     * que usan la pantalla y el PDF, para no reimplementarlas en JavaScript.
-     */
+    public function catalogoPdf(
+        ReporteCatalogoRequest $request,
+        ReporteCatalogoService $servicio,
+        ReportePdfService $pdf,
+    ): Response|JsonResponse {
+        return $this->descargarPdf($servicio->generar(), $pdf);
+    }
+
+    public function catalogoExcel(
+        ReporteCatalogoRequest $request,
+        ReporteCatalogoService $servicio,
+        ReporteExcelService $excel,
+    ): BinaryFileResponse|JsonResponse {
+        return $this->descargarExcel($servicio->generar(), $excel);
+    }
+
+    private function descargarPdf(Reporte $reporte, ReportePdfService $pdf): Response|JsonResponse
+    {
+        try {
+            return response($pdf->generar($reporte), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$reporte->nombreArchivo('pdf').'"',
+            ]);
+        } catch (Throwable $e) {
+            Log::warning('Error al generar PDF: '.$e->getMessage());
+
+            return response()->json(['message' => 'No pudimos generar el archivo PDF en este momento.'], 500);
+        }
+    }
+
+    private function descargarExcel(Reporte $reporte, ReporteExcelService $excel): BinaryFileResponse|JsonResponse
+    {
+        try {
+            return response()->download($excel->generar($reporte), $reporte->nombreArchivo('xlsx'), [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        } catch (Throwable $e) {
+            Log::warning('Error al generar Excel: '.$e->getMessage());
+
+            return response()->json(['message' => 'No pudimos generar el archivo Excel en este momento.'], 500);
+        }
+    }
+
     private function responder(Reporte $reporte, array $extra): JsonResponse
     {
         return response()->json([

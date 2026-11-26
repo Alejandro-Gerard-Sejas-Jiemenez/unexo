@@ -1,27 +1,36 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import cliente from '../api/cliente';
-import { claseControl } from '../componentes/Campo';
+import cliente, { ErrorDeValidacion } from '../api/cliente';
+import BarraHerramientas from '../componentes/BarraHerramientas';
+import BotonAccion from '../componentes/BotonAccion';
+import Cargador from '../componentes/Cargador';
+import EncabezadoPagina from '../componentes/EncabezadoPagina';
+import Icono from '../componentes/Icono';
+import Insignia, { tonoEstado } from '../componentes/Insignia';
+import { useToast } from '../componentes/ToastContext';
+import ZonaArchivo from '../componentes/ZonaArchivo';
+import { gradienteDeCodigo } from '../lib/fechas';
 
 const FASES = [
-    { valor: '', etiqueta: 'Todas' },
-    { valor: 'en_curso', etiqueta: 'En curso' },
-    { valor: 'proximos', etiqueta: 'Próximos' },
-    { valor: 'finalizados', etiqueta: 'Finalizados' },
+    { valor: '', etiqueta: 'Todos' },
+    { valor: 'por-iniciar', etiqueta: 'Por iniciar' },
+    { valor: 'en-curso', etiqueta: 'En curso' },
+    { valor: 'finalizado', etiqueta: 'Finalizados' },
 ];
 
-/**
- * Mis grupos (docente) y Mis cursos (estudiante). Es la misma pantalla: lo que
- * cambia es de dónde vienen los datos y si cada fila enlaza a su detalle.
- */
 export default function MisClases({ modo }) {
     const esDocente = modo === 'docente';
     const ruta = esDocente ? '/mis-grupos' : '/mis-cursos';
+    const { mostrar } = useToast();
 
     const [parametros, setParametros] = useSearchParams();
     const [datos, setDatos] = useState(null);
     const [aviso, setAviso] = useState(null);
     const [cargando, setCargando] = useState(true);
+    const [busqueda, setBusqueda] = useState(parametros.get('q') ?? '');
+    const [archivos, setArchivos] = useState({});
+    const [erroresSubida, setErroresSubida] = useState({});
+    const [subiendoId, setSubiendoId] = useState(null);
 
     const clave = parametros.toString();
 
@@ -51,126 +60,302 @@ export default function MisClases({ modo }) {
         setParametros(siguiente);
     }
 
-    if (cargando) return <p role="status" className="text-[var(--color-texto-suave)]">Cargando…</p>;
-    if (aviso) return <p role="alert" className="text-sm text-[var(--color-error)]">{aviso}</p>;
+    async function subirComprobante(e, matriculaId) {
+        e.preventDefault();
+        const archivo = archivos[matriculaId];
+        if (!archivo) {
+            setErroresSubida((p) => ({ ...p, [matriculaId]: 'Elige un archivo de comprobante antes de enviarlo.' }));
+            return;
+        }
+
+        setErroresSubida((p) => ({ ...p, [matriculaId]: null }));
+        setSubiendoId(matriculaId);
+
+        try {
+            const fd = new FormData();
+            fd.append('archivo', archivo);
+            const { data } = await cliente.post(`/matriculas/${matriculaId}/comprobantes`, fd);
+            mostrar(data.mensaje);
+            setArchivos((p) => ({ ...p, [matriculaId]: null }));
+            await cargar(clave);
+        } catch (error) {
+            if (error instanceof ErrorDeValidacion) {
+                setErroresSubida((p) => ({ ...p, [matriculaId]: error.errores.archivo?.[0] ?? error.message }));
+            } else {
+                setErroresSubida((p) => ({ ...p, [matriculaId]: error.message }));
+            }
+        } finally {
+            setSubiendoId(null);
+        }
+    }
 
     const filas = datos?.data ?? [];
-    const vacio = esDocente ? !datos?.hay_grupos : !datos?.hay_inscripciones;
+    const tieneBase = esDocente ? Boolean(datos?.hay_grupos) : Boolean(datos?.hay_inscripciones);
+    const pendientes = datos?.pendientes_de_pago ?? [];
+    const faseActual = parametros.get('fase') ?? '';
+
+    const pildoras = FASES.map((f) => {
+        const count = f.valor === '' ? datos?.total : datos?.conteo?.[f.valor];
+        return {
+            valor: f.valor,
+            etiqueta: count != null ? `${f.etiqueta} (${count})` : f.etiqueta,
+        };
+    });
 
     return (
         <section>
-            <h1 className="mb-1 text-2xl font-semibold">
-                {esDocente ? 'Mis grupos' : 'Mis cursos'}
-            </h1>
-            <p className="mb-4 text-sm text-[var(--color-texto-suave)]">
-                {esDocente
-                    ? 'Los grupos que tenés a cargo, con su horario y su enlace o aula.'
-                    : 'Los grupos en los que estás inscrito.'}
-            </p>
-
-            {!esDocente && (datos?.pendientes_de_pago ?? []).length > 0 && (
-                <div className="superficie mb-4 p-4">
-                    <h2 className="mb-2 text-sm font-semibold">Matrículas pendientes de pago</h2>
-                    <ul className="list-none space-y-1 p-0 text-sm">
-                        {datos.pendientes_de_pago.map((m) => (
-                            <li key={m.id}>
-                                {m.edicion}
-                                {m.programa ? ` — ${m.programa}` : ''} · matriculada el{' '}
-                                {m.fecha_matricula} · {m.comprobantes} comprobante(s) subido(s)
-                            </li>
-                        ))}
-                    </ul>
-                    <Link to="/app/pagos" className="mt-2 inline-block text-sm">
-                        Ver mis métodos de pago
+            <EncabezadoPagina
+                grande
+                titulo={esDocente ? 'Mis grupos' : 'Mis cursos'}
+                subtitulo={
+                    esDocente
+                        ? 'Los grupos que tienes asignados y los estudiantes inscritos en cada uno.'
+                        : 'Los módulos y programas en los que estás inscrito.'
+                }
+                acciones={
+                    <Link to="/catalogo" className="btn btn-secundario">
+                        <Icono nombre="catalogo" className="h-4 w-4 opacity-75" />
+                        Ver catálogo
                     </Link>
-                </div>
-            )}
+                }
+            />
 
-            {vacio ? (
-                <p className="superficie p-6 text-center text-[var(--color-texto-suave)]">
-                    {esDocente
-                        ? 'Todavía no tenés grupos asignados.'
-                        : 'Todavía no estás inscrito en ningún grupo.'}
-                </p>
-            ) : (
-                <>
-                    <div className="mb-4 flex flex-wrap items-center gap-3">
-                        <div role="group" aria-label="Filtrar por fase" className="flex gap-2">
-                            {FASES.map((f) => (
-                                <button key={f.valor} type="button"
-                                    aria-pressed={(parametros.get('fase') ?? '') === f.valor}
-                                    onClick={() => cambiar('fase', f.valor)}
-                                    className={
-                                        'rounded-lg border px-3 py-1.5 text-sm ' +
-                                        ((parametros.get('fase') ?? '') === f.valor
-                                            ? 'border-[var(--color-acento)] bg-[var(--color-acento)] text-[var(--color-acento-texto)]'
-                                            : 'border-[var(--color-borde)] bg-transparent')
-                                    }>
-                                    {f.etiqueta}
-                                    {f.valor && datos?.conteo?.[f.valor] != null
-                                        ? ` (${datos.conteo[f.valor]})`
-                                        : ''}
-                                </button>
-                            ))}
+            {!esDocente &&
+                pendientes.map((m) => (
+                    <section
+                        key={m.id}
+                        className="mb-6 rounded-xl border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-[var(--color-aviso-fondo)] p-5"
+                    >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h2 className="font-semibold text-[var(--color-aviso)]">
+                                Pago pendiente: {m.programa ? `${m.programa} — ${m.edicion}` : m.edicion}
+                            </h2>
+                            <Link to="/pagos" className="text-xs font-semibold text-[var(--color-acento)] hover:underline">
+                                Pagar en línea o ver cuotas
+                            </Link>
                         </div>
 
-                        <label className="flex-1">
-                            <span className="sr-only">Buscar</span>
-                            <input type="search" placeholder="Buscar por módulo o grupo"
-                                className={claseControl} defaultValue={parametros.get('q') ?? ''}
-                                onChange={(e) => cambiar('q', e.target.value)} />
-                        </label>
-                    </div>
+                        {m.ultimo_comprobante && (
+                            <p className="mt-1 text-sm text-[var(--color-aviso)]">
+                                Último comprobante: {m.ultimo_comprobante.estado_label} ({m.ultimo_comprobante.creado}).
+                            </p>
+                        )}
 
+                        {(!m.ultimo_comprobante || m.ultimo_comprobante.estado !== 'pendiente') && (
+                            <form onSubmit={(e) => subirComprobante(e, m.id)} className="mt-3 space-y-3">
+                                <ZonaArchivo
+                                    etiqueta="Subir comprobante (JPG, PNG o PDF)"
+                                    ayuda="Tamaño máximo 4 MB."
+                                    accept="image/jpeg,image/png,application/pdf"
+                                    maxMb={4}
+                                    esImagen={Boolean(archivos[m.id]?.type?.startsWith('image/'))}
+                                    archivo={archivos[m.id] ?? null}
+                                    alCambiar={(f) => setArchivos((p) => ({ ...p, [m.id]: f }))}
+                                    error={erroresSubida[m.id] ?? null}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={subiendoId === m.id}
+                                    className="btn btn-primario !min-h-9 text-xs"
+                                >
+                                    <Icono nombre="subir-archivo" className="h-4 w-4" />
+                                    {subiendoId === m.id ? 'Subiendo…' : 'Subir comprobante'}
+                                </button>
+                            </form>
+                        )}
+                    </section>
+                ))}
+
+            {aviso && (
+                <p role="alert" className="superficie mb-6 border-[var(--color-error)] p-4 text-sm text-[var(--color-error)]">
+                    {aviso}
+                </p>
+            )}
+
+            {cargando && <Cargador texto="Cargando" />}
+
+            {!cargando && tieneBase && (
+                <BarraHerramientas
+                    pildoras={pildoras}
+                    pildoraActiva={faseActual}
+                    alSeleccionarPildora={(val) => cambiar('fase', val)}
+                    busqueda={busqueda}
+                    placeholder="Buscar por módulo o grupo…"
+                    alCambiarBusqueda={(val) => setBusqueda(val)}
+                    alBuscar={(val) => cambiar('q', val)}
+                    alLimpiarBusqueda={() => {
+                        setBusqueda('');
+                        cambiar('q', '');
+                    }}
+                />
+            )}
+
+            {!cargando && (
+                <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {filas.length === 0 ? (
-                        <p className="superficie p-6 text-center text-[var(--color-texto-suave)]">
-                            Nada coincide con el filtro.
-                        </p>
+                        <div className="col-span-1 md:col-span-2 xl:col-span-3">
+                            <div className="superficie mx-auto max-w-3xl rounded-xl p-12 text-center shadow-sm">
+                                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)]">
+                                    <Icono nombre={esDocente ? 'usuarios' : 'catalogo'} className="h-6 w-6" />
+                                </div>
+                                {tieneBase ? (
+                                    <>
+                                        <h3 className="mb-1 text-lg font-medium">
+                                            No hay {esDocente ? 'grupos' : 'cursos'} con ese filtro
+                                        </h3>
+                                        <p className="text-sm text-[var(--color-texto-suave)]">
+                                            Prueba con otra búsqueda o muestra todos tus registros.
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="mb-1 text-lg font-medium">
+                                            {esDocente
+                                                ? 'Todavía no tienes grupos asignados'
+                                                : 'Todavía no estás inscrito en ningún curso'}
+                                        </h3>
+                                        <p className="mb-4 text-sm text-[var(--color-texto-suave)]">
+                                            {esDocente
+                                                ? 'Cuando la administración te asigne un grupo, aparecerá aquí con sus estudiantes.'
+                                                : 'Cuando la administración registre tu matrícula, tus cursos aparecerán aquí.'}
+                                        </p>
+                                        {!esDocente && (
+                                            <Link to="/catalogo" className="btn btn-primario">
+                                                Revisar el catálogo
+                                            </Link>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     ) : (
-                        <ul className="list-none space-y-3 p-0">
-                            {filas.map((fila) => {
-                                const g = esDocente ? fila : fila.grupo;
+                        filas.map((fila) => {
+                            const g = esDocente ? fila : fila.grupo;
+                            const esRetirado = !esDocente && fila.matricula_estado === 'retirado';
+                            const estaPendiente = !esDocente && fila.matricula_estado === 'pendiente';
+                            const activa = !esDocente && fila.matricula_estado === 'activo';
+                            const enCurso = g.fase === 'por-iniciar' || g.fase === 'en-curso';
 
-                                return (
-                                    <li key={fila.id} className="superficie p-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <p className="font-medium">{g.modulo?.nombre ?? g.nombre}</p>
-                                                <p className="text-sm text-[var(--color-texto-suave)]">
-                                                    {g.nombre} · {g.modalidad_label} · {g.estado_label}
-                                                    {g.cohorte?.nombre ? ` · ${g.cohorte.nombre}` : ''}
-                                                </p>
-                                                {(g.horarios ?? []).length > 0 && (
-                                                    <p className="mt-1 text-xs text-[var(--color-texto-suave)]">
-                                                        {g.horarios
-                                                            .map((h) => `${h.dia_label} ${h.hora_inicio}–${h.hora_fin}`)
-                                                            .join(' · ')}
-                                                    </p>
+                            return (
+                                <article
+                                    key={fila.id}
+                                    className={
+                                        'superficie relative flex flex-col overflow-hidden rounded-xl shadow-sm transition-shadow hover:shadow-md ' +
+                                        (esRetirado ? 'opacity-75 grayscale-[0.5]' : '')
+                                    }
+                                >
+                                    <div className={`${gradienteDeCodigo(g.modulo?.codigo ?? g.nombre)} p-5`}>
+                                        <span className="mb-3 inline-block rounded-md bg-white/20 px-2.5 py-1 text-xs font-bold tracking-wider backdrop-blur-sm">
+                                            {g.cohorte
+                                                ? `${g.cohorte.programa ? `${g.cohorte.programa} · ` : ''}${g.cohorte.nombre}`
+                                                : 'Módulo suelto'}
+                                        </span>
+                                        <h3 className="text-xl leading-tight font-bold">
+                                            {g.modulo?.nombre ?? g.nombre}
+                                        </h3>
+                                    </div>
+
+                                    <div className="flex flex-1 flex-col p-5">
+                                        <dl className="mb-5 grid grid-cols-1 gap-y-3 text-sm">
+                                            {esDocente ? (
+                                                <>
+                                                    <div>
+                                                        <dt className="font-medium text-[var(--color-texto-suave)]">Grupo</dt>
+                                                        <dd className="mt-0.5 font-medium">{g.nombre}</dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt className="font-medium text-[var(--color-texto-suave)]">Fechas</dt>
+                                                        <dd className="mt-0.5 tabular-nums">{g.periodo_texto || '—'}</dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt className="font-medium text-[var(--color-texto-suave)]">Modalidad</dt>
+                                                        <dd className="mt-0.5">
+                                                            {g.modalidad_label}
+                                                            {g.aula ? ` · ${g.aula}` : ''}
+                                                        </dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt className="font-medium text-[var(--color-texto-suave)]">Estudiantes</dt>
+                                                        <dd className="mt-0.5">
+                                                            <span className="inline-flex items-center rounded-full border border-[var(--color-borde)] bg-[var(--color-superficie-2)] px-2 py-0.5 text-xs font-bold">
+                                                                {g.inscripciones_count ?? 0} inscritos
+                                                            </span>
+                                                        </dd>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div>
+                                                        <dt className="font-medium text-[var(--color-texto-suave)]">Docente</dt>
+                                                        <dd className="mt-0.5">{g.docente ?? 'Por asignar'}</dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt className="font-medium text-[var(--color-texto-suave)]">Período</dt>
+                                                        <dd className="mt-0.5 tabular-nums">{g.periodo_texto || '—'}</dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt className="font-medium text-[var(--color-texto-suave)]">Modalidad</dt>
+                                                        <dd className="mt-0.5">
+                                                            {g.modalidad_label}
+                                                            {g.aula ? ` · ${g.aula}` : ''}
+                                                        </dd>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </dl>
+
+                                        {!esDocente && (
+                                            <div className="mt-auto space-y-3 border-t border-[var(--color-borde)] pt-4">
+                                                {!esRetirado && (
+                                                    <Link to={`/mis-cursos/${g.id}`} className="btn btn-secundario w-full">
+                                                        Ver detalle<span className="sr-only"> de {g.modulo?.nombre}</span>
+                                                    </Link>
                                                 )}
-                                                {g.aula && (
-                                                    <p className="mt-1 text-xs">Aula: {g.aula}</p>
-                                                )}
-                                                {g.enlace_videoconferencia && (
-                                                    <a href={g.enlace_videoconferencia}
-                                                        target="_blank" rel="noreferrer"
-                                                        className="mt-1 inline-block text-xs">
-                                                        Entrar a la videoconferencia
+
+                                                {activa && enCurso && g.enlace_videoconferencia ? (
+                                                    <a
+                                                        href={g.enlace_videoconferencia}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="btn btn-primario w-full"
+                                                    >
+                                                        <Icono nombre="video" className="h-4 w-4" />
+                                                        Entrar a la clase
                                                     </a>
+                                                ) : (
+                                                    estaPendiente && (
+                                                        <div className="flex gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-aviso)_30%,transparent)] bg-[var(--color-aviso-fondo)] p-3 text-sm text-[var(--color-aviso)]">
+                                                            <Icono nombre="alerta" className="h-5 w-5 shrink-0" />
+                                                            <p>El enlace de la clase se habilitará cuando se confirme tu pago.</p>
+                                                        </div>
+                                                    )
                                                 )}
                                             </div>
+                                        )}
+                                    </div>
 
-                                            {esDocente && (
-                                                <Link to={`/app/mis-grupos/${g.id}`} className="text-sm">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-4">
+                                        {esDocente ? (
+                                            <>
+                                                <Insignia tono={tonoEstado(g.fase)}>{g.fase_etiqueta}</Insignia>
+                                                <BotonAccion to={`/mis-grupos/${g.id}`} icono="usuarios">
                                                     Ver estudiantes
-                                                </Link>
-                                            )}
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                                </BotonAccion>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Insignia tono={tonoEstado(fila.matricula_estado)}>
+                                                    {fila.matricula_estado_label}
+                                                </Insignia>
+                                                <Insignia tono={tonoEstado(g.fase)}>{g.fase_etiqueta}</Insignia>
+                                            </>
+                                        )}
+                                    </div>
+                                </article>
+                            );
+                        })
                     )}
-                </>
+                </div>
             )}
         </section>
     );

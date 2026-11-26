@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { claveCache, guardarCache, leerCache } from '../api/cache';
 import cliente from '../api/cliente';
 import { useAuth } from '../auth/AuthContext';
+import { conBase } from '../base';
+import Cargador from '../componentes/Cargador';
+import EncabezadoPagina from '../componentes/EncabezadoPagina';
+import Icono from '../componentes/Icono';
+import Insignia, { tonoEstado } from '../componentes/Insignia';
 import Tarjeta from '../componentes/graficos/Tarjeta';
 
-/** Inicio: el contenido depende del rol, igual que el panel del servidor. */
+function iniciales(u) {
+    return ((u?.nombres?.[0] ?? '') + (u?.apellidos?.[0] ?? '')).toUpperCase() || 'NX';
+}
+
 export default function Panel() {
     const { usuario } = useAuth();
-    const [datos, setDatos] = useState(null);
+    const llave = claveCache('/inicio');
+    const [datos, setDatos] = useState(() => leerCache(llave));
     const [aviso, setAviso] = useState(null);
 
     useEffect(() => {
@@ -15,31 +25,43 @@ export default function Panel() {
 
         cliente
             .get('/inicio')
-            .then(({ data }) => vigente && setDatos(data))
-            .catch((e) => vigente && setAviso(e.message));
+            .then(({ data }) => {
+                guardarCache(llave, data);
+                if (vigente) setDatos(data);
+            })
+            .catch((e) => vigente && !leerCache(llave) && setAviso(e.message));
 
         return () => {
             vigente = false;
         };
-    }, []);
+    }, [llave]);
 
     const esAdmin = datos?.rol === 'administrador';
+    const esDocente = datos?.rol === 'docente';
+    const esEstudiante = datos?.rol === 'estudiante';
 
-    /**
-     * El servidor manda los totales y la oferta como objetos de conteos; acá se
-     * arman las tarjetas con el rótulo y el detalle que corresponde a cada una.
-     */
+    const subtituloRol = () => {
+        if (esAdmin) return 'Resumen del catálogo académico de NEXO SIS.';
+        if (esDocente) return 'Bienvenido al panel principal de docencia.';
+        if (esEstudiante) return 'Bienvenido a tu portal estudiantil.';
+        return 'Sistema de Administración Académica de NEXO SIS.';
+    };
+
     const tarjetas = () => {
         const t = datos.totales ?? {};
         const o = datos.oferta ?? {};
+        const p = o.programas ?? 0;
+        const m = o.modulos ?? 0;
 
         return [
             {
                 clave: 'crm',
                 etiqueta: 'Visible para CRM',
-                valor: o.programas ?? 0,
-                detalle: `programas abiertos · ${o.modulos ?? 0} módulos`,
-                icono: 'candado',
+                valor: p,
+                detalle: `${p === 1 ? 'programa abierto' : 'programas abiertos'} · ${m} ${m === 1 ? 'módulo' : 'módulos'}`,
+                icono: 'ojo',
+                ruta: '/catalogo',
+                destacado: true,
             },
             {
                 clave: 'programas',
@@ -47,6 +69,7 @@ export default function Panel() {
                 valor: t.programas ?? 0,
                 detalle: 'en el catálogo',
                 icono: 'programa',
+                ruta: '/programas',
             },
             {
                 clave: 'modulos',
@@ -54,6 +77,7 @@ export default function Panel() {
                 valor: t.modulos ?? 0,
                 detalle: 'en el catálogo',
                 icono: 'modulos',
+                ruta: '/modulos',
             },
             {
                 clave: 'usuarios',
@@ -61,51 +85,61 @@ export default function Panel() {
                 valor: t.usuarios ?? 0,
                 detalle: `${t.docentes ?? 0} docentes · ${t.estudiantes ?? 0} estudiantes`,
                 icono: 'usuarios',
+                ruta: '/usuarios',
             },
         ];
     };
 
-    /** La ruta del aviso viene como URL del panel Blade; acá se usa la de la SPA. */
-    const rutaSpaDelAviso = (url) => {
-        try {
-            const { pathname, search } = new URL(url, window.location.origin);
-            return `/app${pathname}${search}`;
-        } catch {
-            return '/app';
+    const rutaAviso = (ruta) => (ruta?.startsWith('/') ? ruta : '/');
+
+    const accionHeader = () => {
+        if (esAdmin) {
+            return (
+                <Link to="/programas/nuevo" className="btn btn-primario">
+                    <Icono nombre="mas" className="h-4 w-4" />
+                    Nuevo programa
+                </Link>
+            );
         }
+        if (esDocente) {
+            return (
+                <Link to="/mis-grupos" className="btn btn-primario">
+                    <Icono nombre="usuarios" className="h-4 w-4" />
+                    Ver mis grupos
+                </Link>
+            );
+        }
+        if (esEstudiante) {
+            return (
+                <Link to="/mis-cursos" className="btn btn-primario">
+                    <Icono nombre="catalogo" className="h-4 w-4" />
+                    Ver mis cursos
+                </Link>
+            );
+        }
+        return null;
     };
 
     return (
         <section>
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold">Hola, {usuario?.nombres}</h1>
-                    <p className="mt-1 text-[var(--color-texto-suave)]">
-                        {esAdmin
-                            ? 'Resumen del catálogo académico de NEXO SIS.'
-                            : 'Sistema de Administración Académica de NEXO.'}
-                    </p>
-                </div>
+            <EncabezadoPagina
+                grande
+                titulo={`Hola, ${usuario?.nombres ?? ''}`}
+                subtitulo={subtituloRol()}
+                acciones={accionHeader()}
+            />
 
-                {esAdmin && (
-                    <Link
-                        to="/app/programas/nuevo"
-                        className="rounded-xl bg-[var(--color-acento)] px-4 py-2.5 text-sm font-semibold text-[var(--color-acento-texto)] no-underline"
-                    >
-                        + Nuevo programa
-                    </Link>
-                )}
-            </div>
-
-            {aviso && <p role="alert" className="text-sm text-[var(--color-error)]">{aviso}</p>}
-
-            {!datos && !aviso && (
-                <p role="status" className="text-[var(--color-texto-suave)]">Cargando…</p>
+            {aviso && (
+                <p role="alert" className="superficie mb-6 border-[var(--color-error)] p-4 text-sm text-[var(--color-error)]">
+                    {aviso}
+                </p>
             )}
+
+            {!datos && !aviso && <Cargador texto="Cargando resumen" />}
 
             {esAdmin && (
                 <>
-                    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                         {tarjetas().map((t) => (
                             <Tarjeta
                                 key={t.clave}
@@ -113,102 +147,190 @@ export default function Panel() {
                                 valor={t.valor}
                                 detalle={t.detalle}
                                 icono={t.icono}
+                                ruta={t.ruta}
+                                destacado={Boolean(t.destacado)}
                             />
                         ))}
                     </div>
 
-                    <div className="superficie p-6">
-                        <h2 className="mb-4 text-lg font-bold">Requiere atención</h2>
+                    <section aria-labelledby="titulo-atencion" className="superficie overflow-hidden rounded-xl shadow-sm">
+                        <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                            <h2 id="titulo-atencion" className="text-lg font-bold">
+                                Requiere atención
+                            </h2>
+                        </div>
 
-                        {(datos.avisos ?? []).length === 0 ? (
-                            <p className="text-sm text-[var(--color-texto-suave)]">
-                                No hay nada pendiente. El catálogo está al día.
-                            </p>
-                        ) : (
-                            <ul className="list-none space-y-3 p-0">
-                                {datos.avisos.map((a, i) => (
-                                    <li
-                                        key={i}
-                                        className="flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3"
-                                        style={{
-                                            borderColor: 'var(--color-aviso)',
-                                            background: 'var(--color-aviso-fondo)',
-                                        }}
-                                    >
-                                        <span
-                                            aria-hidden="true"
-                                            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold"
-                                            style={{
-                                                background: 'var(--color-aviso)',
-                                                color: 'var(--color-aviso-fondo)',
-                                            }}
-                                        >
-                                            {a.cantidad}
-                                        </span>
-
-                                        <span
-                                            className="flex-1 text-sm font-medium"
-                                            style={{ color: 'var(--color-aviso)' }}
-                                        >
-                                            {a.cantidad === 1 ? a.singular : a.plural}
-                                        </span>
-
-                                        {a.ruta && (
+                        <div className="p-6">
+                            {(datos.avisos ?? []).length === 0 ? (
+                                <div className="flex items-center gap-4 rounded-xl border border-[color-mix(in_srgb,var(--color-exito)_35%,transparent)] bg-[var(--color-exito-fondo)] p-6 text-[var(--color-exito)]">
+                                    <Icono nombre="check" className="h-8 w-8 shrink-0" />
+                                    <div>
+                                        <h3 className="text-base font-semibold">Todo al día</h3>
+                                        <p className="mt-1 text-sm opacity-90">
+                                            El catálogo está al día: no hay nada pendiente de revisar.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <ul className="list-none space-y-4 p-0">
+                                    {datos.avisos.map((a, i) => (
+                                        <li key={i}>
                                             <Link
-                                                to={rutaSpaDelAviso(a.ruta)}
-                                                className="text-sm font-semibold"
-                                                style={{ color: 'var(--color-aviso)' }}
+                                                to={rutaAviso(a.ruta)}
+                                                className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color-mix(in_srgb,var(--color-aviso)_35%,transparent)] bg-[var(--color-aviso-fondo)] p-4 text-[var(--color-aviso)] no-underline transition-all hover:brightness-95"
                                             >
-                                                Revisar →
+                                                <div className="flex items-center gap-4">
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-aviso)_20%,transparent)] text-lg font-bold"
+                                                    >
+                                                        {a.cantidad}
+                                                    </span>
+                                                    <span className="font-medium">
+                                                        {a.cantidad === 1 ? a.singular : a.plural}
+                                                    </span>
+                                                </div>
+
+                                                <span className="flex items-center gap-1 text-sm font-semibold">
+                                                    Revisar
+                                                    <Icono nombre="siguiente" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                                </span>
                                             </Link>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </section>
                 </>
             )}
 
-            {(datos?.rol === 'docente' || datos?.rol === 'estudiante') && (
-                <div>
-                    <h2 className="mb-3 text-lg font-bold">Tus próximas clases</h2>
+            {(esDocente || esEstudiante) && (
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                    <div className="space-y-8 lg:col-span-2">
+                        <section aria-labelledby="titulo-proximos" className="superficie overflow-hidden rounded-xl shadow-sm">
+                            <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                                <h2 id="titulo-proximos" className="text-lg font-bold">
+                                    {esDocente ? 'Tus próximos grupos' : 'Tus próximos cursos'}
+                                </h2>
+                            </div>
 
-                    {(datos.proximos ?? []).length === 0 ? (
-                        <p className="superficie p-6 text-sm text-[var(--color-texto-suave)]">
-                            No tenés clases próximas registradas.
-                        </p>
-                    ) : (
-                        <ul className="list-none space-y-3 p-0">
-                            {datos.proximos.map((g) => (
-                                <li key={g.id} className="superficie p-4">
-                                    <p className="font-semibold">{g.modulo?.nombre ?? g.nombre}</p>
-                                    <p className="text-sm text-[var(--color-texto-suave)]">
-                                        {g.nombre} · {g.modalidad_label}
-                                        {g.fecha_inicio ? ` · desde el ${g.fecha_inicio}` : ''}
+                            {(datos.proximos ?? []).length === 0 ? (
+                                <div className="p-8 text-center">
+                                    <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-superficie-2)] text-[var(--color-texto-suave)]">
+                                        <Icono nombre={esDocente ? 'usuarios' : 'catalogo'} className="h-6 w-6" />
+                                    </div>
+                                    <h3 className="mb-1 text-base font-medium">
+                                        {esDocente ? 'No tienes grupos asignados por ahora' : 'No tienes cursos activos por ahora'}
+                                    </h3>
+                                    <p className="mb-4 text-sm text-[var(--color-texto-suave)]">
+                                        {esDocente
+                                            ? 'Cuando coordinación académica te asigne un grupo, aparecerá en este listado.'
+                                            : 'Cuando la administración te inscriba, los verás aquí. Mientras tanto puedes revisar la oferta disponible.'}
                                     </p>
-                                    {(g.horarios ?? []).length > 0 && (
-                                        <p className="mt-1 text-xs text-[var(--color-texto-suave)]">
-                                            {g.horarios
-                                                .map((h) => `${h.dia_label} ${h.hora_inicio}–${h.hora_fin}`)
-                                                .join(' · ')}
-                                        </p>
+                                    {esEstudiante && (
+                                        <Link
+                                            to="/catalogo"
+                                            className="btn btn-primario"
+                                        >
+                                            Ir al catálogo
+                                        </Link>
                                     )}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                                </div>
+                            ) : (
+                                <ul className="list-none divide-y divide-[var(--color-borde)] p-0">
+                                    {datos.proximos.map((g) => {
+                                        const destino = esDocente ? `/mis-grupos/${g.id}` : `/mis-cursos/${g.id}`;
 
-                    <div className="mt-4 flex flex-wrap gap-3">
-                        <Link to="/app/calendario" className="superficie px-4 py-2 text-sm no-underline">
-                            Ver calendario
-                        </Link>
-                        <Link
-                            to={datos.rol === 'docente' ? '/app/mis-grupos' : '/app/mis-cursos'}
-                            className="superficie px-4 py-2 text-sm no-underline"
-                        >
-                            {datos.rol === 'docente' ? 'Mis grupos' : 'Mis cursos'}
-                        </Link>
+                                        return (
+                                            <li key={g.id} className="transition-colors hover:bg-[var(--color-superficie-2)]/60">
+                                                <Link to={destino} className="group flex items-center justify-between gap-4 p-4 no-underline sm:p-6">
+                                                    <div className="min-w-0 flex-1">
+                                                        <h3 className="truncate text-base font-bold transition-colors group-hover:text-[var(--color-acento)]">
+                                                            {g.modulo?.nombre ?? g.nombre}
+                                                        </h3>
+                                                        <div className="mt-1 flex flex-col gap-1 text-sm text-[var(--color-texto-suave)] sm:flex-row sm:items-center sm:gap-3">
+                                                            <span className="flex items-center gap-1.5">
+                                                                <Icono nombre="calendario" className="h-4 w-4 shrink-0 opacity-75" />
+                                                                <span>{g.periodo_texto || g.nombre}</span>
+                                                            </span>
+                                                            <span className="hidden opacity-40 sm:inline">•</span>
+                                                            <span className="flex items-center gap-1.5">
+                                                                <Icono nombre="usuarios" className="h-4 w-4 shrink-0 opacity-75" />
+                                                                {esDocente ? (
+                                                                    <span>{g.inscripciones_count ?? 0} inscritos</span>
+                                                                ) : (
+                                                                    <span>{g.docente ?? 'Docente por asignar'}</span>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {g.fase_etiqueta && (
+                                                        <Insignia tono={tonoEstado(g.fase)}>{g.fase_etiqueta}</Insignia>
+                                                    )}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </section>
+                    </div>
+
+                    <div className="space-y-8 lg:col-span-1">
+                        <section aria-labelledby="titulo-perfil" className="superficie overflow-hidden rounded-xl shadow-sm">
+                            <div className="border-b border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] px-6 py-5">
+                                <h2 id="titulo-perfil" className="text-lg font-bold">
+                                    Mi perfil
+                                </h2>
+                            </div>
+
+                            <div className="p-6">
+                                <div className="mb-6 flex items-center gap-4">
+                                    {usuario?.foto_perfil_url ? (
+                                        <img
+                                            src={conBase(usuario.foto_perfil_url)}
+                                            alt=""
+                                            className="h-16 w-16 rounded-full border-2 border-white object-cover shadow-sm"
+                                        />
+                                    ) : (
+                                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-white bg-[var(--color-acento-suave)] text-2xl font-bold text-[var(--color-acento)] uppercase shadow-sm">
+                                            {iniciales(usuario)}
+                                        </div>
+                                    )}
+                                    <div className="min-w-0">
+                                        <h3 className="truncate font-bold">{usuario?.nombre_completo}</h3>
+                                        <p className="text-sm text-[var(--color-texto-suave)]">{usuario?.rol_label}</p>
+                                    </div>
+                                </div>
+
+                                <dl className="space-y-4">
+                                    <div>
+                                        <dt className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                                            Correo institucional
+                                        </dt>
+                                        <dd className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-2.5 text-sm font-medium break-all">
+                                            {usuario?.correo_institucional ?? 'Sin asignar'}
+                                        </dd>
+                                    </div>
+
+                                    <div>
+                                        <dt className="mb-1 text-xs font-semibold tracking-wider text-[var(--color-texto-suave)] uppercase">
+                                            Teléfono
+                                        </dt>
+                                        <dd className="rounded-lg border border-[var(--color-borde)] bg-[var(--color-superficie-cabecera)] p-2.5 text-sm font-medium">
+                                            {usuario?.telefono || '—'}
+                                        </dd>
+                                    </div>
+                                </dl>
+
+                                <Link to="/perfil" className="btn btn-secundario mt-5 w-full text-xs">
+                                    <Icono nombre="editar" className="h-3.5 w-3.5" />
+                                    Editar perfil
+                                </Link>
+                            </div>
+                        </section>
                     </div>
                 </div>
             )}

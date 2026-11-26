@@ -21,11 +21,20 @@ class MetodoPago extends Model
         'vencimiento',
         'etiqueta',
         'predeterminado',
+        'proveedor',
+        'stripe_payment_method_id',
+        'marca',
+        'exp_mes',
+        'exp_anio',
     ];
 
     protected function casts(): array
     {
-        return ['predeterminado' => 'boolean'];
+        return [
+            'predeterminado' => 'boolean',
+            'exp_mes' => 'integer',
+            'exp_anio' => 'integer',
+        ];
     }
 
     public function usuario(): BelongsTo

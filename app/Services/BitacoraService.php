@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Bitacora;
 use App\Models\User;
+use App\Support\ConsultaTexto;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
@@ -72,10 +73,11 @@ class BitacoraService
             ->when($evento, fn ($q) => $q->where('evento', $evento))
             ->when($filtros['desde'] ?? null, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
             ->when($filtros['hasta'] ?? null, fn ($q, $h) => $q->whereDate('created_at', '<=', $h))
-            ->when($busqueda !== '', fn ($q) => $q->where(fn ($b) => $b
-                ->where('recurso', 'like', "%{$busqueda}%")
-                ->orWhere('ip', 'like', "%{$busqueda}%")
-                ->orWhere('identificador', 'like', "%{$busqueda}%")))
+            ->when($busqueda !== '', fn ($q) => $q->where(function ($b) use ($busqueda) {
+                ConsultaTexto::dondeContiene($b, 'recurso', $busqueda);
+                ConsultaTexto::dondeContiene($b, 'ip', $busqueda, true);
+                ConsultaTexto::dondeContiene($b, 'identificador', $busqueda, true);
+            }))
             ->orderByDesc('created_at')
             ->paginate(config('limites.por_pagina'));
     }

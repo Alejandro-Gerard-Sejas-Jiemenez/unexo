@@ -201,4 +201,32 @@ class CatalogoPanelApiTest extends TestCase
             'estado_comercial' => 'abierto',
         ])->assertOk()->assertJsonPath('modulo.nombre', 'Lógica de programación I');
     }
+
+    public function test_no_se_agrega_el_mismo_modulo_dos_veces_y_acepta_portada(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $admin = $this->admin();
+
+        $creado = $this->actingAs($admin)->post('/api/panel/catalogo/programas', [
+            'codigo' => 'PORT-01',
+            'nombre' => 'Programa con Portada',
+            'version' => '1.0',
+            'estado_comercial' => 'borrador',
+            'imagen_portada_url' => \Illuminate\Http\UploadedFile::fake()->image('portada.jpg'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $this->assertNotNull($creado->json('programa.imagen_portada_url'));
+
+        $programaId = $creado->json('programa.id');
+        $modulo = $this->modulo();
+
+        $this->actingAs($admin)
+            ->postJson("/api/panel/catalogo/programas/{$programaId}/modulos", ['modulo_id' => $modulo->id])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->postJson("/api/panel/catalogo/programas/{$programaId}/modulos", ['modulo_id' => $modulo->id])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['modulo_id']);
+    }
 }

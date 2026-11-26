@@ -57,7 +57,7 @@ class PanelApiTest extends TestCase
 
         $this->postJson('/api/panel/login', ['usuario' => 'bloqueado@nexo.test', 'password' => 'Demo12345'])
             ->assertStatus(422)
-            ->assertJsonPath('errors.usuario.0', fn (string $m) => str_contains($m, 'Demasiados intentos'));
+            ->assertJsonPath('errors.usuario.0', fn(string $m) => str_contains($m, 'Demasiados intentos'));
     }
 
     public function test_usuario_inactivo_no_entra(): void
@@ -90,7 +90,7 @@ class PanelApiTest extends TestCase
 
         $this->assertContains('Docencia', $etiquetas);
         $this->assertNotContains('Configuración y Seguridad', $etiquetas);
-        $this->assertSame('/app', $respuesta->json('menu.0.ruta'));
+        $this->assertSame('/', $respuesta->json('menu.0.ruta'));
     }
 
     public function test_un_docente_no_alcanza_el_modulo_de_usuarios(): void
@@ -192,8 +192,32 @@ class PanelApiTest extends TestCase
         $token = $cliente->createToken('crm')->plainTextToken;
 
         // El guard resuelve el token, pero 'rol:administrador' no encuentra un rol de negocio.
-        $this->withHeader('Authorization', 'Bearer '.$token)
+        $this->withHeader('Authorization', 'Bearer ' . $token)
             ->getJson('/api/panel/usuarios')
             ->assertForbidden();
+    }
+
+    public function test_login_con_correo_institucional_y_actualizacion_de_perfil(): void
+    {
+        $usuario = User::factory()->create([
+            'rol' => Rol::Docente,
+            'email' => 'personal@nexo.test',
+            'correo_institucional' => 'institucional@uagrm.edu.bo',
+            'password' => 'Demo12345',
+            'estado' => 'activo',
+        ]);
+
+        $this->postJson('/api/panel/login', [
+            'usuario' => 'institucional@uagrm.edu.bo',
+            'password' => 'Demo12345',
+        ])->assertOk()->assertJsonPath('usuario.id', $usuario->id);
+
+        $this->actingAs($usuario)->getJson('/api/panel/perfil')
+            ->assertOk()
+            ->assertJsonPath('usuario.correo_institucional', 'institucional@uagrm.edu.bo');
+
+        $this->actingAs($usuario)->putJson('/api/panel/perfil', [
+            'telefono' => '+591 70001122',
+        ])->assertOk()->assertJsonPath('usuario.telefono', '+591 70001122');
     }
 }

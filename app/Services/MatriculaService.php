@@ -29,8 +29,18 @@ class MatriculaService
                 'fecha_matricula' => today(),
             ]);
 
-            foreach ($cohorte->grupos as $grupo) {
-                InscripcionGrupo::create(['matricula_id' => $matricula->id, 'grupo_id' => $grupo->id]);
+            $grupos = $cohorte->grupos()->get(['id']);
+            if ($grupos->isNotEmpty()) {
+                $ahora = now();
+                $filas = $grupos->map(fn (Grupo $grupo) => [
+                    'id' => (string) Str::uuid(),
+                    'matricula_id' => $matricula->id,
+                    'grupo_id' => $grupo->id,
+                    'created_at' => $ahora,
+                    'updated_at' => $ahora,
+                ])->all();
+
+                InscripcionGrupo::insert($filas);
             }
 
             return $matricula;

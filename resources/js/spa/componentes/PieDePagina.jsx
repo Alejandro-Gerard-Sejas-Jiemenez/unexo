@@ -1,39 +1,66 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import cliente from '../api/cliente';
 
-/**
- * Contador de visitas persistente, en el pie de todas las vistas del sitio,
- * como exige el requisito 7. El conteo lo lleva el servidor.
- */
-export default function PieDePagina() {
+const cacheVisitas = new Map();
+
+export default function PieDePagina({ rutaFija = null }) {
     const { pathname } = useLocation();
-    const [visitas, setVisitas] = useState(null);
+    const rutaActual = rutaFija ?? pathname;
+    const [visitas, setVisitas] = useState(() => cacheVisitas.get(rutaActual) ?? null);
+    const ultimaRegistrada = useRef(null);
 
     useEffect(() => {
         let vigente = true;
+        const guardada = cacheVisitas.get(rutaActual);
+        if (guardada) {
+            setVisitas(guardada);
+        }
+
+        const guardar = (data) => {
+            if (!data) return;
+            cacheVisitas.set(rutaActual, data);
+            if (vigente) setVisitas(data);
+        };
+
+        if (ultimaRegistrada.current === rutaActual) {
+            cliente
+                .get('/visitas', { params: { ruta: rutaActual } })
+                .then(({ data }) => guardar(data))
+                .catch(() => {});
+
+            return () => {
+                vigente = false;
+            };
+        }
+
+        ultimaRegistrada.current = rutaActual;
 
         cliente
-            .get('/visitas', { params: { ruta: pathname } })
-            .then(({ data }) => vigente && setVisitas(data))
+            .post('/visitas', { ruta: rutaActual })
+            .then(({ data }) => guardar(data))
             .catch(() => {
-                // El contador es informativo: si falla, el pie se muestra sin él.
+                cliente
+                    .get('/visitas', { params: { ruta: rutaActual } })
+                    .then(({ data }) => guardar(data))
+                    .catch(() => {});
             });
 
         return () => {
             vigente = false;
         };
-    }, [pathname]);
+    }, [rutaActual]);
 
     return (
-        <footer className="border-t border-[var(--color-borde)] px-6 py-3 text-xs text-[var(--color-texto-suave)]">
+        <footer className="border-t border-[var(--color-borde)] bg-[var(--color-superficie)] px-4 py-3 text-xs text-[var(--color-texto-suave)] sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <span>NEXO SIS · Universidad Autónoma Gabriel René Moreno</span>
                 {visitas && (
                     <span>
                         Visitas de esta página:{' '}
-                        <b>{visitas.pagina.toLocaleString('es-BO')}</b> · Total del sitio:{' '}
-                        <b>{visitas.total.toLocaleString('es-BO')}</b>
+                        <b className="text-[var(--color-texto)]">{visitas.pagina.toLocaleString('es-BO')}</b> · Total
+                        del sitio:{' '}
+                        <b className="text-[var(--color-texto)]">{visitas.total.toLocaleString('es-BO')}</b>
                     </span>
                 )}
             </div>
