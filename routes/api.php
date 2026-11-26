@@ -111,6 +111,7 @@ Route::prefix('panel')->middleware('web')->group(function () {
             Route::get('reportes/catalogo/excel', [ReporteApiController::class, 'catalogoExcel']);
 
             Route::get('aulas', [ConfiguracionApiController::class, 'aulas']);
+            Route::get('aulas/{aula}', [ConfiguracionApiController::class, 'aula'])->whereUuid('aula');
             Route::post('aulas', [ConfiguracionApiController::class, 'guardarAula']);
             Route::put('aulas/{aula}', [ConfiguracionApiController::class, 'actualizarAula'])->whereUuid('aula');
             Route::get('clientes-api', [ConfiguracionApiController::class, 'clientesApi']);

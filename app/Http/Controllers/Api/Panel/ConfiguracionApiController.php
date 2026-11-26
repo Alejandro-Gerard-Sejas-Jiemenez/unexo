@@ -35,6 +35,11 @@ class ConfiguracionApiController extends Controller
         ]);
     }
 
+    public function aula(Aula $aula): JsonResponse
+    {
+        return response()->json(['data' => $aula->only(['id', 'nombre', 'capacidad'])]);
+    }
+
     public function guardarAula(AulaRequest $request): JsonResponse
     {
         $aula = Aula::create($request->validated());

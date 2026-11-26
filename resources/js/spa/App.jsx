@@ -35,6 +35,7 @@ import MiGrupoDetalle from './paginas/docencia/MiGrupoDetalle';
 import MiCursoDetalle from './paginas/docencia/MiCursoDetalle';
 import ClientesApi from './paginas/sistema/ClientesApi';
 import Aulas from './paginas/sistema/Aulas';
+import AulaFormulario from './paginas/sistema/AulaFormulario';
 
 const ADMIN = ['administrador'];
 const DOCENTE = ['docente'];
@@ -248,6 +249,22 @@ function Rutas() {
                     element={
                         <RutaProtegida roles={ADMIN}>
                             <Aulas />
+                        </RutaProtegida>
+                    }
+                />
+                <Route
+                    path="aulas/nueva"
+                    element={
+                        <RutaProtegida roles={ADMIN}>
+                            <AulaFormulario />
+                        </RutaProtegida>
+                    }
+                />
+                <Route
+                    path="aulas/:id"
+                    element={
+                        <RutaProtegida roles={ADMIN}>
+                            <AulaFormulario />
                         </RutaProtegida>
                     }
                 />
