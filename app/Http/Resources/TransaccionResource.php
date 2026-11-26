@@ -13,7 +13,7 @@ class TransaccionResource extends JsonResource
 {
     private const ESTADOS = [
         'pendiente' => 'Pendiente',
-        'procesando' => 'Procesando',
+        'procesando' => 'En curso',
         'requiere_accion' => 'Requiere confirmación',
         'aprobada' => 'Aprobada',
         'rechazada' => 'Rechazada',
@@ -37,6 +37,7 @@ class TransaccionResource extends JsonResource
             'estado' => $this->estado,
             'estado_label' => self::ESTADOS[$this->estado] ?? $this->estado,
             'referencia' => $this->referencia,
+            'puede_resolver_manual' => $this->admiteResolucionManual(),
             'motivo_rechazo' => $this->motivo_rechazo,
             'fecha_vencimiento' => $this->fecha_vencimiento?->format('Y-m-d'),
             'metodo' => $this->whenLoaded('metodoPago', fn () => $this->metodoPago?->descripcion()),
