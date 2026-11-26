@@ -38,10 +38,11 @@ class CalendarioYBusquedaTest extends TestCase
         $matricula = Matricula::create(['estudiante_id' => $estudiante->id, 'estado' => EstadoMatricula::Activo, 'fecha_matricula' => now()]);
         InscripcionGrupo::create(['matricula_id' => $matricula->id, 'grupo_id' => $grupo->id]);
 
-        $this->actingAs($estudiante)->get(route('calendario'))
-            ->assertOk()
-            ->assertSee('Inicia: Redes Avanzadas · Grupo A', false)
-            ->assertSee('Termina: Redes Avanzadas · Grupo A', false);
+        $res = $this->actingAs($estudiante)->getJson('/api/panel/calendario')->assertOk();
+        $etiquetas = collect($res->json('semanas'))->flatten(1)->flatMap(fn ($d) => $d['eventos'] ?? [])->pluck('texto')->all();
+
+        $this->assertContains('Inicia: Redes Avanzadas · Grupo A', $etiquetas);
+        $this->assertContains('Termina: Redes Avanzadas · Grupo A', $etiquetas);
     }
 
     // CA-40: un grupo de edición aparece en el calendario con las fechas de su edición
@@ -69,16 +70,17 @@ class CalendarioYBusquedaTest extends TestCase
         $matricula = Matricula::create(['estudiante_id' => $estudiante->id, 'estado' => EstadoMatricula::Activo, 'fecha_matricula' => now()]);
         InscripcionGrupo::create(['matricula_id' => $matricula->id, 'grupo_id' => $grupo->id]);
 
-        $this->actingAs($estudiante)->get(route('calendario'))
-            ->assertOk()
-            ->assertSee('Inicia: Seguridad · Seguridad – Edición 1 – Grupo 1', false)
-            ->assertSee('Termina: Seguridad · Seguridad – Edición 1 – Grupo 1', false);
+        $res = $this->actingAs($estudiante)->getJson('/api/panel/calendario')->assertOk();
+        $etiquetas = collect($res->json('semanas'))->flatten(1)->flatMap(fn ($d) => $d['eventos'] ?? [])->pluck('texto')->all();
+
+        $this->assertContains('Inicia: Seguridad · Seguridad – Edición 1 – Grupo 1', $etiquetas);
+        $this->assertContains('Termina: Seguridad · Seguridad – Edición 1 – Grupo 1', $etiquetas);
     }
 
     public function test_el_administrador_no_entra_al_calendario(): void
     {
         $this->actingAs(User::factory()->create(['rol' => Rol::Administrador]))
-            ->get(route('calendario'))->assertForbidden();
+            ->getJson('/api/panel/calendario')->assertForbidden();
     }
 
     public function test_la_busqueda_de_usuarios_filtra_por_nombre(): void
@@ -87,10 +89,11 @@ class CalendarioYBusquedaTest extends TestCase
         User::factory()->create(['rol' => Rol::Estudiante, 'nombres' => 'Valeria', 'apellidos' => 'Ortiz']);
         User::factory()->create(['rol' => Rol::Estudiante, 'nombres' => 'Gonzalo', 'apellidos' => 'Pinto']);
 
-        $this->actingAs($admin)->get(route('usuarios.index', ['q' => 'valeria']))
-            ->assertOk()
-            ->assertSee('Valeria')
-            ->assertDontSee('Gonzalo');
+        $res = $this->actingAs($admin)->getJson('/api/panel/usuarios?q=valeria')->assertOk();
+        $nombres = collect($res->json('data'))->pluck('nombres')->all();
+
+        $this->assertContains('Valeria', $nombres);
+        $this->assertNotContains('Gonzalo', $nombres);
     }
 
     public function test_la_busqueda_de_programas_no_rompe_con_inyeccion(): void
@@ -98,8 +101,9 @@ class CalendarioYBusquedaTest extends TestCase
         $admin = User::factory()->create(['rol' => Rol::Administrador]);
         Programa::create(['codigo' => 'P-1', 'nombre' => 'Diplomado', 'version' => '1.0', 'estado_comercial' => EstadoComercial::Abierto]);
 
-        $this->actingAs($admin)->get(route('programas.index', ['q' => "' OR '1'='1"]))
+        $this->actingAs($admin)
+            ->getJson('/api/panel/catalogo/programas?q='.urlencode("' OR '1'='1"))
             ->assertOk()
-            ->assertSee('No se encontraron programas');
+            ->assertJsonCount(0, 'data');
     }
 }

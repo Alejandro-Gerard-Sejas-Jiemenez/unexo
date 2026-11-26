@@ -64,6 +64,10 @@ abstract class FiltrosReporteRequest extends FormRequest
 
     protected function failedValidation(Validator $validator): void
     {
+        if ($this->is('api/*') || $this->expectsJson()) {
+            parent::failedValidation($validator);
+        }
+
         if ($this->esDescarga()) {
             throw new HttpResponseException(redirect()->route($this->rutaPantalla(), $this->query()));
         }

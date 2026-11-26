@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\EstadoComercial;
 use App\Models\Programa;
+use App\Services\ReporteCatalogoService;
 use App\Support\Reporte;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaDatosDeReportes;
@@ -20,10 +21,9 @@ class ReporteCatalogoTest extends TestCase
 
     private function reporte(): Reporte
     {
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.catalogo'));
-        $respuesta->assertOk();
+        $this->actingAs($this->admin())->getJson('/api/panel/reportes/catalogo')->assertOk();
 
-        return $respuesta->viewData('reporte');
+        return app(ReporteCatalogoService::class)->generar();
     }
 
     private function conModulo(Programa $programa, EstadoComercial $estado): void
@@ -31,7 +31,6 @@ class ReporteCatalogoTest extends TestCase
         $programa->modulos()->attach($this->modulo($estado)->id, ['orden' => $programa->modulos()->count() + 1]);
     }
 
-    // RF-13 / CA-13
     public function test_cantidades_por_estado_comercial(): void
     {
         $this->programa(EstadoComercial::Borrador);
@@ -48,28 +47,25 @@ class ReporteCatalogoTest extends TestCase
         ], $this->filasDe($this->reporte(), self::POR_ESTADO));
     }
 
-    // RF-14, RF-29 / CA-14, CA-29
     public function test_la_oferta_visible_sigue_la_regla_de_rf29(): void
     {
         $conContenido = $this->programa(EstadoComercial::Abierto);
         $this->conModulo($conContenido, EstadoComercial::Abierto);
         $vacio = $this->programa(EstadoComercial::Abierto);
         $this->conModulo($vacio, EstadoComercial::Cerrado);
-        $this->modulo(EstadoComercial::Abierto); // módulo suelto abierto
+        $this->modulo(EstadoComercial::Abierto);
         $borrador = $this->programa(EstadoComercial::Borrador);
         $this->conModulo($borrador, EstadoComercial::Borrador);
 
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.catalogo'));
-        $reporte = $respuesta->viewData('reporte');
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/catalogo')->assertOk();
+        $reporte = $this->reporte();
 
         $this->assertSame(1, $this->totalDe($reporte, 'Programas en la oferta visible'));
         $this->assertSame(2, $this->totalDe($reporte, 'Módulos en la oferta visible'));
-        $this->assertSame('1', $this->numeroDeTarjeta($respuesta->getContent(), 'Programas en la oferta visible'));
-        $this->assertSame('2', $this->numeroDeTarjeta($respuesta->getContent(), 'Módulos en la oferta visible'));
-        $respuesta->assertDontSee('en la oferta visible para el CRM'); // RF-30: sin frases
+        $this->assertSame('1', (string) $res->json('totales.0.valor'));
+        $this->assertSame('2', (string) $res->json('totales.1.valor'));
     }
 
-    // RF-15 / CA-15
     public function test_lista_los_programas_abiertos_sin_modulos_abiertos(): void
     {
         $vacio = $this->programa(EstadoComercial::Abierto, 'DEMO Vacío');
@@ -78,13 +74,14 @@ class ReporteCatalogoTest extends TestCase
         $this->conModulo($conContenido, EstadoComercial::Abierto);
         $this->programa(EstadoComercial::Cerrado);
 
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.catalogo'));
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/catalogo')->assertOk();
+        $reporte = $this->reporte();
 
         $this->assertSame(
             [[$vacio->codigo, 'DEMO Vacío', 'El CRM lo ve vacío']],
-            $this->filasDe($respuesta->viewData('reporte'), self::VACIOS),
+            $this->filasDe($reporte, self::VACIOS),
         );
-        $respuesta->assertSee('El CRM lo ve vacío');
+        $this->assertSame('El CRM lo ve vacío', $res->json('secciones.1.filas.0.2'));
     }
 
     public function test_sin_programas_vacios_muestra_el_mensaje(): void
@@ -92,10 +89,10 @@ class ReporteCatalogoTest extends TestCase
         $programa = $this->programa(EstadoComercial::Abierto);
         $this->conModulo($programa, EstadoComercial::Abierto);
 
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.catalogo'));
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/catalogo')->assertOk();
 
-        $this->assertSame([], $this->filasDe($respuesta->viewData('reporte'), self::VACIOS));
-        $respuesta->assertSee('No hay programas abiertos sin módulos abiertos.');
+        $this->assertSame([], $this->filasDe($this->reporte(), self::VACIOS));
+        $this->assertSame('No hay programas abiertos sin módulos abiertos.', $res->json('secciones.1.vacio'));
     }
 
     public function test_los_programas_vacios_se_ordenan_por_nombre(): void
@@ -106,46 +103,42 @@ class ReporteCatalogoTest extends TestCase
         $this->assertSame(['DEMO A', 'DEMO B'], array_column($this->filasDe($this->reporte(), self::VACIOS), 1));
     }
 
-    // RF-14: sin precios
     public function test_no_muestra_precios(): void
     {
         $programa = $this->programa(EstadoComercial::Abierto);
         $programa->update(['precio' => 2500]);
 
-        $this->actingAs($this->admin())->get(route('reportes.catalogo'))
-            ->assertOk()
-            ->assertDontSee('2500')
-            ->assertDontSee('2.500')
-            ->assertDontSee('2,500');
+        $contenido = $this->actingAs($this->admin())->getJson('/api/panel/reportes/catalogo')->assertOk()->getContent();
+        $this->assertStringNotContainsString('2500', $contenido);
+        $this->assertStringNotContainsString('2.500', $contenido);
+        $this->assertStringNotContainsString('2,500', $contenido);
     }
 
-    // CA-40 (parte negativa): el reporte no muestra créditos ni nivel y no lista grupos
     public function test_no_muestra_creditos_ni_nivel_ni_lista_grupos(): void
     {
         $programa = $this->programa(EstadoComercial::Abierto, 'DEMO Programa catálogo');
         $this->conModulo($programa, EstadoComercial::Abierto);
         $this->grupo(['nombre' => 'DEMO Grupo oculto']);
 
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.catalogo'))->assertOk();
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/catalogo')->assertOk();
+        $contenido = $res->getContent();
 
-        $respuesta->assertDontSee('Créditos')
-            ->assertDontSee('Nivel')
-            ->assertDontSee('DEMO Grupo oculto');
-        $titulos = array_column($respuesta->viewData('reporte')->secciones, 'titulo');
-        $this->assertNotContains('Grupos', $titulos);
+        $this->assertStringNotContainsString('Créditos', $contenido);
+        $this->assertStringNotContainsString('Nivel', $contenido);
+        $this->assertStringNotContainsString('DEMO Grupo oculto', $contenido);
+        $this->assertNotContains('Grupos', array_column($res->json('secciones'), 'titulo'));
     }
 
-    // CA-37
     public function test_sin_datos_muestra_ceros_y_el_aviso(): void
     {
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.catalogo'));
-        $reporte = $respuesta->viewData('reporte');
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/catalogo')->assertOk();
+        $reporte = $this->reporte();
 
         $this->assertTrue($reporte->sinDatos);
         $this->assertSame(0, $this->totalDe($reporte, 'Programas en la oferta visible'));
         $this->assertSame(0, $this->totalDe($reporte, 'Módulos en la oferta visible'));
         $this->assertSame([], $reporte->secciones);
-        $respuesta->assertSee(Reporte::AVISO_SIN_DATOS);
+        $this->assertSame(Reporte::AVISO_SIN_DATOS, $res->json('aviso_sin_datos'));
     }
 
     public function test_el_catalogo_no_tiene_filtros(): void

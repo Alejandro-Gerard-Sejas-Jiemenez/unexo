@@ -2,29 +2,22 @@
 
 namespace Tests\Feature;
 
-use App\Enums\Rol;
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class DocumentacionApiTest extends TestCase
 {
-    use RefreshDatabase;
-
-    // CA-34/RF-27: la documentación no muestra campos retirados y sí los vigentes.
+    // CA-34/RF-27: la documentación en ClientesApi refleja lo que se publica.
     public function test_la_documentacion_de_la_api_refleja_lo_que_se_publica(): void
     {
-        $admin = User::factory()->create(['rol' => Rol::Administrador]);
+        $contenido = file_get_contents(resource_path('js/spa/paginas/sistema/ClientesApi.jsx'));
 
-        $respuesta = $this->actingAs($admin)->get(route('clientes-api.index'));
-
-        $respuesta->assertOk()
-            ->assertDontSee('creditos', false)
-            ->assertDontSee('tipo_evaluacion', false)
-            ->assertDontSee('nivel_academico', false)
-            ->assertDontSee('perfil_egreso', false)
-            ->assertSee('crm/ediciones', false)
-            ->assertSee('prerrequisito', false)
-            ->assertSee('horarios', false);
+        $this->assertIsString($contenido);
+        $this->assertStringNotContainsString('creditos', $contenido);
+        $this->assertStringNotContainsString('tipo_evaluacion', $contenido);
+        $this->assertStringNotContainsString('nivel_academico', $contenido);
+        $this->assertStringNotContainsString('perfil_egreso', $contenido);
+        $this->assertStringContainsString('crm/ediciones', $contenido);
+        $this->assertStringContainsString('prerrequisito', $contenido);
+        $this->assertStringContainsString('horarios', $contenido);
     }
 }

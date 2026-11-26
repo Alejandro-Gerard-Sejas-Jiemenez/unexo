@@ -8,6 +8,7 @@ use App\Models\HorarioGrupo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class GrupoService
@@ -85,13 +86,19 @@ class GrupoService
     {
         $grupo->horarios()->delete();
 
-        foreach ($horarios as $horario) {
-            HorarioGrupo::create([
+        if ($horarios !== []) {
+            $ahora = now();
+            $filas = array_map(fn (array $horario) => [
+                'id' => (string) Str::uuid(),
                 'grupo_id' => $grupo->id,
                 'dia_semana' => (int) $horario['dia_semana'],
                 'hora_inicio' => $this->conSegundos($horario['hora_inicio']),
                 'hora_fin' => $this->conSegundos($horario['hora_fin']),
-            ]);
+                'created_at' => $ahora,
+                'updated_at' => $ahora,
+            ], $horarios);
+
+            HorarioGrupo::insert($filas);
         }
 
         $grupo->unsetRelation('horarios');

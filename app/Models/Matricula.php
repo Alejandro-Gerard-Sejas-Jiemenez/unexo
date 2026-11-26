@@ -54,4 +54,10 @@ class Matricula extends Model
     {
         return $this->hasMany(Comprobante::class)->latest();
     }
+
+    /** Pagos electrónicos: pagos únicos y cuotas del plan de pagos. */
+    public function transacciones(): HasMany
+    {
+        return $this->hasMany(Transaccion::class)->orderBy('numero_cuota');
+    }
 }

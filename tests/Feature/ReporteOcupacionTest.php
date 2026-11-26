@@ -6,6 +6,7 @@ use App\Enums\EstadoMatricula;
 use App\Enums\EstadoPlanificacion;
 use App\Models\Grupo;
 use App\Models\User;
+use App\Services\ReporteOcupacionService;
 use App\Support\Reporte;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -27,10 +28,11 @@ class ReporteOcupacionTest extends TestCase
 
     private function reporte(array $filtros = []): Reporte
     {
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.ocupacion', $filtros));
-        $respuesta->assertOk();
+        $this->actingAs($this->admin())
+            ->getJson('/api/panel/reportes/ocupacion?'.http_build_query($filtros))
+            ->assertOk();
 
-        return $respuesta->viewData('reporte');
+        return app(ReporteOcupacionService::class)->generar($filtros);
     }
 
     /** @param  array<int, EstadoMatricula>  $estados  una matrícula inscrita al grupo por cada estado */
@@ -213,7 +215,7 @@ class ReporteOcupacionTest extends TestCase
         $contar = function () use ($admin): int {
             DB::flushQueryLog();
             DB::enableQueryLog();
-            $this->actingAs($admin)->get(route('reportes.ocupacion'))->assertOk();
+            $this->actingAs($admin)->getJson('/api/panel/reportes/ocupacion')->assertOk();
 
             return count(DB::getQueryLog());
         };
@@ -235,13 +237,13 @@ class ReporteOcupacionTest extends TestCase
         $this->grupoConInscritos([EstadoMatricula::Activo], ['cupo_minimo' => 10, 'estado' => EstadoPlanificacion::Cancelado]);
         $this->grupo();
 
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.ocupacion'));
-        $reporte = $respuesta->viewData('reporte');
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/ocupacion')->assertOk();
+        $reporte = $this->reporte();
 
         $this->assertSame(5, $this->totalDe($reporte, 'Grupos listados'));
         $this->assertSame(2, $this->totalDe($reporte, 'No alcanzan el cupo mínimo'));
-        $this->assertSame('5', $this->numeroDeTarjeta($respuesta->getContent(), 'Grupos listados'));
-        $this->assertSame('2', $this->numeroDeTarjeta($respuesta->getContent(), 'No alcanzan el cupo mínimo'));
+        $this->assertSame(5, $res->json('totales.0.valor'));
+        $this->assertSame(2, $res->json('totales.1.valor'));
     }
 
     // RF-30 / CA-39: solo el número, sin frases
@@ -249,24 +251,25 @@ class ReporteOcupacionTest extends TestCase
     {
         $this->grupoConInscritos([], ['cupo_minimo' => 3]);
 
-        $html = $this->actingAs($this->admin())->get(route('reportes.ocupacion'))->getContent();
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/ocupacion')->assertOk();
+        $contenido = $res->getContent();
 
-        $this->assertSame('1', $this->numeroDeTarjeta($html, 'Grupos listados'));
-        $this->assertSame('1', $this->numeroDeTarjeta($html, 'No alcanzan el cupo mínimo'));
-        $this->assertStringNotContainsString('1 grupo', $html);
-        $this->assertStringNotContainsString('1 no alcanza el cupo mínimo', $html);
+        $this->assertSame(1, $res->json('totales.0.valor'));
+        $this->assertSame(1, $res->json('totales.1.valor'));
+        $this->assertStringNotContainsString('1 grupo', $contenido);
+        $this->assertStringNotContainsString('1 no alcanza el cupo mínimo', $contenido);
     }
 
     // CA-37
     public function test_sin_grupos_muestra_ceros_y_el_aviso(): void
     {
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.ocupacion'));
-        $reporte = $respuesta->viewData('reporte');
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/ocupacion')->assertOk();
+        $reporte = $this->reporte();
 
         $this->assertTrue($reporte->sinDatos);
         $this->assertSame(0, $this->totalDe($reporte, 'Grupos listados'));
         $this->assertSame([], $reporte->secciones);
-        $respuesta->assertSee(Reporte::AVISO_SIN_DATOS);
+        $this->assertSame(Reporte::AVISO_SIN_DATOS, $res->json('aviso_sin_datos'));
     }
 
     public function test_los_grupos_se_ordenan_por_inicio_descendente_y_luego_por_nombre(): void
@@ -304,29 +307,32 @@ class ReporteOcupacionTest extends TestCase
         $grupo = $this->grupo(['docente_id' => $docente->id]);
         $this->inscribir($this->matricula(['estudiante_id' => $estudiante->id]), $grupo);
 
-        $this->actingAs($this->admin())->get(route('reportes.ocupacion'))
-            ->assertOk()
-            ->assertSee('Lucía Vargas Soliz')
-            ->assertDontSee('lucia.secreta@nexo.test')
-            ->assertDontSee('7654321')
-            ->assertDontSee('70011223')
-            ->assertDontSee('Zacarías')
-            ->assertDontSee('zacarias@nexo.test');
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/ocupacion')->assertOk();
+        $contenido = json_encode($res->json(), JSON_UNESCAPED_UNICODE);
+        $this->assertStringContainsString('Lucía Vargas Soliz', $contenido);
+        $this->assertStringNotContainsString('lucia.secreta@nexo.test', $contenido);
+        $this->assertStringNotContainsString('7654321', $contenido);
+        $this->assertStringNotContainsString('70011223', $contenido);
+        $this->assertStringNotContainsString('Zacarías', $contenido);
+        $this->assertStringNotContainsString('zacarias@nexo.test', $contenido);
     }
 
     public function test_los_estados_del_filtro_salen_del_enum_y_los_filtros_se_describen(): void
     {
         $cohorte = $this->cohorte(nombre: 'DEMO Cohorte A');
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.ocupacion', ['estado' => 'cancelado', 'cohorte_id' => $cohorte->id, 'desde' => '2026-03-01']));
+        $res = $this->actingAs($this->admin())
+            ->getJson("/api/panel/reportes/ocupacion?estado=cancelado&cohorte_id={$cohorte->id}&desde=2026-03-01")
+            ->assertOk();
 
+        $estados = $res->json('opciones.estados');
         foreach (EstadoPlanificacion::cases() as $estado) {
-            $respuesta->assertSee($estado->label());
+            $this->assertContains($estado->value, $estados);
         }
         $this->assertSame([
             ['etiqueta' => 'Estado del grupo', 'valor' => 'Cancelado'],
             ['etiqueta' => 'Cohorte', 'valor' => 'DEMO Cohorte A'],
             ['etiqueta' => 'Período desde', 'valor' => '01/03/2026'],
             ['etiqueta' => 'Período hasta', 'valor' => 'Todos'],
-        ], $respuesta->viewData('reporte')->filtros);
+        ], $res->json('filtros_aplicados'));
     }
 }

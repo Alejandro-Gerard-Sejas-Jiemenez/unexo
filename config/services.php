@@ -35,4 +35,19 @@ return [
         ],
     ],
 
+    'payments' => [
+        'driver' => env('PAYMENTS_DRIVER', 'simulado'),
+        'currency' => env('PAYMENTS_CURRENCY', 'bob'),
+    ],
+
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'videoconferencia' => [
+        'base_url' => env('VIDEOCONFERENCIA_BASE_URL', 'https://meet.jit.si'),
+    ],
+
 ];

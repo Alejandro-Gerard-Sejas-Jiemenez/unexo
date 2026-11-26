@@ -129,13 +129,13 @@ trait EnviaFormularioDeGrupo
     /** @param  array<string, mixed>  $datos */
     protected function guardarGrupo(array $datos): TestResponse
     {
-        return $this->actingAs($this->admin())->post(route('grupos.store'), $datos);
+        return $this->actingAs($this->admin())->postJson('/api/panel/grupos', $datos);
     }
 
     /** @param  array<string, mixed>  $datos */
     protected function actualizarGrupo(Grupo $grupo, array $datos): TestResponse
     {
-        return $this->actingAs($this->admin())->put(route('grupos.update', $grupo), $datos);
+        return $this->actingAs($this->admin())->putJson("/api/panel/grupos/{$grupo->id}", $datos);
     }
 
     /** Nombres de los grupos de un contexto (módulo y edición, o sueltos del módulo), ordenados. */

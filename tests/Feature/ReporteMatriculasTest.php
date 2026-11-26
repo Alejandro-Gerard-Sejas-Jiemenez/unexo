@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\EstadoMatricula;
 use App\Enums\OrigenMatricula;
+use App\Services\ReporteMatriculasService;
 use App\Support\Reporte;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaDatosDeReportes;
@@ -16,10 +17,11 @@ class ReporteMatriculasTest extends TestCase
 
     private function reporte(array $filtros = []): Reporte
     {
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.matriculas', $filtros));
-        $respuesta->assertOk();
+        $this->actingAs($this->admin())
+            ->getJson('/api/panel/reportes/matriculas?'.http_build_query($filtros))
+            ->assertOk();
 
-        return $respuesta->viewData('reporte');
+        return app(ReporteMatriculasService::class)->generar($filtros);
     }
 
     private function crear(int $cantidad, array $atributos = []): void
@@ -36,8 +38,8 @@ class ReporteMatriculasTest extends TestCase
         $this->crear(3, ['estado' => EstadoMatricula::Activo]);
         $this->crear(1, ['estado' => EstadoMatricula::Retirado]);
 
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.matriculas'));
-        $reporte = $respuesta->viewData('reporte');
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/matriculas')->assertOk();
+        $reporte = $this->reporte();
 
         $this->assertSame(6, $this->totalDe($reporte, 'Total de matrículas'));
         $this->assertSame([
@@ -45,7 +47,10 @@ class ReporteMatriculasTest extends TestCase
             ['Activo (pagado)', 3, 50.0],
             ['Retirado', 1, 16.7],
         ], $this->filasDe($reporte, 'Matrículas por estado'));
-        $respuesta->assertSee('33,3 %')->assertSee('50,0 %')->assertSee('16,7 %');
+        $contenido = $res->getContent();
+        $this->assertStringContainsString('33,3 %', $contenido);
+        $this->assertStringContainsString('50,0 %', $contenido);
+        $this->assertStringContainsString('16,7 %', $contenido);
     }
 
     // RF-30 / CA-39
@@ -53,10 +58,10 @@ class ReporteMatriculasTest extends TestCase
     {
         $this->crear(6);
 
-        $html = $this->actingAs($this->admin())->get(route('reportes.matriculas'))->getContent();
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/matriculas')->assertOk();
 
-        $this->assertSame('6', $this->numeroDeTarjeta($html, 'Total de matrículas'));
-        $this->assertStringNotContainsString('6 matrículas', $html);
+        $this->assertSame(6, $res->json('totales.0.valor'));
+        $this->assertStringNotContainsString('6 matrículas', $res->getContent());
     }
 
     // CA-36
@@ -169,13 +174,13 @@ class ReporteMatriculasTest extends TestCase
     // CA-37
     public function test_sin_matriculas_muestra_ceros_y_el_aviso(): void
     {
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.matriculas'));
-        $reporte = $respuesta->viewData('reporte');
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/matriculas')->assertOk();
+        $reporte = $this->reporte();
 
         $this->assertTrue($reporte->sinDatos);
         $this->assertSame(0, $this->totalDe($reporte, 'Total de matrículas'));
         $this->assertSame([], $reporte->secciones);
-        $respuesta->assertSee(Reporte::AVISO_SIN_DATOS);
+        $this->assertSame(Reporte::AVISO_SIN_DATOS, $res->json('aviso_sin_datos'));
     }
 
     // RF-17: filtros sin resultados
@@ -183,23 +188,23 @@ class ReporteMatriculasTest extends TestCase
     {
         $this->matricula(['fecha_matricula' => '2026-03-10']);
 
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.matriculas', ['desde' => '2027-01-01']));
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/reportes/matriculas?desde=2027-01-01')->assertOk();
 
-        $this->assertTrue($respuesta->viewData('reporte')->sinDatos);
-        $respuesta->assertSee(Reporte::AVISO_SIN_DATOS);
+        $this->assertTrue($res->json('sin_datos'));
+        $this->assertSame(Reporte::AVISO_SIN_DATOS, $res->json('aviso_sin_datos'));
     }
 
     // RNF-05
     public function test_las_etiquetas_de_estado_y_origen_son_las_del_sistema(): void
     {
         $this->matricula();
-        $respuesta = $this->actingAs($this->admin())->get(route('reportes.matriculas'));
+        $contenido = $this->actingAs($this->admin())->getJson('/api/panel/reportes/matriculas')->assertOk()->getContent();
 
         foreach (EstadoMatricula::cases() as $estado) {
-            $respuesta->assertSee($estado->label());
+            $this->assertStringContainsString($estado->label(), $contenido);
         }
         foreach (OrigenMatricula::cases() as $origen) {
-            $respuesta->assertSee($origen->label());
+            $this->assertStringContainsString($origen->label(), $contenido);
         }
     }
 

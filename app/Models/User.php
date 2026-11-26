@@ -30,6 +30,7 @@ class User extends Authenticatable
         'id_externo_crm',
         'estado',
         'foto_perfil_url',
+        'stripe_customer_id',
     ];
 
     protected $hidden = [
@@ -58,6 +59,12 @@ class User extends Authenticatable
     public function gruposComoDocente(): HasMany
     {
         return $this->hasMany(Grupo::class, 'docente_id');
+    }
+
+    /** Métodos de pago del usuario, el predeterminado primero. */
+    public function metodosPago(): HasMany
+    {
+        return $this->hasMany(MetodoPago::class)->orderByDesc('predeterminado');
     }
 
     public function estaActivo(): bool

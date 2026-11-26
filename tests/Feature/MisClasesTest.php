@@ -38,7 +38,7 @@ class MisClasesTest extends TestCase
             'fecha_inicio' => today()->subDays(5),
             'fecha_fin' => today()->addDays(20),
             'modalidad' => Modalidad::Virtual,
-            'enlace_videoconferencia' => 'https://meet.example.test/'.strtolower($nombreModulo),
+            'enlace_videoconferencia' => 'https://meet.example.test/'.strtolower(str_replace(' ', '-', $nombreModulo)),
             'estado' => EstadoPlanificacion::Programado,
         ]);
     }
@@ -61,10 +61,11 @@ class MisClasesTest extends TestCase
         $this->inscribir($andres, $this->grupo($docente, 'Excel Avanzado'));
         $this->inscribir($otro, $this->grupo($docente, 'Contabilidad Secreta'));
 
-        $this->actingAs($andres)->get(route('mis-cursos'))
-            ->assertOk()
-            ->assertSee('Excel Avanzado')
-            ->assertDontSee('Contabilidad Secreta');
+        $res = $this->actingAs($andres)->getJson('/api/panel/mis-cursos')->assertOk();
+        $nombres = collect($res->json('data'))->pluck('grupo.modulo.nombre')->all();
+
+        $this->assertContains('Excel Avanzado', $nombres);
+        $this->assertNotContains('Contabilidad Secreta', $nombres);
     }
 
     public function test_el_enlace_de_la_clase_solo_aparece_con_matricula_pagada(): void
@@ -76,10 +77,12 @@ class MisClasesTest extends TestCase
         $this->inscribir($pagado, $grupo, EstadoMatricula::Activo);
         $this->inscribir($pendiente, $grupo, EstadoMatricula::Pendiente);
 
-        $this->actingAs($pagado)->get(route('mis-cursos'))->assertSee('Entrar a la clase');
-        $this->actingAs($pendiente)->get(route('mis-cursos'))
-            ->assertDontSee('Entrar a la clase')
-            ->assertSee('cuando se confirme tu pago');
+        $resPagado = $this->actingAs($pagado)->getJson('/api/panel/mis-cursos')->assertOk();
+        $this->assertNotNull($resPagado->json('data.0.grupo.enlace_videoconferencia'));
+
+        $resPendiente = $this->actingAs($pendiente)->getJson('/api/panel/mis-cursos')->assertOk();
+        $this->assertNull($resPendiente->json('data.0.grupo.enlace_videoconferencia'));
+        $this->assertSame('pendiente', $resPendiente->json('data.0.matricula_estado'));
     }
 
     public function test_el_docente_ve_sus_grupos_y_sus_estudiantes(): void
@@ -91,14 +94,14 @@ class MisClasesTest extends TestCase
         $this->grupo($lucia, 'Marketing Digital');
         $this->inscribir($estudiante, $grupoCarlos);
 
-        $this->actingAs($carlos)->get(route('mis-grupos.index'))
-            ->assertOk()
-            ->assertSee('Excel Basico')
-            ->assertDontSee('Marketing Digital');
+        $resLista = $this->actingAs($carlos)->getJson('/api/panel/mis-grupos')->assertOk();
+        $nombres = collect($resLista->json('data'))->pluck('modulo.nombre')->all();
+        $this->assertContains('Excel Basico', $nombres);
+        $this->assertNotContains('Marketing Digital', $nombres);
 
-        $this->actingAs($carlos)->get(route('mis-grupos.show', $grupoCarlos))
-            ->assertOk()
-            ->assertSee('Daniela');
+        $resDetalle = $this->actingAs($carlos)->getJson("/api/panel/mis-grupos/{$grupoCarlos->id}")->assertOk();
+        $estudiantes = collect($resDetalle->json('estudiantes'))->pluck('nombre')->implode(' ');
+        $this->assertStringContainsString('Daniela', $estudiantes);
     }
 
     public function test_un_docente_no_puede_ver_el_grupo_de_otro(): void
@@ -107,14 +110,14 @@ class MisClasesTest extends TestCase
         $lucia = $this->usuario(Rol::Docente);
         $grupoLucia = $this->grupo($lucia, 'Marketing Digital');
 
-        $this->actingAs($carlos)->get(route('mis-grupos.show', $grupoLucia))->assertForbidden();
+        $this->actingAs($carlos)->getJson("/api/panel/mis-grupos/{$grupoLucia->id}")->assertForbidden();
     }
 
     public function test_cada_rol_solo_entra_a_su_pantalla(): void
     {
-        $this->actingAs($this->usuario(Rol::Estudiante))->get(route('mis-grupos.index'))->assertForbidden();
-        $this->actingAs($this->usuario(Rol::Docente))->get(route('mis-cursos'))->assertForbidden();
-        $this->actingAs($this->usuario(Rol::Docente))->get(route('programas.index'))->assertForbidden();
+        $this->actingAs($this->usuario(Rol::Estudiante))->getJson('/api/panel/mis-grupos')->assertForbidden();
+        $this->actingAs($this->usuario(Rol::Docente))->getJson('/api/panel/mis-cursos')->assertForbidden();
+        $this->actingAs($this->usuario(Rol::Docente))->postJson('/api/panel/catalogo/programas', [])->assertForbidden();
     }
 
     public function test_la_busqueda_filtra_los_cursos(): void
@@ -124,17 +127,20 @@ class MisClasesTest extends TestCase
         $this->inscribir($estudiante, $this->grupo($docente, 'Excel Avanzado'));
         $this->inscribir($estudiante, $this->grupo($docente, 'Liderazgo'));
 
-        $this->actingAs($estudiante)->get(route('mis-cursos', ['q' => 'excel']))
-            ->assertSee('Excel Avanzado')
-            ->assertDontSee('Liderazgo');
+        $res = $this->actingAs($estudiante)->getJson('/api/panel/mis-cursos?q=excel')->assertOk();
+        $nombres = collect($res->json('data'))->pluck('grupo.modulo.nombre')->all();
+
+        $this->assertContains('Excel Avanzado', $nombres);
+        $this->assertNotContains('Liderazgo', $nombres);
     }
 
     public function test_una_busqueda_con_codigo_html_no_se_ejecuta(): void
     {
         $estudiante = $this->usuario(Rol::Estudiante);
 
-        $this->actingAs($estudiante)->get(route('mis-cursos', ['q' => '<script>alert(1)</script>']))
+        $this->actingAs($estudiante)
+            ->getJson('/api/panel/mis-cursos?q='.urlencode('<script>alert(1)</script>'))
             ->assertOk()
-            ->assertDontSee('<script>alert(1)</script>', false);
+            ->assertJsonCount(0, 'data');
     }
 }

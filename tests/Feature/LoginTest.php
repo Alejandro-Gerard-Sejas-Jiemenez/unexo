@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Rol;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class LoginTest extends TestCase
@@ -22,61 +23,72 @@ class LoginTest extends TestCase
         ]);
     }
 
-    public function test_la_pantalla_de_acceso_se_muestra_sin_menu(): void
+    public function test_la_pantalla_de_acceso_se_sirve_en_la_spa(): void
     {
-        $this->get(route('login'))
+        $this->get('/')
             ->assertOk()
-            ->assertSee('Te damos la bienvenida')
-            ->assertSee('type="email"', false)
-            ->assertDontSee('class="superior"', false);
+            ->assertSee('id="app"', false);
     }
 
     public function test_se_puede_entrar_con_el_correo_personal_o_el_institucional(): void
     {
         $this->usuario();
 
-        $this->post(route('login'), ['usuario' => 'ana@nexo.test', 'password' => 'Demo12345'])->assertRedirect(route('panel'));
-        $this->post(route('logout'));
-        $this->post(route('login'), ['usuario' => 'ana@nexo.edu.test', 'password' => 'Demo12345'])->assertRedirect(route('panel'));
+        $this->postJson('/api/panel/login', ['usuario' => 'ana@nexo.test', 'password' => 'Demo12345'])
+            ->assertOk()
+            ->assertJsonPath('usuario.email', 'ana@nexo.test');
+
+        $this->postJson('/api/panel/logout')->assertOk();
+
+        $this->postJson('/api/panel/login', ['usuario' => 'ana@nexo.edu.test', 'password' => 'Demo12345'])
+            ->assertOk()
+            ->assertJsonPath('usuario.correo_institucional', 'ana@nexo.edu.test');
     }
 
     public function test_un_dato_incorrecto_muestra_un_solo_mensaje_claro(): void
     {
         $this->usuario();
+        RateLimiter::clear('ana@nexo.test|127.0.0.1');
 
-        $respuesta = $this->from(route('login'))
-            ->followingRedirects()
-            ->post(route('login'), ['usuario' => 'ana@nexo.test', 'password' => 'incorrecta']);
-
-        $respuesta->assertSee('El correo o la contraseña no son correctos');
-        $this->assertSame(1, substr_count($respuesta->getContent(), 'no son correctos'));
+        $this->postJson('/api/panel/login', ['usuario' => 'ana@nexo.test', 'password' => 'incorrecta'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('usuario')
+            ->assertJsonPath('errors.usuario.0', 'El correo o la contraseña no son correctos. Revisa los datos e inténtalo de nuevo.');
     }
 
     public function test_una_cuenta_inactiva_no_puede_entrar(): void
     {
         $this->usuario('inactivo');
+        RateLimiter::clear('ana@nexo.test|127.0.0.1');
 
-        $this->post(route('login'), ['usuario' => 'ana@nexo.test', 'password' => 'Demo12345'])->assertSessionHasErrors('usuario');
+        $this->postJson('/api/panel/login', ['usuario' => 'ana@nexo.test', 'password' => 'Demo12345'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('usuario');
         $this->assertGuest();
     }
 
-    public function test_quien_ya_inicio_sesion_va_directo_al_panel(): void
+    public function test_quien_ya_inicio_sesion_recibe_su_perfil_en_me(): void
     {
-        $this->actingAs($this->usuario())->get(route('login'))->assertRedirect('/panel');
+        $this->actingAs($this->usuario())
+            ->getJson('/api/panel/me')
+            ->assertOk()
+            ->assertJsonPath('usuario.email', 'ana@nexo.test');
     }
 
     public function test_se_bloquea_el_acceso_tras_cinco_intentos_fallidos(): void
     {
         $this->usuario();
+        RateLimiter::clear('ana@nexo.test|127.0.0.1');
 
         foreach (range(1, 5) as $_) {
-            $this->post(route('login'), ['usuario' => 'ana@nexo.test', 'password' => 'incorrecta'])
-                ->assertSessionHasErrors('usuario');
+            $this->postJson('/api/panel/login', ['usuario' => 'ana@nexo.test', 'password' => 'incorrecta'])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('usuario');
         }
 
-        // Con la contraseña correcta también se rechaza mientras dure el bloqueo.
-        $this->post(route('login'), ['usuario' => 'ana@nexo.test', 'password' => 'Demo12345'])
-            ->assertSessionHasErrors('usuario');
+        $this->postJson('/api/panel/login', ['usuario' => 'ana@nexo.test', 'password' => 'Demo12345'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('usuario');
         $this->assertGuest();
     }
 }

@@ -15,7 +15,7 @@ use Tests\Concerns\CreaGruposConHorarios;
 use Tests\Concerns\EnviaFormularioDeGrupo;
 use Tests\TestCase;
 
-/** RF-11 a RF-14: nombre automático "Grupo N" por contexto (módulo y edición, o sueltos del módulo). */
+/** RF-11 a RF-14: nombre automÃ¡tico "Grupo N" por contexto (mÃ³dulo y ediciÃ³n, o sueltos del mÃ³dulo). */
 class GrupoNombreAutomaticoTest extends TestCase
 {
     use CreaGruposConHorarios;
@@ -28,31 +28,31 @@ class GrupoNombreAutomaticoTest extends TestCase
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
         $modulo = $this->moduloParaGrupo($edicion);
 
-        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSessionHasNoErrors();
-        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSuccessful();
+        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSuccessful();
 
         $this->assertSame(['Grupo 1', 'Grupo 2'], $this->nombresEnContexto($modulo, $edicion));
         $this->assertSame([1, 2], Grupo::where('modulo_id', $modulo->id)->orderBy('numero')->pluck('numero')->all());
     }
 
-    // CA-11 / RF-11: el contexto sin edición numera igual.
+    // CA-11 / RF-11: el contexto sin ediciÃ³n numera igual.
     public function test_dos_grupos_sueltos_del_mismo_modulo_se_llaman_grupo_1_y_grupo_2(): void
     {
         $modulo = $this->moduloParaGrupo();
 
-        $this->guardarGrupo($this->datosGrupo($modulo))->assertSessionHasNoErrors();
-        $this->guardarGrupo($this->datosGrupo($modulo))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo))->assertSuccessful();
+        $this->guardarGrupo($this->datosGrupo($modulo))->assertSuccessful();
 
         $this->assertSame(['Grupo 1', 'Grupo 2'], $this->nombresEnContexto($modulo, null));
     }
 
-    // RF-11: una petición que envía nombre lo ignora.
+    // RF-11: una peticiÃ³n que envÃ­a nombre lo ignora.
     public function test_el_nombre_enviado_en_la_peticion_se_ignora(): void
     {
         $modulo = $this->moduloParaGrupo();
 
         $this->guardarGrupo($this->datosGrupo($modulo, null, ['nombre' => 'Mi grupo especial']))
-            ->assertSessionHasNoErrors();
+            ->assertSuccessful();
 
         $this->assertSame(['Grupo 1'], $this->nombresEnContexto($modulo, null));
         $this->assertDatabaseMissing('grupos', ['nombre' => 'Mi grupo especial']);
@@ -66,7 +66,7 @@ class GrupoNombreAutomaticoTest extends TestCase
         $this->grupoNumerado($modulo, $edicion, 1);
         $this->grupoNumerado($modulo, $edicion, 2, ['estado' => 'cancelado']);
 
-        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSuccessful();
 
         $this->assertSame(['Grupo 1', 'Grupo 2', 'Grupo 3'], $this->nombresEnContexto($modulo, $edicion));
     }
@@ -78,24 +78,24 @@ class GrupoNombreAutomaticoTest extends TestCase
         $modulo = $this->moduloParaGrupo($edicion);
         $this->grupoNumerado($modulo, null, 1);
 
-        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSuccessful();
 
         $this->assertSame(['Grupo 1'], $this->nombresEnContexto($modulo, $edicion));
     }
 
-    // CA-13 (recíproco)
+    // CA-13 (recÃ­proco)
     public function test_un_grupo_de_edicion_no_cuenta_para_los_sueltos(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
         $modulo = $this->moduloParaGrupo($edicion);
         $this->grupoNumerado($modulo, $edicion, 1);
 
-        $this->guardarGrupo($this->datosGrupo($modulo))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo))->assertSuccessful();
 
         $this->assertSame(['Grupo 1'], $this->nombresEnContexto($modulo, null));
     }
 
-    // RF-13: otro módulo y otra edición del mismo módulo son contextos distintos.
+    // RF-13: otro mÃ³dulo y otra ediciÃ³n del mismo mÃ³dulo son contextos distintos.
     public function test_otro_modulo_y_otra_edicion_son_contextos_distintos(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
@@ -105,7 +105,7 @@ class GrupoNombreAutomaticoTest extends TestCase
         $this->grupoNumerado($modulo, $otraEdicion, 1);
         $this->grupoNumerado($otroModulo, $edicion, 1);
 
-        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSuccessful();
 
         $this->assertSame(['Grupo 1'], $this->nombresEnContexto($modulo, $edicion));
     }
@@ -116,7 +116,7 @@ class GrupoNombreAutomaticoTest extends TestCase
         $modulo = $this->moduloParaGrupo();
         $this->grupoNumerado($modulo, null, 1, ['nombre' => 'Grupo A', 'numero' => null]);
 
-        $this->guardarGrupo($this->datosGrupo($modulo))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo))->assertSuccessful();
 
         $this->assertEqualsCanonicalizing(['Grupo A', 'Grupo 1'], $this->nombresEnContexto($modulo, null));
         $this->assertDatabaseHas('grupos', ['modulo_id' => $modulo->id, 'nombre' => 'Grupo 1', 'numero' => 1]);
@@ -130,7 +130,7 @@ class GrupoNombreAutomaticoTest extends TestCase
         $otroDocente = User::factory()->create(['rol' => Rol::Docente, 'estado' => 'activo']);
 
         $this->actualizarGrupo($grupo, $this->datosDe($grupo, ['docente_id' => $otroDocente->id]))
-            ->assertSessionHasNoErrors();
+            ->assertSuccessful();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'docente_id' => $otroDocente->id, 'nombre' => 'Grupo 2', 'numero' => 2]);
     }
@@ -145,7 +145,7 @@ class GrupoNombreAutomaticoTest extends TestCase
         $this->grupoNumerado($modulo, $edicionB, 1);
 
         $this->actualizarGrupo($grupo, $this->datosDe($grupo, ['cohorte_id' => $edicionB->id]))
-            ->assertSessionHasNoErrors();
+            ->assertSuccessful();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'cohorte_id' => $edicionB->id, 'nombre' => 'Grupo 2', 'numero' => 2]);
     }
@@ -160,12 +160,12 @@ class GrupoNombreAutomaticoTest extends TestCase
         $this->grupoNumerado($modulo, $edicionB, 1);
 
         $this->actualizarGrupo($grupo, $this->datosDe($grupo, ['cohorte_id' => $edicionB->id]))
-            ->assertSessionHasNoErrors();
+            ->assertSuccessful();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'cohorte_id' => $edicionB->id, 'nombre' => 'Grupo 3', 'numero' => 3]);
     }
 
-    // CA-44: pasar de edición a suelto, sin choque.
+    // CA-44: pasar de ediciÃ³n a suelto, sin choque.
     public function test_al_pasar_de_edicion_a_suelto_conserva_el_nombre_si_no_existe(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
@@ -176,12 +176,12 @@ class GrupoNombreAutomaticoTest extends TestCase
             'cohorte_id' => '',
             'fecha_inicio' => '2026-07-01',
             'fecha_fin' => '2026-07-31',
-        ]))->assertSessionHasNoErrors();
+        ]))->assertSuccessful();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'cohorte_id' => null, 'nombre' => 'Grupo 1', 'numero' => 1]);
     }
 
-    // CA-44: pasar de edición a suelto, con choque.
+    // CA-44: pasar de ediciÃ³n a suelto, con choque.
     public function test_al_pasar_de_edicion_a_suelto_renumera_si_ya_existe(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
@@ -193,7 +193,7 @@ class GrupoNombreAutomaticoTest extends TestCase
             'cohorte_id' => '',
             'fecha_inicio' => '2026-07-01',
             'fecha_fin' => '2026-07-31',
-        ]))->assertSessionHasNoErrors();
+        ]))->assertSuccessful();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'cohorte_id' => null, 'nombre' => 'Grupo 2', 'numero' => 2]);
     }
@@ -207,12 +207,12 @@ class GrupoNombreAutomaticoTest extends TestCase
         $this->grupoNumerado($modulo, $edicion, 1);
 
         $this->actualizarGrupo($grupo, $this->datosDe($grupo, ['cohorte_id' => $edicion->id]))
-            ->assertSessionHasNoErrors();
+            ->assertSuccessful();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'cohorte_id' => $edicion->id, 'nombre' => 'Grupo 2', 'numero' => 2]);
     }
 
-    // Supuesto P-4: cambiar de módulo cambia el contexto.
+    // Supuesto P-4: cambiar de mÃ³dulo cambia el contexto.
     public function test_al_cambiar_de_modulo_renumera_si_el_nombre_existe_en_el_modulo_nuevo(): void
     {
         $moduloA = $this->moduloParaGrupo();
@@ -221,7 +221,7 @@ class GrupoNombreAutomaticoTest extends TestCase
         $this->grupoNumerado($moduloB, null, 1);
 
         $this->actualizarGrupo($grupo, $this->datosDe($grupo, ['modulo_id' => $moduloB->id]))
-            ->assertSessionHasNoErrors();
+            ->assertSuccessful();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'modulo_id' => $moduloB->id, 'nombre' => 'Grupo 2', 'numero' => 2]);
     }
@@ -234,19 +234,19 @@ class GrupoNombreAutomaticoTest extends TestCase
         $grupo = $this->grupoNumerado($moduloA, null, 1);
 
         $this->actualizarGrupo($grupo, $this->datosDe($grupo, ['modulo_id' => $moduloB->id]))
-            ->assertSessionHasNoErrors();
+            ->assertSuccessful();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'modulo_id' => $moduloB->id, 'nombre' => 'Grupo 1', 'numero' => 1]);
     }
 
-    // CA-16: un competidor toma el mismo número entre el cálculo y el guardado.
+    // CA-16: un competidor toma el mismo nÃºmero entre el cÃ¡lculo y el guardado.
     public function test_dos_altas_simultaneas_de_la_misma_edicion_reciben_nombres_distintos(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
         $modulo = $this->moduloParaGrupo($edicion);
         $contador = $this->simularCompetidorConfirmado($modulo, $edicion);
 
-        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSuccessful();
 
         $this->assertGreaterThanOrEqual(2, $contador->llamadas);
 
@@ -260,7 +260,7 @@ class GrupoNombreAutomaticoTest extends TestCase
         $modulo = $this->moduloParaGrupo();
         $contador = $this->simularCompetidorConfirmado($modulo, null);
 
-        $this->guardarGrupo($this->datosGrupo($modulo))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo))->assertSuccessful();
 
         $this->assertGreaterThanOrEqual(2, $contador->llamadas);
 
@@ -268,7 +268,7 @@ class GrupoNombreAutomaticoTest extends TestCase
         $this->assertSame(2, Grupo::where('modulo_id', $modulo->id)->count());
     }
 
-    // RF-13 / D7: el índice único respalda la regla en ambos contextos.
+    // RF-13 / D7: el Ã­ndice Ãºnico respalda la regla en ambos contextos.
     public function test_el_indice_unico_rechaza_el_mismo_numero_en_el_mismo_contexto(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
@@ -276,36 +276,36 @@ class GrupoNombreAutomaticoTest extends TestCase
         $this->grupoNumerado($modulo, $edicion, 1);
         $this->grupoNumerado($modulo, null, 1);
 
-        $this->assertThrows(fn () => $this->grupoNumerado($modulo, $edicion, 1, ['nombre' => 'Grupo 1 bis']), QueryException::class);
-        $this->assertThrows(fn () => $this->grupoNumerado($modulo, null, 1, ['nombre' => 'Grupo 1 bis']), QueryException::class);
+        $this->assertThrows(fn() => $this->grupoNumerado($modulo, $edicion, 1, ['nombre' => 'Grupo 1 bis']), QueryException::class);
+        $this->assertThrows(fn() => $this->grupoNumerado($modulo, null, 1, ['nombre' => 'Grupo 1 bis']), QueryException::class);
 
-        // El mismo número en otro módulo sí es válido.
+        // El mismo nÃºmero en otro mÃ³dulo sÃ­ es vÃ¡lido.
         $this->grupoNumerado($this->moduloParaGrupo(), null, 1);
         $this->assertSame(1, Grupo::where('modulo_id', $modulo->id)->whereNull('cohorte_id')->count());
     }
 
-    // RF-11 / D9: la apertura asistida usa el mismo nombre automático.
+    // RF-11 / D9: la apertura asistida usa el mismo nombre automÃ¡tico.
     public function test_la_apertura_asistida_nombra_los_grupos_con_el_nombre_automatico(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
         $moduloA = $this->moduloParaGrupo($edicion);
         $moduloB = $this->moduloParaGrupo($edicion);
-        $this->grupoNumerado($moduloB, null, 1); // un suelto no cuenta para la edición
+        $this->grupoNumerado($moduloB, null, 1); // un suelto no cuenta para la ediciÃ³n
 
         $this->actingAs($this->admin())
-            ->post(route('cohortes.aperturar-grupos', $edicion), [
+            ->postJson("/api/panel/cohortes/{$edicion->id}/aperturar-grupos", [
                 'docente_id' => $this->docenteTitular()->id,
                 'modalidad' => 'virtual',
             ])
-            ->assertRedirect(route('cohortes.show', $edicion));
+            ->assertOk();
 
         $this->assertSame(['Grupo 1'], $this->nombresEnContexto($moduloA, $edicion));
         $this->assertSame(['Grupo 1'], $this->nombresEnContexto($moduloB, $edicion));
     }
 
     /**
-     * Fiel a producción: el competidor "Grupo 1" ya está confirmado antes del primer intento, y el servicio
-     * calcula en ese intento un número obsoleto (1) porque lo leyó antes de que el competidor confirmara.
+     * Fiel a producciÃ³n: el competidor "Grupo 1" ya estÃ¡ confirmado antes del primer intento, y el servicio
+     * calcula en ese intento un nÃºmero obsoleto (1) porque lo leyÃ³ antes de que el competidor confirmara.
      * Devuelve un contador de llamadas a siguienteNumero; con el reintento debe ser al menos 2.
      */
     private function simularCompetidorConfirmado(Modulo $modulo, ?Cohorte $edicion): \stdClass

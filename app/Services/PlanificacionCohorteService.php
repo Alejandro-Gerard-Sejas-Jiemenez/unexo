@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoMatricula;
 use App\Enums\EstadoPlanificacion;
 use App\Enums\Modalidad;
 use App\Enums\Rol;
@@ -62,7 +63,9 @@ class PlanificacionCohorteService
             'cohorte_id' => $cohorte->id,
             'docente_id' => $docenteAsignado->id,
             'modalidad' => $modalidad,
-            'enlace_videoconferencia' => $modalidad === Modalidad::Virtual ? 'https://meet.example.test/cohorte-'.substr($cohorte->id, 0, 8) : null,
+            'enlace_videoconferencia' => $modalidad === Modalidad::Virtual
+                ? rtrim((string) config('services.videoconferencia.base_url', 'https://meet.jit.si'), '/').'/nexo-'.substr($cohorte->id, 0, 8)
+                : null,
             'cupo_minimo' => $cupoMinimo,
             'estado' => EstadoPlanificacion::Programado,
         ])));
@@ -76,7 +79,15 @@ class PlanificacionCohorteService
      */
     public function calcularQuorum(Grupo $grupo): array
     {
-        $inscritos = $grupo->inscripciones_count ?? $grupo->inscripciones()->count();
+        $inscritos = $grupo->inscritos_count
+            ?? $grupo->inscripciones_count
+            ?? $grupo->inscripciones()->whereHas(
+                'matricula',
+                fn ($q) => $q->whereIn('estado', array_map(
+                    fn (EstadoMatricula $e) => $e->value,
+                    EstadoMatricula::queCuentanComoInscritos(),
+                )),
+            )->count();
         $minimo = (int) ($grupo->cupo_minimo ?? 0);
         $tieneLimite = $minimo > 0;
         $alcanzado = $tieneLimite ? ($inscritos >= $minimo) : true;

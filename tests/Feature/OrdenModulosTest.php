@@ -16,11 +16,13 @@ class OrdenModulosTest extends TestCase
     private function programaConModulos(int $cantidad): array
     {
         $programa = Programa::create(['codigo' => 'P-1', 'nombre' => 'Diplomado', 'version' => '1.0']);
+        $admin = User::factory()->create(['rol' => Rol::Administrador]);
         $modulos = [];
         foreach (range(1, $cantidad) as $n) {
             $modulos[] = $m = Modulo::create(['codigo' => "M-$n", 'nombre' => "Módulo $n"]);
-            $this->actingAs(User::factory()->create(['rol' => Rol::Administrador]))
-                ->post(route('programas.modulos.agregar', $programa), ['modulo_id' => $m->id]);
+            $this->actingAs($admin)
+                ->postJson("/api/panel/catalogo/programas/{$programa->id}/modulos", ['modulo_id' => $m->id])
+                ->assertOk();
         }
 
         return [$programa, $modulos];
@@ -37,22 +39,25 @@ class OrdenModulosTest extends TestCase
 
         $this->assertSame(['M-1', 'M-2', 'M-3'], $this->orden($programa));
 
-        $this->post(route('programas.modulos.agregar', $programa), ['modulo_id' => $modulos[0]->id])
-            ->assertSessionHasErrors('modulo_id');
+        $this->postJson("/api/panel/catalogo/programas/{$programa->id}/modulos", ['modulo_id' => $modulos[0]->id])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('modulo_id');
     }
 
     public function test_subir_y_bajar_intercambian_con_el_vecino(): void
     {
         [$programa, $modulos] = $this->programaConModulos(3);
 
-        $this->patch(route('programas.modulos.mover', [$programa, $modulos[2]]), ['direccion' => 'subir']);
+        $this->patchJson("/api/panel/catalogo/programas/{$programa->id}/modulos/{$modulos[2]->id}/mover", ['direccion' => 'subir'])
+            ->assertOk();
         $this->assertSame(['M-1', 'M-3', 'M-2'], $this->orden($programa));
 
-        $this->patch(route('programas.modulos.mover', [$programa, $modulos[0]]), ['direccion' => 'bajar']);
+        $this->patchJson("/api/panel/catalogo/programas/{$programa->id}/modulos/{$modulos[0]->id}/mover", ['direccion' => 'bajar'])
+            ->assertOk();
         $this->assertSame(['M-3', 'M-1', 'M-2'], $this->orden($programa));
 
-        // El último módulo (M-2) no puede bajar más: no cambia nada.
-        $this->patch(route('programas.modulos.mover', [$programa, $modulos[1]]), ['direccion' => 'bajar']);
+        $this->patchJson("/api/panel/catalogo/programas/{$programa->id}/modulos/{$modulos[1]->id}/mover", ['direccion' => 'bajar'])
+            ->assertOk();
         $this->assertSame(['M-3', 'M-1', 'M-2'], $this->orden($programa));
     }
 
@@ -60,7 +65,8 @@ class OrdenModulosTest extends TestCase
     {
         [$programa, $modulos] = $this->programaConModulos(3);
 
-        $this->delete(route('programas.modulos.quitar', [$programa, $modulos[0]]));
+        $this->deleteJson("/api/panel/catalogo/programas/{$programa->id}/modulos/{$modulos[0]->id}")
+            ->assertOk();
 
         $this->assertSame(['M-2', 'M-3'], $this->orden($programa));
         $this->assertSame([1, 2], $programa->modulos()->orderBy('programa_modulo.orden')->get()->map(fn ($m) => $m->pivot->orden)->all());

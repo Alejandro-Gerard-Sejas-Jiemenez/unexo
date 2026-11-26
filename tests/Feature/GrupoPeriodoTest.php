@@ -193,18 +193,18 @@ class GrupoPeriodoTest extends TestCase
         $this->assertSame([$visible->id], Cohorte::visibleParaCrm()->pluck('id')->all());
     }
 
-    // CA-18: el formulario de un grupo de edición no trae campos de fecha activos.
-    public function test_el_formulario_de_un_grupo_de_edicion_no_trae_campos_de_fecha(): void
+    // CA-18: el grupo de edición no guarda fechas propias en la API.
+    public function test_el_detalle_de_la_api_de_un_grupo_de_edicion_muestra_el_periodo_de_la_edicion(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
         $grupo = $this->crearGrupoConHorarios([[1, '19:00', '21:00']], $edicion);
 
-        $html = $this->actingAs($this->admin())->get(route('grupos.edit', $grupo))->assertOk()->getContent();
-
-        $campos = $this->xpath($html)->query('//input[@name="fecha_inicio" or @name="fecha_fin"][not(@disabled)][not(ancestor::template)]');
-        $this->assertSame(0, $campos->length, 'Un grupo de edición no debe enviar fechas propias.');
-        $this->assertStringContainsString('04/05/2026', $html);
-        $this->assertStringContainsString('20/06/2026', $html);
+        $this->actingAs($this->admin())
+            ->getJson("/api/panel/grupos/{$grupo->id}")
+            ->assertOk()
+            ->assertJsonPath('data.fecha_inicio', null)
+            ->assertJsonPath('data.fecha_fin', null)
+            ->assertJsonPath('data.periodo_texto', '04/05/2026 – 20/06/2026');
     }
 
     // CA-18: el detalle muestra el período de la edición.
@@ -213,10 +213,9 @@ class GrupoPeriodoTest extends TestCase
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
         $grupo = $this->crearGrupoConHorarios([], $edicion);
 
-        $this->actingAs($this->admin())->get(route('grupos.show', $grupo))
+        $this->actingAs($this->admin())->getJson("/api/panel/grupos/{$grupo->id}")
             ->assertOk()
-            ->assertSee('04/05/2026')
-            ->assertSee('20/06/2026');
+            ->assertJsonPath('data.periodo_texto', '04/05/2026 – 20/06/2026');
     }
 
     // CA-19: al cambiar las fechas de la edición, el detalle del grupo muestra las nuevas.
@@ -227,11 +226,9 @@ class GrupoPeriodoTest extends TestCase
 
         $edicion->update(['fecha_inicio' => '2026-07-01', 'fecha_fin' => '2026-08-15']);
 
-        $this->actingAs($this->admin())->get(route('grupos.show', $grupo))
+        $this->actingAs($this->admin())->getJson("/api/panel/grupos/{$grupo->id}")
             ->assertOk()
-            ->assertSee('01/07/2026')
-            ->assertSee('15/08/2026')
-            ->assertDontSee('04/05/2026');
+            ->assertJsonPath('data.periodo_texto', '01/07/2026 – 15/08/2026');
     }
 
     // RF-15 / CA-22: el alta en una edición no pide fechas ni guarda las que lleguen.
@@ -240,9 +237,9 @@ class GrupoPeriodoTest extends TestCase
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
         $modulo = $this->moduloParaGrupo($edicion);
 
-        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertSessionHasNoErrors();
+        $this->guardarGrupo($this->datosGrupo($modulo, $edicion))->assertCreated();
         $this->guardarGrupo($this->datosGrupo($modulo, $edicion, ['fecha_inicio' => '2030-01-01', 'fecha_fin' => '2030-01-31']))
-            ->assertSessionHasNoErrors();
+            ->assertCreated();
 
         $this->assertSame(2, Grupo::where('cohorte_id', $edicion->id)->count());
         $this->assertSame(0, Grupo::where('cohorte_id', $edicion->id)->whereNotNull('fecha_inicio')->count());
@@ -255,7 +252,8 @@ class GrupoPeriodoTest extends TestCase
         $modulo = $this->moduloParaGrupo();
 
         $this->guardarGrupo($this->datosGrupo($modulo, null, ['fecha_inicio' => '2026-04-30', 'fecha_fin' => '2026-04-01']))
-            ->assertSessionHasErrors(['fecha_fin' => 'La fecha de fin no puede ser anterior a la de inicio.']);
+            ->assertStatus(422)
+            ->assertJsonPath('errors.fecha_fin.0', 'La fecha de fin no puede ser anterior a la de inicio.');
 
         $this->assertDatabaseCount('grupos', 0);
     }
@@ -267,7 +265,7 @@ class GrupoPeriodoTest extends TestCase
         $datos = $this->datosGrupo($modulo);
         unset($datos['fecha_inicio'], $datos['fecha_fin']);
 
-        $this->guardarGrupo($datos)->assertSessionHasErrors(['fecha_inicio', 'fecha_fin']);
+        $this->guardarGrupo($datos)->assertStatus(422)->assertJsonValidationErrors(['fecha_inicio', 'fecha_fin']);
 
         $this->assertDatabaseCount('grupos', 0);
     }
@@ -280,7 +278,8 @@ class GrupoPeriodoTest extends TestCase
         $grupo = $this->grupoNumerado($modulo, $edicion, 1);
 
         $this->actualizarGrupo($grupo, $this->datosDe($grupo, ['cohorte_id' => '']))
-            ->assertSessionHasErrors(['fecha_inicio', 'fecha_fin']);
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['fecha_inicio', 'fecha_fin']);
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'cohorte_id' => $edicion->id]);
     }
@@ -296,7 +295,7 @@ class GrupoPeriodoTest extends TestCase
             'cohorte_id' => '',
             'fecha_inicio' => '2026-08-03',
             'fecha_fin' => '2026-08-28',
-        ]))->assertSessionHasNoErrors();
+        ]))->assertOk();
 
         $this->assertNull($grupo->fresh()->cohorte_id);
         $this->assertSame('03/08/2026 – 28/08/2026', $grupo->fresh()->periodo_texto);
@@ -311,7 +310,7 @@ class GrupoPeriodoTest extends TestCase
         $datos = $this->datosDe($grupo, ['cohorte_id' => $edicion->id]);
         unset($datos['fecha_inicio'], $datos['fecha_fin']);
 
-        $this->actualizarGrupo($grupo, $datos)->assertSessionHasNoErrors();
+        $this->actualizarGrupo($grupo, $datos)->assertOk();
 
         $this->assertSame('04/05/2026 – 20/06/2026', $grupo->fresh()->periodo_texto);
     }
@@ -324,51 +323,22 @@ class GrupoPeriodoTest extends TestCase
         $grupo = $this->grupoNumerado($modulo, null, 1);
 
         $this->actualizarGrupo($grupo, $this->datosDe($grupo, ['cohorte_id' => $edicion->id]))
-            ->assertSessionHasNoErrors();
+            ->assertOk();
 
         $this->assertDatabaseHas('grupos', ['id' => $grupo->id, 'cohorte_id' => $edicion->id, 'fecha_inicio' => null, 'fecha_fin' => null]);
     }
 
-    // CA-23: al crear, la lista de ediciones ofrece "Módulo suelto" y las existentes.
-    public function test_la_lista_de_ediciones_ofrece_modulo_suelto_y_las_ediciones_al_crear(): void
-    {
-        $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
-
-        $html = $this->actingAs($this->admin())->get(route('grupos.create'))->assertOk()->getContent();
-
-        $this->assertListaDeEdiciones($html, [$edicion->nombre]);
-    }
-
-    // CA-23: al editar, el selector se muestra siempre (D12), también en un grupo de edición.
-    public function test_la_lista_de_ediciones_ofrece_modulo_suelto_y_las_ediciones_al_editar(): void
+    // CA-23: la API de opciones ofrece ediciones vigentes.
+    public function test_las_opciones_de_planificacion_ofrecen_las_ediciones(): void
     {
         $edicion = $this->crearEdicionConPeriodo('2026-05-04', '2026-06-20');
         $otra = $this->crearEdicionConPeriodo('2026-09-01', '2026-10-20');
-        $deEdicion = $this->crearGrupoConHorarios([[1, '19:00', '21:00']], $edicion);
-        $suelto = $this->crearGrupoConHorarios([[1, '19:00', '21:00']]);
 
-        foreach ([$deEdicion, $suelto] as $grupo) {
-            $html = $this->actingAs($this->admin())->get(route('grupos.edit', $grupo))->assertOk()->getContent();
-            $this->assertListaDeEdiciones($html, [$edicion->nombre, $otra->nombre]);
-        }
-    }
+        $res = $this->actingAs($this->admin())->getJson('/api/panel/planificacion/opciones')->assertOk();
+        $nombres = collect($res->json('cohortes'))->pluck('nombre')->all();
 
-    /** @param  array<int, string>  $nombres */
-    private function assertListaDeEdiciones(string $html, array $nombres): void
-    {
-        $xpath = $this->xpath($html);
-
-        $vacia = $xpath->query('//select[@id="cohorte_id"][@name="cohorte_id"]/option[@value=""]');
-        $this->assertSame(1, $vacia->length, 'Falta la opción vacía del selector de edición.');
-        $this->assertStringContainsString('Módulo suelto (sin edición)', $vacia->item(0)->textContent);
-
-        $opciones = '';
-        foreach ($xpath->query('//select[@id="cohorte_id"]/option') as $opcion) {
-            $opciones .= $opcion->textContent."\n";
-        }
-        foreach ($nombres as $nombre) {
-            $this->assertStringContainsString($nombre, $opciones);
-        }
+        $this->assertContains($edicion->nombre, $nombres);
+        $this->assertContains($otra->nombre, $nombres);
     }
 
     private function edicionDe(EstadoComercial $estadoPrograma, bool $conModuloAbierto, EstadoPlanificacion $estado): Cohorte
