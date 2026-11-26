@@ -5,7 +5,9 @@ import Campo, { claseControl } from '../../componentes/Campo';
 import Cargador from '../../componentes/Cargador';
 import EncabezadoPagina from '../../componentes/EncabezadoPagina';
 import Icono from '../../componentes/Icono';
+import SelectorHorarios from '../../componentes/SelectorHorarios';
 import { useToast } from '../../componentes/ToastContext';
+import { agregarBloque } from '../../lib/horarios';
 
 const VACIO = {
     cohorte_id: '',
@@ -18,8 +20,10 @@ const VACIO = {
     fecha_inicio: '',
     fecha_fin: '',
     enlace_videoconferencia: '',
-    horarios: [{ dia_semana: '1', hora_inicio: '19:00', hora_fin: '21:00' }],
+    horarios: [],
 };
+
+const BLOQUE_VACIO = { dias: [], hora_inicio: '19:00', hora_fin: '21:00' };
 
 export default function GrupoFormulario() {
     const { id } = useParams();
@@ -43,6 +47,8 @@ export default function GrupoFormulario() {
         dias: [],
     });
     const [errores, setErrores] = useState({});
+    const [bloque, setBloque] = useState(BLOQUE_VACIO);
+    const [errorBloque, setErrorBloque] = useState(null);
     const [aviso, setAviso] = useState(null);
     const [cargando, setCargando] = useState(true);
     const [enviando, setEnviando] = useState(false);
@@ -60,7 +66,6 @@ export default function GrupoFormulario() {
                     const { data } = await cliente.get(`/grupos/${id}`);
                     if (!vigente) return;
                     const g = data.data;
-                    const sinHorarioPermitido = g.estado === 'finalizado' || g.estado === 'cancelado';
                     setDatos({
                         cohorte_id: g.cohorte_id ?? '',
                         modulo_id: g.modulo_id ?? '',
@@ -72,15 +77,11 @@ export default function GrupoFormulario() {
                         fecha_inicio: g.fecha_inicio ?? '',
                         fecha_fin: g.fecha_fin ?? '',
                         enlace_videoconferencia: g.enlace_videoconferencia ?? '',
-                        horarios: g.horarios?.length
-                            ? g.horarios.map((h) => ({
-                                  dia_semana: String(h.dia_semana),
-                                  hora_inicio: h.hora_inicio,
-                                  hora_fin: h.hora_fin,
-                              }))
-                            : sinHorarioPermitido
-                              ? []
-                              : [{ dia_semana: '1', hora_inicio: '19:00', hora_fin: '21:00' }],
+                        horarios: (g.horarios ?? []).map((h) => ({
+                            dia_semana: String(h.dia_semana),
+                            hora_inicio: h.hora_inicio,
+                            hora_fin: h.hora_fin,
+                        })),
                     });
                 }
             } catch (error) {
@@ -118,17 +119,23 @@ export default function GrupoFormulario() {
 
     const maxHorarios = opciones.limites?.horarios_max ?? 14;
 
-    function agregarHorario() {
-        setDatos((p) => {
-            if (p.horarios.length >= maxHorarios) return p;
-            return {
-                ...p,
-                horarios: [...p.horarios, { dia_semana: '1', hora_inicio: '19:00', hora_fin: '21:00' }],
-            };
-        });
+    // Los errores por fila van por posición: al cambiar la lista dejan de corresponder.
+    function sinErroresDeHorario() {
+        setErrores((p) => Object.fromEntries(Object.entries(p).filter(([c]) => !c.startsWith('horarios'))));
+    }
+
+    function agregarHorarios() {
+        const resultado = agregarBloque(datos.horarios, bloque, maxHorarios);
+        setErrorBloque(resultado.error);
+        if (resultado.error) return;
+
+        sinErroresDeHorario();
+        setDatos((p) => ({ ...p, horarios: resultado.horarios }));
+        setBloque((b) => ({ ...b, dias: [] }));
     }
 
     function quitarHorario(indice) {
+        sinErroresDeHorario();
         setDatos((p) => ({
             ...p,
             horarios: p.horarios.filter((_, i) => i !== indice),
@@ -147,6 +154,10 @@ export default function GrupoFormulario() {
 
     async function enviar(e) {
         e.preventDefault();
+        if (bloque.dias.length > 0) {
+            setErrorBloque('Pulsa «Agregar» para sumar los días marcados, o desmárcalos.');
+            return;
+        }
         setErrores({});
         setAviso(null);
         setEnviando(true);
@@ -401,11 +412,24 @@ export default function GrupoFormulario() {
                             <p className="mb-3 text-xs text-(--color-error)">{errores.horarios}</p>
                         )}
 
+                        <SelectorHorarios
+                            bloque={bloque}
+                            alCambiar={(nuevo) => {
+                                setBloque(nuevo);
+                                setErrorBloque(null);
+                            }}
+                            alAgregar={agregarHorarios}
+                            frecuentes={opciones.horarios_frecuentes}
+                            error={errorBloque}
+                        />
+
+                        <h3 className="mt-5 mb-2 text-sm font-semibold">Horarios del grupo</h3>
+
                         {datos.horarios.length === 0 && (
                             <p className="mb-3 text-xs text-(--color-texto-suave)">
                                 {permiteSinHorarios
                                     ? 'Sin horarios definidos (permitido en grupos finalizados o cancelados).'
-                                    : 'Agrega al menos un horario semanal.'}
+                                    : 'Marca los días, pon las horas y pulsa «Agregar».'}
                             </p>
                         )}
 
@@ -466,10 +490,9 @@ export default function GrupoFormulario() {
 
                                             <button
                                                 type="button"
-                                                disabled={!permiteSinHorarios && datos.horarios.length === 1}
                                                 onClick={() => quitarHorario(i)}
                                                 aria-label={`Quitar horario ${i + 1}`}
-                                                className="btn btn-secundario min-h-9! px-3! text-xs sm:mt-5 disabled:opacity-40"
+                                                className="btn btn-secundario min-h-9! px-3! text-xs sm:mt-5"
                                             >
                                                 Quitar
                                             </button>
@@ -484,16 +507,6 @@ export default function GrupoFormulario() {
                                 );
                             })}
                         </div>
-
-                        <button
-                            type="button"
-                            disabled={datos.horarios.length >= maxHorarios}
-                            onClick={agregarHorario}
-                            className="btn btn-secundario mt-2 min-h-9! px-3! text-xs disabled:opacity-40"
-                        >
-                            <Icono nombre="mas" className="h-4 w-4" />
-                            Agregar horario
-                        </button>
                     </fieldset>
 
                     <div className="form-acciones">
