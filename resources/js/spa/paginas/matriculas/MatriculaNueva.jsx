@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import cliente, { ErrorDeValidacion } from '../../api/cliente';
 import Campo, { claseControl } from '../../componentes/Campo';
 import Cargador from '../../componentes/Cargador';
@@ -11,7 +11,9 @@ export default function MatriculaNueva() {
     const navegar = useNavigate();
     const { mostrar } = useToast();
     const [opciones, setOpciones] = useState({ estudiantes: [], cohortes: [], grupos_sueltos: [] });
-    const [datos, setDatos] = useState({ estudiante_id: '', tipo: 'cohorte', cohorte_id: '', grupo_id: '' });
+    const [busqueda] = useSearchParams();
+    const pedido = busqueda.get('estudiante_id') ?? '';
+    const [datos, setDatos] = useState({ estudiante_id: pedido, tipo: 'cohorte', cohorte_id: '', grupo_id: '' });
     const [errores, setErrores] = useState({});
     const [aviso, setAviso] = useState(null);
     const [cargando, setCargando] = useState(true);
@@ -21,15 +23,24 @@ export default function MatriculaNueva() {
         let vigente = true;
 
         cliente
-            .get('/matriculas/opciones')
-            .then(({ data }) => vigente && setOpciones(data))
+            .get(pedido ? `/matriculas/opciones?estudiante_id=${encodeURIComponent(pedido)}` : '/matriculas/opciones')
+            .then(({ data }) => {
+                if (!vigente) return;
+                setOpciones(data);
+                // Si el estudiante pedido no se puede elegir, no queda marcado a escondidas.
+                setDatos((p) =>
+                    p.estudiante_id && !data.estudiantes.some((e) => e.id === p.estudiante_id)
+                        ? { ...p, estudiante_id: '' }
+                        : p,
+                );
+            })
             .catch((e) => vigente && setAviso(e.message))
             .finally(() => vigente && setCargando(false));
 
         return () => {
             vigente = false;
         };
-    }, []);
+    }, [pedido]);
 
     const cambiar = (campo) => (e) => setDatos((p) => ({ ...p, [campo]: e.target.value }));
 

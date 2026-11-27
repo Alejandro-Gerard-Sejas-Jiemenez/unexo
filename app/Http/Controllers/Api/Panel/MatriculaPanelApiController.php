@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Panel;
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 use App\Enums\EstadoMatricula;
 use App\Enums\Rol;
 use App\Http\Controllers\Controller;
@@ -89,16 +91,12 @@ class MatriculaPanelApiController extends Controller
         ]);
     }
 
-    public function opciones(): JsonResponse
+    public function opciones(Request $request): JsonResponse
     {
         $limite = (int) config('limites.opciones_select');
 
         return response()->json([
-            'estudiantes' => User::where('rol', Rol::Estudiante->value)
-                ->where('estado', 'activo')
-                ->orderBy('apellidos')
-                ->limit($limite)
-                ->get(['id', 'nombres', 'apellidos', 'email'])
+            'estudiantes' => $this->estudiantesParaElegir($limite, (string) $request->query('estudiante_id', ''))
                 ->map(fn (User $e) => [
                     'id' => $e->id,
                     'nombre' => $e->nombre_completo,
@@ -130,5 +128,20 @@ class MatriculaPanelApiController extends Controller
                 EstadoMatricula::cases(),
             ),
         ]);
+    }
+
+    /** Los primeros estudiantes activos y, si un atajo pidió uno, ese también. */
+    private function estudiantesParaElegir(int $limite, string $pedido): Collection
+    {
+        $activos = fn () => User::where('rol', Rol::Estudiante->value)->where('estado', 'activo');
+        $columnas = ['id', 'nombres', 'apellidos', 'email'];
+
+        $lista = $activos()->orderBy('apellidos')->limit($limite)->get($columnas)->toBase();
+
+        if (Str::isUuid($pedido) && ! $lista->contains('id', $pedido)) {
+            $lista = $lista->concat($activos()->whereKey($pedido)->get($columnas));
+        }
+
+        return $lista;
     }
 }
